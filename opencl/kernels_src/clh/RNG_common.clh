@@ -1,0 +1,68 @@
+// Taken from PhD thessi of Thomas Luu (Department of Mathematics
+// at University College of London)
+
+static float normcdfinv_(float u) {
+	float	v;
+	float	p;
+	float	q;
+	float	ushift;
+	float   tmp;
+
+    if ((u < 0.0f) || (u > 1.0f)) {
+	    return FLT_MIN;
+	} else if ((u == 0.0f) || (u == 1.0f)) {
+	    return 0.0f;
+	} else {
+		tmp = u;
+	}
+
+	ushift = tmp - 0.5f;
+
+	v = copysign(ushift, 0.0f);
+	
+	if (v < 0.499433f) {
+		v = rsqrt((-tmp*tmp) + tmp);
+		v *= 0.5f;
+		p = 0.001732781974270904f;
+		p = p * v + 0.1788417306083325f;
+		p = p * v + 2.804338363421083f;
+		p = p * v + 9.35716893191325f;
+		p = p * v + 5.283080058166861f;
+		p = p * v + 0.07885390444279965f;
+		p *= ushift;
+		q = 0.0001796248328874524f;
+		q = q * v + 0.02398533988976253f;
+		q = q * v + 0.4893072798067982f;
+		q = q * v + 2.406460595830034f;
+		q = q * v + 3.142947488363618f;
+	} else {
+		if (ushift > 0.0f) {
+			tmp = 1.0f - tmp;
+		}
+		v = log2(tmp+tmp);
+		v *= -0.6931471805599453f;
+		if (v < 22.0f) {
+			p = 0.000382438382914666f;
+			p = p * v + 0.03679041341785685f;
+			p = p * v + 0.5242351532484291f;
+			p = p * v + 1.21642047402659f;
+			q = 9.14019972725528e-6f;
+			q = q * v + 0.003523083799369908f;
+			q = q * v + 0.126802543865968f;
+			q = q * v + 0.8502031783957995f;
+		} else {
+			p = 0.00001016962895771568f;
+			p = p * v + 0.003330096951634844f;
+			p = p * v + 0.1540146885433827f;
+			p = p * v + 1.045480394868638f;
+			q = 1.303450553973082e-7f;
+			q = q * v + 0.0001728926914526662f;
+			q = q * v + 0.02031866871146244f;
+			q = q * v + 0.3977137974626933f;
+		}
+		p *= copysign(v, ushift);
+	}
+	q = q * v + 1.0f;
+	v = 1.0f / q;
+	return p * v;
+}
