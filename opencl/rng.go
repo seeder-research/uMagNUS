@@ -158,7 +158,7 @@ func (g *Generator) Normal(data unsafe.Pointer, d_size int, events []*cl.Event) 
 			event = g.PRNG.GenerateNormal(g.buf.DevPtr(0), g.buf_size, events)
 			err = cl.WaitForEvents([]*cl.Event{event})
 			if err != nil {
-				fmt.Printf("WaitForEvents in generating uniform random numbers failed: %+v \n", err)
+				fmt.Printf("WaitForEvents in generating normally distributed random numbers failed: %+v \n", err)
 			}
 			bufferSize := g.buf.Size()
 			if bufferSize[0] != g.buf_size {
@@ -170,11 +170,11 @@ func (g *Generator) Normal(data unsafe.Pointer, d_size int, events []*cl.Event) 
 		if g.supply >= demand {
 			event, err = ClCmdQueue.EnqueueCopyBuffer((*cl.MemObject)(g.buf.DevPtr(0)), (*cl.MemObject)(data), SIZEOF_FLOAT32*g.sup_offset, SIZEOF_FLOAT32*demand_offset, SIZEOF_FLOAT32*demand, nil)
 			if err != nil {
-				fmt.Printf("EnqueueCopyBuffer in copying uniform random numbers failed: %+v \n", err)
+				fmt.Printf("EnqueueCopyBuffer in copying normally distributed random numbers failed: %+v \n", err)
 			}
 			err = cl.WaitForEvents([]*cl.Event{event})
 			if err != nil {
-				fmt.Printf("WaitForEvents in copying uniform random numbers failed: %+v \n", err)
+				fmt.Printf("WaitForEvents in copying normally distributed random numbers failed: %+v \n", err)
 			}
 			g.sup_offset += demand
 			g.supply -= demand
@@ -182,11 +182,11 @@ func (g *Generator) Normal(data unsafe.Pointer, d_size int, events []*cl.Event) 
 		} else {
 			event, err = ClCmdQueue.EnqueueCopyBuffer((*cl.MemObject)(g.buf.DevPtr(0)), (*cl.MemObject)(data), SIZEOF_FLOAT32*g.sup_offset, SIZEOF_FLOAT32*demand_offset, SIZEOF_FLOAT32*g.supply, nil)
 			if err != nil {
-				fmt.Printf("EnqueueCopyBuffer in copying uniform random numbers failed: %+v \n", err)
+				fmt.Printf("EnqueueCopyBuffer in copying normally distributed random numbers failed: %+v \n", err)
 			}
 			err = cl.WaitForEvents([]*cl.Event{event})
 			if err != nil {
-				fmt.Printf("WaitForEvents in copying uniform random numbers failed: %+v \n", err)
+				fmt.Printf("WaitForEvents in copying uniform normally distributed numbers failed: %+v \n", err)
 			}
 			demand -= g.supply
 			demand_offset += g.supply
@@ -252,7 +252,7 @@ func (p *mtgp32_params) GenerateUniform(d_data unsafe.Pointer, data_size int, ev
 		log.Fatalln("Generator has not been initialized!")
 	}
 
-	item_num := MTGP32_TN * p.GetGroupCount()
+	item_num := p.GetGroupSize() * p.GetGroupCount()
 	min_size := MTGP32_LS * p.GetGroupCount()
 	tmpSize := data_size
 	if data_size%min_size != 0 {
@@ -266,7 +266,7 @@ func (p *mtgp32_params) GenerateUniform(d_data unsafe.Pointer, data_size int, ev
 
 	event := k_mtgp32_uniform_async(unsafe.Pointer(p.Rec_buf), unsafe.Pointer(p.Temper_buf), unsafe.Pointer(p.Flt_temper_buf), unsafe.Pointer(p.Pos_buf),
 		unsafe.Pointer(p.Sh1_buf), unsafe.Pointer(p.Sh2_buf), unsafe.Pointer(p.Status_buf), d_data, tmpSize/p.GetGroupCount(),
-		&config{[]int{item_num}, []int{MTGP32_TN}}, events)
+		&config{[]int{item_num}, []int{p.GetGroupSize()}}, events)
 
 	if Synchronous { // debug
 		ClCmdQueue.Finish()
@@ -282,7 +282,7 @@ func (p *mtgp32_params) GenerateNormal(d_data unsafe.Pointer, data_size int, eve
 		log.Fatalln("Generator has not been initialized!")
 	}
 
-	item_num := MTGP32_TN * p.GetGroupCount()
+	item_num := p.GetGroupSize() * p.GetGroupCount()
 	min_size := MTGP32_LS * p.GetGroupCount()
 	tmpSize := data_size
 	if data_size%min_size != 0 {
@@ -291,12 +291,12 @@ func (p *mtgp32_params) GenerateNormal(d_data unsafe.Pointer, data_size int, eve
 
 	if Synchronous { // debug
 		ClCmdQueue.Finish()
-		timer.Start("mtgp32_uniform")
+		timer.Start("mtgp32_normal")
 	}
 
 	event := k_mtgp32_normal_async(unsafe.Pointer(p.Rec_buf), unsafe.Pointer(p.Temper_buf), unsafe.Pointer(p.Flt_temper_buf), unsafe.Pointer(p.Pos_buf),
 		unsafe.Pointer(p.Sh1_buf), unsafe.Pointer(p.Sh2_buf), unsafe.Pointer(p.Status_buf), d_data, tmpSize/p.GetGroupCount(),
-		&config{[]int{item_num}, []int{MTGP32_TN}}, events)
+		&config{[]int{item_num}, []int{p.GetGroupSize()}}, events)
 
 	if Synchronous { // debug
 		ClCmdQueue.Finish()
