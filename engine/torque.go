@@ -48,6 +48,23 @@ var (
 	EpsilonPrime2             = NewScalarParam("EpsilonPrime2", "", "Slonczewski secondairy STT term ε' for interface 2")
 	FixedLayer2               = NewExcitation("FixedLayer2", "", "Slonczewski fixed layer polarization for interface 2")
 	Jint2                     = NewExcitation("Jint2", "A/m2", "Electrical current density through interface 2")
+
+	// For constant voltage type simulations (first interface)
+	DisableVoltageInt1 = true
+	ToMulFactorInt1    = true
+	Vint1              = NewExcitation("Vint1", "", "Voltage applied to generate electrical current for interface 1 (same sign as J)")
+	A1int1             = NewExcitation("A1int1", "", "First scale factor for calculating J from applied voltage for interface 1")
+	A2int1             = NewExcitation("A2int1", "", "Second scale factor for calculating J from applied voltage for interface 1")
+	VcmaCoeff1         = NewScalarParam("VcmaCoeff1", "J/m3/V", "voltage-controlled anisotropy constant for interface 1")
+	AnisVCMAU1         = NewVectorParam("anisVCMAU1", "", "Voltage-controlled magnetic anisotropy direction for interface 1")
+	// For constant voltage type simulations (second interface)
+	DisableVoltageInt2 = true
+	ToMulFactorInt2    = true
+	Vint2              = NewExcitation("Vint2", "", "Voltage applied to generate electrical current for interface 2 (same sign as J)")
+	A1int2             = NewExcitation("A1int2", "", "First scale factor for calculating J from applied voltage for interface 2")
+	A2int2             = NewExcitation("A2int2", "", "Second scale factor for calculating J from applied voltage for interface 2")
+	VcmaCoeff2         = NewScalarParam("VcmaCoeff2", "J/m3/V", "voltage-controlled anisotropy constant for interface 2")
+	AnisVCMAU2         = NewVectorParam("anisVCMAU2", "", "Voltage-controlled magnetic anisotropy direction for interface 2")
 )
 
 func init() {
@@ -72,6 +89,10 @@ func init() {
 	Lambdafixed2.Set(1)              // sensible default value (?). TODO: should not be zero
 	DeclVar("DisableSlonczewskiTorque1", &DisableSlonczewskiTorque1, "Disables Slonczewski torque through interface 1 (default=true)")
 	DeclVar("DisableSlonczewskiTorque2", &DisableSlonczewskiTorque2, "Disables Slonczewski torque through interface 2 (default=true)")
+	DeclVar("DisableVoltageInt1", &DisableVoltageInt1, "Disables voltage based calculation of Slonczewski torque through interface 1 (default=true)")
+	DeclVar("ToMulFactorInt1", &ToMulFactorInt1, "Sets function converting voltage to current as multiply at interface 1 (default=true, divide if false)")
+	DeclVar("DisableVoltageInt2", &DisableVoltageInt2, "Disables voltage based calculation of Slonczewski torque through interface 2 (default=true)")
+	DeclVar("ToMulFactorInt2", &ToMulFactorInt2, "Sets function converting voltage to current as multiply at interface 2 (default=true, divide if false)")
 }
 
 // Sets dst to the current total torque
@@ -149,7 +170,7 @@ func AddSTTorque(dst *data.Slice) {
 
 // Adds the current spin transfer torque from first additional source to dst
 func AddSTTorque1(dst *data.Slice) {
-	if Jint1.isZero() {
+	if Jint1.isZero() && Vint1.isZero() {
 		return
 	}
 	util.AssertMsg(!Pfree1.isZero(), "spin polarization (Pfree1) should not be 0")
@@ -165,7 +186,25 @@ func AddSTTorque1(dst *data.Slice) {
 	if !DisableSlonczewskiTorque1 && !FixedLayer1.isZero() {
 		msat := Msat.MSlice()
 		defer msat.Recycle()
-		j := Jint1.MSlice()
+		vapp, rec := Vint1.Slice()
+		if rec {
+			defer opencl.Recycle(vapp)
+		}
+		Jcurr := opencl.Buffer(vapp.NComp(), vapp.Size())
+		defer opencl.Recycle(Jcurr)
+		if !DisableVoltageInt1 {
+			a1int, rec := A1int1.Slice()
+			if rec {
+				defer opencl.Recycle(a1int)
+			}
+			a2int, rec := A2int1.Slice()
+			if rec {
+				defer opencl.Recycle(a2int)
+			}
+			JfromV(vapp, a1int, a2int, M.Buffer(), fl, Jcurr, ToMulFactorInt1)
+			Jint1.AddTo(Jcurr)
+		}
+		j := opencl.ToMSlice(Jcurr)
 		defer j.Recycle()
 		fixedP := FixedLayer1.MSlice()
 		defer fixedP.Recycle()
@@ -188,7 +227,7 @@ func AddSTTorque1(dst *data.Slice) {
 
 // Adds the current spin transfer torque from second additional source to dst
 func AddSTTorque2(dst *data.Slice) {
-	if Jint2.isZero() {
+	if Jint2.isZero() && Vint2.isZero() {
 		return
 	}
 	util.AssertMsg(!Pfree2.isZero(), "spin polarization (Pfree1) should not be 0")
@@ -204,7 +243,25 @@ func AddSTTorque2(dst *data.Slice) {
 	if !DisableSlonczewskiTorque2 && !FixedLayer2.isZero() {
 		msat := Msat.MSlice()
 		defer msat.Recycle()
-		j := Jint2.MSlice()
+		vapp, rec := Vint2.Slice()
+		if rec {
+			defer opencl.Recycle(vapp)
+		}
+		Jcurr := opencl.Buffer(vapp.NComp(), vapp.Size())
+		defer opencl.Recycle(Jcurr)
+		if !DisableVoltageInt2 {
+			a1int, rec := A1int2.Slice()
+			if rec {
+				defer opencl.Recycle(a1int)
+			}
+			a2int, rec := A2int2.Slice()
+			if rec {
+				defer opencl.Recycle(a2int)
+			}
+			JfromV(vapp, a1int, a2int, M.Buffer(), fl, Jcurr, ToMulFactorInt2)
+			Jint2.AddTo(Jcurr)
+		}
+		j := opencl.ToMSlice(Jcurr)
 		defer j.Recycle()
 		fixedP := FixedLayer1.MSlice()
 		defer fixedP.Recycle()
@@ -222,6 +279,42 @@ func AddSTTorque2(dst *data.Slice) {
 		defer epsPrime.Recycle()
 		opencl.AddOommfSlonczewskiTorque(dst, M.Buffer(),
 			msat, j, fixedP, alpha, pfix, pfree, lambdafix, lambdafree, epsPrime, Mesh())
+	}
+}
+
+func JfromV(Vappl, A1, A2, m, refM, Jcurr *data.Slice, ToMulFactor bool) {
+	cellSz := M.Mesh().CellSize()
+	xSz, ySz, zSz := cellSz[X], cellSz[Y], cellSz[Z]
+	xArea := make([]float64, 3)
+	xArea[X], xArea[Y], xArea[Z] = ySz*zSz, xSz*zSz, xSz*ySz
+
+	a1int := opencl.Buffer(1, A1.Size())
+	a2int := opencl.Buffer(1, A1.Size())
+	factor := opencl.Buffer(1, A1.Size())
+	factor1 := opencl.Buffer(1, A1.Size())
+	dp := opencl.Buffer(1, A1.Size())
+	defer opencl.Recycle(a1int)
+	defer opencl.Recycle(a2int)
+	defer opencl.Recycle(factor)
+	defer opencl.Recycle(factor1)
+	defer opencl.Recycle(dp)
+	opencl.Zero(dp)
+	opencl.Zero(factor)
+	opencl.Zero(factor1)
+
+	opencl.AddDotProduct(dp, float32(1.0), m, refM)
+
+	for ii := 0; ii < A1.NComp(); ii++ {
+		opencl.Madd2(a1int, A1.Comp(ii), A2.Comp(ii), float32(0.5), float32(0.5))
+		opencl.Madd2(a2int, A1.Comp(ii), A2.Comp(ii), float32(0.5), float32(-0.5))
+		opencl.Mul(factor1, a2int, dp)
+		if ToMulFactor {
+			opencl.Madd2(factor, a1int, factor1, float32(float64(1.0)/xArea[ii]), float32(float64(1.0)/xArea[ii]))
+			opencl.Mul(Jcurr.Comp(ii), Vappl.Comp(ii), factor)
+		} else {
+			opencl.Madd2(factor, a1int, factor1, float32(xArea[ii]), float32(xArea[ii]))
+			opencl.Div(Jcurr.Comp(ii), Vappl.Comp(ii), factor)
+		}
 	}
 }
 

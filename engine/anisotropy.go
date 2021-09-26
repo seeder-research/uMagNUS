@@ -107,11 +107,57 @@ func addTensorAnisotropyFrom(dst *data.Slice, M magnetization, Msat, KuXX, KuYY,
 	}
 }
 
+func addVCAnisotropyFrom(dst *data.Slice, M magnetization, Msat, VcmaCoeff1, VcmaCoeff2 *RegionwiseScalar, AnisVCMAU1, AnisVCMAU2 *RegionwiseVector) {
+	if VcmaCoeff1.nonZero() {
+		if !Vint1.isZero() {
+			ms := Msat.MSlice()
+			defer ms.Recycle()
+
+			vcmaCoeff := VcmaCoeff1.MSlice()
+			defer vcmaCoeff.Recycle()
+
+			c1 := AnisVCMAU1.MSlice()
+			defer c1.Recycle()
+
+			vapp, rec := Vint1.Slice()
+			if rec {
+				defer opencl.Recycle(vapp)
+			}
+			Vapp := opencl.ToMSlice(vapp)
+			defer Vapp.Recycle()
+
+			opencl.AddVoltageControlledAnisotropy(dst, M.Buffer(), ms, vcmaCoeff, Vapp, c1)
+		}
+	}
+	if VcmaCoeff2.nonZero() {
+		if !Vint2.isZero() {
+			ms := Msat.MSlice()
+			defer ms.Recycle()
+
+			vcmaCoeff := VcmaCoeff2.MSlice()
+			defer vcmaCoeff.Recycle()
+
+			c1 := AnisVCMAU2.MSlice()
+			defer c1.Recycle()
+
+			vapp, rec := Vint2.Slice()
+			if rec {
+				defer opencl.Recycle(vapp)
+			}
+			Vapp := opencl.ToMSlice(vapp)
+			defer Vapp.Recycle()
+
+			opencl.AddVoltageControlledAnisotropy(dst, M.Buffer(), ms, vcmaCoeff, Vapp, c1)
+		}
+	}
+}
+
 // Add the anisotropy field to dst
 func AddAnisotropyField(dst *data.Slice) {
 	addUniaxialAnisotropyFrom(dst, M, Msat, Ku1, Ku2, AnisU)
 	addCubicAnisotropyFrom(dst, M, Msat, Kc1, Kc2, Kc3, AnisC1, AnisC2)
 	addTensorAnisotropyFrom(dst, M, Msat, KuXX, KuYY, KuZZ, AnisUxx, AnisUyy, AnisUzz)
+	addVCAnisotropyFrom(dst, M, Msat, VcmaCoeff1, VcmaCoeff2, AnisVCMAU1, AnisVCMAU2)
 }
 
 // Add the anisotropy energy density to dst
