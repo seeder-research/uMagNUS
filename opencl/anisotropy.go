@@ -255,6 +255,104 @@ func AddUniaxialAnisotropy2(Beff, m *data.Slice, Msat, k1, k2, u MSlice) {
 	}
 	err := cl.WaitForEvents([](*cl.Event){event})
 	if err != nil {
+		fmt.Printf("WaitForEvents failed in addcubicanisotropy2: %+v \n", err)
+	}
+}
+
+// Add uniaxial magnetocrystalline anisotropy field to Beff.
+// see uniaxialanisotropy.cl
+func AddUniaxialAnisotropy(Beff, m *data.Slice, Msat, k1, u MSlice) {
+	util.Argument(Beff.Size() == m.Size())
+
+	N := Beff.Len()
+	cfg := make1DConf(N)
+
+	Beff_X := (unsafe.Pointer)(nil)
+	Beff_Y := (unsafe.Pointer)(nil)
+	Beff_Z := (unsafe.Pointer)(nil)
+	m_X := (unsafe.Pointer)(nil)
+	m_Y := (unsafe.Pointer)(nil)
+	m_Z := (unsafe.Pointer)(nil)
+	Msat_X := (unsafe.Pointer)(nil)
+	k1Ptr := (unsafe.Pointer)(nil)
+	uX := (unsafe.Pointer)(nil)
+	uY := (unsafe.Pointer)(nil)
+	uZ := (unsafe.Pointer)(nil)
+	eventList := [](*cl.Event){}
+	if Beff != nil {
+		Beff_X = Beff.DevPtr(X)
+		Beff_Y = Beff.DevPtr(Y)
+		Beff_Z = Beff.DevPtr(Z)
+		eventList = append(eventList, Beff.GetEvent(X))
+		eventList = append(eventList, Beff.GetEvent(Y))
+		eventList = append(eventList, Beff.GetEvent(Z))
+	}
+	if m != nil {
+		m_X = m.DevPtr(X)
+		m_Y = m.DevPtr(Y)
+		m_Z = m.DevPtr(Z)
+		eventList = append(eventList, m.GetEvent(X))
+		eventList = append(eventList, m.GetEvent(Y))
+		eventList = append(eventList, m.GetEvent(Z))
+	}
+	if Msat.GetSlicePtr(0) != nil {
+		Msat_X = Msat.DevPtr(0)
+		eventList = append(eventList, Msat.GetEvent(0))
+	}
+	if k1.GetSlicePtr(0) != nil {
+		k1Ptr = k1.DevPtr(0)
+		eventList = append(eventList, k1.GetEvent(0))
+	}
+	if u.GetSlicePtr(X) != nil {
+		uX = u.DevPtr(X)
+		eventList = append(eventList, u.GetEvent(X))
+	}
+	if u.GetSlicePtr(Y) != nil {
+		uY = u.DevPtr(Y)
+		eventList = append(eventList, u.GetEvent(Y))
+	}
+	if u.GetSlicePtr(Z) != nil {
+		uZ = u.DevPtr(Z)
+		eventList = append(eventList, u.GetEvent(Z))
+	}
+
+	event := k_adduniaxialanisotropy_async(
+		Beff_X, Beff_Y, Beff_Z,
+		m_X, m_Y, m_Z,
+		Msat_X, Msat.Mul(0),
+		k1Ptr, k1.Mul(0),
+		uX, u.Mul(X),
+		uY, u.Mul(Y),
+		uZ, u.Mul(Z),
+		N, cfg, eventList)
+
+	if Beff != nil {
+		Beff.SetEvent(X, event)
+		Beff.SetEvent(Y, event)
+		Beff.SetEvent(Z, event)
+	}
+	if m != nil {
+		m.SetEvent(X, event)
+		m.SetEvent(Y, event)
+		m.SetEvent(Z, event)
+	}
+	if Msat.GetSlicePtr(0) != nil {
+		Msat.SetEvent(0, event)
+	}
+	if k1.GetSlicePtr(0) != nil {
+		k1.SetEvent(0, event)
+	}
+	if u.GetSlicePtr(X) != nil {
+		u.SetEvent(X, event)
+	}
+	if u.GetSlicePtr(Y) != nil {
+		u.SetEvent(Y, event)
+	}
+	if u.GetSlicePtr(Z) != nil {
+		u.SetEvent(Z, event)
+	}
+	err := cl.WaitForEvents([](*cl.Event){event})
+	if err != nil {
 		fmt.Printf("WaitForEvents failed in addcubicanisotropy: %+v \n", err)
 	}
 }

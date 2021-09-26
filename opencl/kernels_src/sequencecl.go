@@ -70,6 +70,7 @@ var OCLKernelsList = []string{
 	"settemperature2",
 	"settopologicalcharge",
 	"settopologicalchargelattice",
+	"adduniaxialanisotropy",
 	"adduniaxialanisotropy2",
 	"vecnorm",
 	"zeromask",
