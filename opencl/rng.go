@@ -71,7 +71,7 @@ func (g *Generator) CreatePNG() {
 }
 
 func (g *Generator) Init(seed *uint32, events []*cl.Event) {
-	g.buf_size = 3 * g.PRNG.GetGroupSize() * g.PRNG.GetGroupCount()
+	g.buf_size = 8 * g.PRNG.GetGroupSize() * MTGP32_TN
 	if seed == nil {
 		g.PRNG.Init(initRNG(), events)
 	} else {
@@ -252,7 +252,7 @@ func (p *mtgp32_params) GenerateUniform(d_data unsafe.Pointer, data_size int, ev
 		log.Fatalln("Generator has not been initialized!")
 	}
 
-	item_num := p.GetGroupSize() * p.GetGroupCount()
+	item_num := MTGP32_TN * p.GetGroupCount()
 	min_size := MTGP32_LS * p.GetGroupCount()
 	tmpSize := data_size
 	if data_size%min_size != 0 {
@@ -266,7 +266,7 @@ func (p *mtgp32_params) GenerateUniform(d_data unsafe.Pointer, data_size int, ev
 
 	event := k_mtgp32_uniform_async(unsafe.Pointer(p.Rec_buf), unsafe.Pointer(p.Temper_buf), unsafe.Pointer(p.Flt_temper_buf), unsafe.Pointer(p.Pos_buf),
 		unsafe.Pointer(p.Sh1_buf), unsafe.Pointer(p.Sh2_buf), unsafe.Pointer(p.Status_buf), d_data, tmpSize/p.GetGroupCount(),
-		&config{[]int{item_num}, []int{p.GetGroupSize()}}, events)
+		&config{[]int{item_num}, []int{MTGP32_TN}}, events)
 
 	if Synchronous { // debug
 		ClCmdQueue.Finish()
@@ -282,7 +282,7 @@ func (p *mtgp32_params) GenerateNormal(d_data unsafe.Pointer, data_size int, eve
 		log.Fatalln("Generator has not been initialized!")
 	}
 
-	item_num := p.GetGroupSize() * p.GetGroupCount()
+	item_num := MTGP32_TN * p.GetGroupCount()
 	min_size := MTGP32_LS * p.GetGroupCount()
 	tmpSize := data_size
 	if data_size%min_size != 0 {
@@ -296,7 +296,7 @@ func (p *mtgp32_params) GenerateNormal(d_data unsafe.Pointer, data_size int, eve
 
 	event := k_mtgp32_normal_async(unsafe.Pointer(p.Rec_buf), unsafe.Pointer(p.Temper_buf), unsafe.Pointer(p.Flt_temper_buf), unsafe.Pointer(p.Pos_buf),
 		unsafe.Pointer(p.Sh1_buf), unsafe.Pointer(p.Sh2_buf), unsafe.Pointer(p.Status_buf), d_data, tmpSize/p.GetGroupCount(),
-		&config{[]int{item_num}, []int{p.GetGroupSize()}}, events)
+		&config{[]int{item_num}, []int{MTGP32_TN}}, events)
 
 	if Synchronous { // debug
 		ClCmdQueue.Finish()
