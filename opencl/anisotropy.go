@@ -367,7 +367,7 @@ func AddVoltageControlledAnisotropy(Beff, m *data.Slice, Msat, vcmaCoeff, voltag
 	N := Beff.Len()
 	cfg := make1DConf(N)
 
-		Beff_X := (unsafe.Pointer)(nil)
+	Beff_X := (unsafe.Pointer)(nil)
 	Beff_Y := (unsafe.Pointer)(nil)
 	Beff_Z := (unsafe.Pointer)(nil)
 	m_X := (unsafe.Pointer)(nil)

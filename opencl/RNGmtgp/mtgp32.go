@@ -144,41 +144,41 @@ func (p *MTGP32dc_params_array_ptr) CreateParamBuffers(context *cl.Context) {
 	}
 }
 
-func (p *MTGP32dc_params_array_ptr) LoadAllParamBuffersToDevice(queue *cl.CommandQueue, eventWaitList []*cl.Event) ([]*cl.Event, error) {
+func (p *MTGP32dc_params_array_ptr) LoadAllParamBuffersToDevice(eventWaitList []*cl.Event) ([]*cl.Event, error) {
 	var err error
 
 	var pos_event *cl.Event
-	pos_event, err = queue.EnqueueWriteBuffer(p.Pos_buf, false, 0, p.Pos_size, unsafe.Pointer(&p.Pos[0]), eventWaitList)
+	pos_event, err = ClCmdQueue.EnqueueWriteBuffer(p.Pos_buf, false, 0, p.Pos_size, unsafe.Pointer(&p.Pos[0]), eventWaitList)
 	if err != nil {
 		log.Fatalln("Unable to write pos buffer to device: ", err)
 	}
 
 	var sh1_event *cl.Event
-	sh1_event, err = queue.EnqueueWriteBuffer(p.Sh1_buf, false, 0, p.Sh1_size, unsafe.Pointer(&p.Sh1[0]), eventWaitList)
+	sh1_event, err = ClCmdQueue.EnqueueWriteBuffer(p.Sh1_buf, false, 0, p.Sh1_size, unsafe.Pointer(&p.Sh1[0]), eventWaitList)
 	if err != nil {
 		log.Fatalln("Unable to write sh1 buffer to device: ", err)
 	}
 
 	var sh2_event *cl.Event
-	sh2_event, err = queue.EnqueueWriteBuffer(p.Sh2_buf, false, 0, p.Sh2_size, unsafe.Pointer(&p.Sh2[0]), eventWaitList)
+	sh2_event, err = ClCmdQueue.EnqueueWriteBuffer(p.Sh2_buf, false, 0, p.Sh2_size, unsafe.Pointer(&p.Sh2[0]), eventWaitList)
 	if err != nil {
 		log.Fatalln("Unable to write sh2 buffer to device: ", err)
 	}
 
 	var rec_event *cl.Event
-	rec_event, err = queue.EnqueueWriteBuffer(p.Rec_buf, false, 0, p.Rec_size, unsafe.Pointer(&p.Rec[0]), eventWaitList)
+	rec_event, err = ClCmdQueue.EnqueueWriteBuffer(p.Rec_buf, false, 0, p.Rec_size, unsafe.Pointer(&p.Rec[0]), eventWaitList)
 	if err != nil {
 		log.Fatalln("Unable to write rec buffer to device: ", err)
 	}
 
 	var temper_event *cl.Event
-	temper_event, err = queue.EnqueueWriteBuffer(p.Temper_buf, false, 0, p.Temper_size, unsafe.Pointer(&p.Temper[0]), eventWaitList)
+	temper_event, err = ClCmdQueue.EnqueueWriteBuffer(p.Temper_buf, false, 0, p.Temper_size, unsafe.Pointer(&p.Temper[0]), eventWaitList)
 	if err != nil {
 		log.Fatalln("Unable to write temper buffer to device: ", err)
 	}
 
 	var flt_temper_event *cl.Event
-	flt_temper_event, err = queue.EnqueueWriteBuffer(p.Flt_temper_buf, false, 0, p.Flt_temper_size, unsafe.Pointer(&p.Flt_temper[0]), eventWaitList)
+	flt_temper_event, err = ClCmdQueue.EnqueueWriteBuffer(p.Flt_temper_buf, false, 0, p.Flt_temper_size, unsafe.Pointer(&p.Flt_temper[0]), eventWaitList)
 	if err != nil {
 		log.Fatalln("Unable to write flt_temper buffer to device: ", err)
 	}
@@ -186,16 +186,16 @@ func (p *MTGP32dc_params_array_ptr) LoadAllParamBuffersToDevice(queue *cl.Comman
 	return []*cl.Event{pos_event, sh1_event, sh2_event, rec_event, temper_event, flt_temper_event}, nil
 }
 
-func (p *MTGP32dc_params_array_ptr) LoadStatusBuffersToDevice(queue *cl.CommandQueue, eventWaitList []*cl.Event) (*cl.Event, error) {
-	status_event, err := queue.EnqueueWriteBuffer(p.Status_buf, false, 0, p.Status_size, unsafe.Pointer(&p.Status[0]), eventWaitList)
+func (p *MTGP32dc_params_array_ptr) LoadStatusBuffersToDevice(eventWaitList []*cl.Event) (*cl.Event, error) {
+	status_event, err := ClCmdQueue.EnqueueWriteBuffer(p.Status_buf, false, 0, p.Status_size, unsafe.Pointer(&p.Status[0]), eventWaitList)
 	if err != nil {
 		log.Fatalln("Unable to write status buffer to device: ", err)
 	}
 	return status_event, nil
 }
 
-func (p *MTGP32dc_params_array_ptr) LoadStatusBuffersFromDevice(queue *cl.CommandQueue, eventWaitList []*cl.Event) (*cl.Event, error) {
-	status_event, err := queue.EnqueueReadBuffer(p.Status_buf, false, 0, p.Status_size, unsafe.Pointer(&p.Status[0]), eventWaitList)
+func (p *MTGP32dc_params_array_ptr) LoadStatusBuffersFromDevice(eventWaitList []*cl.Event) (*cl.Event, error) {
+	status_event, err := ClCmdQueue.EnqueueReadBuffer(p.Status_buf, false, 0, p.Status_size, unsafe.Pointer(&p.Status[0]), eventWaitList)
 	if err != nil {
 		log.Fatalln("Unable to read status buffer from device: ", err)
 	}
@@ -254,7 +254,7 @@ func (p *MTGP32dc_params_array_ptr) SetGroupCount(in int) {
 	p.GroupCount = in
 }
 
-func (p *MTGP32dc_params_array_ptr) GetGroupSizeCount() int {
+func (p *MTGP32dc_params_array_ptr) GetGroupCount() int {
 	return p.GroupCount
 }
 
