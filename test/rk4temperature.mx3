@@ -13,7 +13,7 @@ AnisU = vector(0, 0, 1)
 m     = uniform(0, 0, 1)
 fixdt = 2e-12
 Temp  = 100              
-Ku1   = 1e4/4
+Ku1   = 1e4/8
 enabledemag = false
 setsolver(4)
 

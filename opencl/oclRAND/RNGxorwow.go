@@ -6,6 +6,7 @@ import (
 	"unsafe"
 
 	"github.com/seeder-research/uMagNUS/opencl/cl"
+	"github.com/seeder-research/uMagNUS/timer"
 	"math/rand"
 )
 
@@ -43,3 +44,52 @@ func (p *XORWOW_status_array_ptr) Init(seed uint32, events []*cl.Event) {
 	}
 
 }
+
+func (p *XORWOW_status_array_ptr) GenerateUniform(d_data unsafe.Pointer, data_size int, events []*cl.Event) *cl.Event {
+
+	if p.Ini == false {
+		log.Fatalln("Generator has not been initialized!")
+	}
+
+	item_num := p.GetStatusSize()
+
+	if Synchronous { // debug
+		ClCmdQueue.Finish()
+		timer.Start("xorwow_uniform")
+	}
+
+	event := k_xorwow_uniform_async(unsafe.Pointer(p.Status_buf), d_data, data_size,
+		&config{[]int{item_num}, []int{p.GetGroupSize()}}, events)
+
+	if Synchronous { // debug
+		ClCmdQueue.Finish()
+		timer.Stop("xorwow_uniform")
+	}
+
+	return event
+}
+
+func (p *XORWOW_status_array_ptr) GenerateNormal(d_data unsafe.Pointer, data_size int, events []*cl.Event) *cl.Event {
+
+	if p.Ini == false {
+		log.Fatalln("Generator has not been initialized!")
+	}
+
+	item_num := p.GetStatusSize()
+
+	if Synchronous { // debug
+		ClCmdQueue.Finish()
+		timer.Start("xorwow_normal")
+	}
+
+	event := k_xorwow_normal_async(unsafe.Pointer(p.Status_buf), d_data, data_size,
+		&config{[]int{item_num}, []int{p.GetGroupSize()}}, events)
+
+	if Synchronous { // debug
+		ClCmdQueue.Finish()
+		timer.Stop("xorwow_normal")
+	}
+
+	return event
+}
+
