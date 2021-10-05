@@ -14,18 +14,19 @@ func (p *XORWOW_status_array_ptr) Init(seed uint32, events []*cl.Event) {
 	// Generate random seed array to seed the PRNG
 	rand.Seed((int64)(seed))
 	totalCount := p.GetStatusSize()
-	seed_arr := make([]uint32, totalCount)
+	seed_arr := make([]uint64, totalCount)
 	for idx := 0; idx < totalCount; idx++ {
-		tmpNum := rand.Uint32()
+		tmpNum := rand.Uint64()
 		for tmpNum == 0 {
-			tmpNum = rand.Uint32()
+			tmpNum = rand.Uint64()
 		}
 		seed_arr[idx] = tmpNum
 	}
 
 	// Copy random seed array to GPU
 	context := p.GetContext()
-	seed_buf, err := context.CreateBufferUnsafe(cl.MemReadWrite, int(unsafe.Sizeof(seed))*totalCount, nil)
+	seed_buf, err := context.CreateBufferUnsafe(cl.MemReadWrite, int(unsafe.Sizeof(seed_arr[0]))*totalCount, nil)
+	defer seed_buf.Release()
 	if err != nil {
 		log.Fatalln("Unable to create buffer for XORWOW seed array!")
 	}
@@ -58,15 +59,13 @@ func (p *XORWOW_status_array_ptr) GenerateUniform(d_data unsafe.Pointer, data_si
 		log.Fatalln("Generator has not been initialized!")
 	}
 
-	item_num := p.GetStatusSize()
-
 	if Synchronous { // debug
 		ClCmdQueue.Finish()
 		timer.Start("xorwow_uniform")
 	}
 
 	event := k_xorwow_uniform_async(unsafe.Pointer(p.Status_buf), d_data, data_size,
-		&config{[]int{item_num}, []int{p.GetGroupSize()}}, events)
+		&config{[]int{p.GetStatusSize()}, []int{p.GetGroupSize()}}, events)
 
 	if Synchronous { // debug
 		ClCmdQueue.Finish()
@@ -82,15 +81,13 @@ func (p *XORWOW_status_array_ptr) GenerateNormal(d_data unsafe.Pointer, data_siz
 		log.Fatalln("Generator has not been initialized!")
 	}
 
-	item_num := p.GetStatusSize()
-
 	if Synchronous { // debug
 		ClCmdQueue.Finish()
 		timer.Start("xorwow_normal")
 	}
 
 	event := k_xorwow_normal_async(unsafe.Pointer(p.Status_buf), d_data, data_size,
-		&config{[]int{item_num}, []int{p.GetGroupSize()}}, events)
+		&config{[]int{p.GetStatusSize()}, []int{p.GetGroupSize()}}, events)
 
 	if Synchronous { // debug
 		ClCmdQueue.Finish()
