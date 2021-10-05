@@ -49,6 +49,11 @@ func NewGenerator(name string) *Generator {
 	case "mrg32k3a":
 		fmt.Println("mrg32k3a not yet implemented")
 		return nil
+	case "xorwow":
+		oclRAND.Init(ClCmdQueue, Synchronous, KernList)
+		var prng_ptr Prng_
+		prng_ptr = NewXORWOWRNGParams()
+		return &Generator{Name: "xorwow", PRNG: prng_ptr}
 	default:
 		fmt.Println("RNG not implemented: ", name)
 		return nil
@@ -64,6 +69,11 @@ func (g *Generator) CreatePNG() {
 		g.PRNG = prng_ptr
 	case "mrg32k3a":
 		fmt.Println("mrg32k3a not yet implemented")
+	case "xorwow":
+		oclRAND.Init(ClCmdQueue, Synchronous, KernList)
+		var prng_ptr Prng_
+		prng_ptr = NewXORWOWRNGParams()
+		g.PRNG = prng_ptr
 	default:
 		fmt.Println("RNG not implemented: ", g.Name)
 	}
@@ -227,9 +237,6 @@ func NewMTGPRNGParams() *oclRAND.MTGP32dc_params_array_ptr {
 }
 
 func NewXORWOWRNGParams() *oclRAND.XORWOW_status_array_ptr {
-//	var err error
-//	var events_list []*cl.Event
-//	var event *cl.Event
 	tmp := oclRAND.NewXORWOWStatus()
 	tmp.SetGroupCount(ClCUnits)
 	tmp.SetGroupSize(ClWGSize)
