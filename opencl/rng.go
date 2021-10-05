@@ -226,6 +226,18 @@ func NewMTGPRNGParams() *oclRAND.MTGP32dc_params_array_ptr {
 	return tmp
 }
 
+func NewXORWOWRNGParams() *oclRAND.XORWOW_status_array_ptr {
+//	var err error
+//	var events_list []*cl.Event
+//	var event *cl.Event
+	tmp := oclRAND.NewXORWOWStatus()
+	tmp.SetGroupCount(ClCUnits)
+	tmp.SetGroupSize(ClWGSize)
+	tmp.CreateStatusBuffer(ClCtx)
+
+	return tmp
+}
+
 func initRNG() uint32 {
 	rand.Seed(time.Now().UTC().UnixNano())
 	return rand.Uint32()
