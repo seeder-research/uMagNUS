@@ -56,8 +56,8 @@ __kernel void xorwow_normal(
                         d += 362437;
 
 	                float tmpRes = (float)(d + x[4]);
-                        tmpRes *= tmpRes * XORWOW_FLOAT_MULTI; // convert value to float
-                        d_data[idx] = normcdfinv_(tmpRes); // output normal random value
+                        tmpRes *= XORWOW_FLOAT_MULTI; // convert value to float
+                        d_data[pos] = normcdfinv_(tmpRes); // output normal random value
                 }
 
                 // update the state buffer with the latest state

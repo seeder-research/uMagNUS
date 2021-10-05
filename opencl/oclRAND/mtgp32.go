@@ -258,6 +258,10 @@ func (p *MTGP32dc_params_array_ptr) GetGroupCount() int {
 	return p.GroupCount
 }
 
+func (p *MTGP32dc_params_array_ptr) RecommendSize() int {
+        return 8 * p.GroupCount * MTGPDC_TN
+}
+
 var MTGP32_params_fast_11213 = []MTGP32dc_params_fast_t{
 	{
 		/* No.0 delta:1924 weight:1595 */

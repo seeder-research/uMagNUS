@@ -18,6 +18,7 @@ type Prng_ interface {
 	GenerateNormal(unsafe.Pointer, int, []*cl.Event) *cl.Event
 	GetGroupSize() int
 	GetGroupCount() int
+	RecommendSize() int
 }
 
 type Generator struct {
@@ -80,7 +81,7 @@ func (g *Generator) CreatePNG() {
 }
 
 func (g *Generator) Init(seed *uint32, events []*cl.Event) {
-	g.buf_size = 8 * g.PRNG.GetGroupSize() * MTGP32_TN
+	g.buf_size = g.PRNG.RecommendSize()
 	if seed == nil {
 		g.PRNG.Init(initRNG(), events)
 	} else {
@@ -240,6 +241,7 @@ func NewXORWOWRNGParams() *oclRAND.XORWOW_status_array_ptr {
 	tmp := oclRAND.NewXORWOWStatus()
 	tmp.SetGroupCount(ClCUnits)
 	tmp.SetGroupSize(ClWGSize)
+	tmp.SetStatusSize(ClCUnits * ClWGSize)
 	tmp.CreateStatusBuffer(ClCtx)
 
 	return tmp

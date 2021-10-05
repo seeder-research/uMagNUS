@@ -68,3 +68,7 @@ func (p *XORWOW_status_array_ptr) SetGroupCount(in int) {
 func (p *XORWOW_status_array_ptr) GetGroupCount() int {
 	return p.GroupCount
 }
+
+func (p *XORWOW_status_array_ptr) RecommendSize() int {
+        return 8 * p.Status_size
+}

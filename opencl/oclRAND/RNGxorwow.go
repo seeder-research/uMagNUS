@@ -11,6 +11,7 @@ import (
 )
 
 func (p *XORWOW_status_array_ptr) Init(seed uint32, events []*cl.Event) {
+	// Generate random seed array to seed the PRNG
 	rand.Seed((int64)(seed))
 	totalCount := p.GetStatusSize()
 	seed_arr := make([]uint32, totalCount)
@@ -21,21 +22,27 @@ func (p *XORWOW_status_array_ptr) Init(seed uint32, events []*cl.Event) {
 		}
 		seed_arr[idx] = tmpNum
 	}
+
+	// Copy random seed array to GPU
 	context := p.GetContext()
-	seed_buf, err := context.CreateBufferUnsafe(cl.MemReadWrite, int(unsafe.Sizeof(seed))*p.Status_size, nil)
+	seed_buf, err := context.CreateBufferUnsafe(cl.MemReadWrite, int(unsafe.Sizeof(seed))*totalCount, nil)
 	if err != nil {
 		log.Fatalln("Unable to create buffer for XORWOW seed array!")
 	}
 	var seed_event *cl.Event
-	seed_event, err = ClCmdQueue.EnqueueWriteBuffer(seed_buf, true, 0, totalCount, unsafe.Pointer(&seed_arr[0]), nil)
+	seed_event, err = ClCmdQueue.EnqueueWriteBuffer(seed_buf, false, 0, int(unsafe.Sizeof(seed))*totalCount, unsafe.Pointer(&seed_arr[0]), nil)
 	if err != nil {
 		log.Fatalln("Unable to write seed buffer to device: ", err)
 	}
-	err = cl.WaitForEvents(events)
-	if err != nil {
-		fmt.Printf("First WaitForEvents failed in InitRNG: %+v \n", err)
+	if events != nil {
+		err = cl.WaitForEvents(events)
+		if err != nil {
+			fmt.Printf("First WaitForEvents failed in InitRNG: %+v \n", err)
+		}
 	}
-	event := k_xorwow_seed_async(unsafe.Pointer(p.Status_buf), unsafe.Pointer(seed_buf), &config{[]int{p.GetGroupCount() * p.GetGroupSize()}, []int{p.GetGroupSize()}}, []*cl.Event{seed_event})
+
+	// Seed the RNG
+	event := k_xorwow_seed_async(unsafe.Pointer(p.Status_buf), unsafe.Pointer(seed_buf), &config{[]int{totalCount}, []int{p.GetGroupSize()}}, []*cl.Event{seed_event})
 
 	p.Ini = true
 	err = cl.WaitForEvents([]*cl.Event{event})
@@ -92,4 +99,3 @@ func (p *XORWOW_status_array_ptr) GenerateNormal(d_data unsafe.Pointer, data_siz
 
 	return event
 }
-
