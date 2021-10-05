@@ -11,8 +11,9 @@ addvoltagecontrolledanisotropy2(__global float* __restrict  Bx, __global float* 
                                 __global float* __restrict uz_, float uz_mul,
                                 int N) {
 
-    int i =  ( get_group_id(1)*get_num_groups(0) + get_group_id(0) ) * get_local_size(0) + get_local_id(0);
-    if (i < N) {
+    int gid = get_global_id(0);
+    int gsize = get_global_size(0);
+    for (int i = gid; i < N; i += gsize) {
 
         float3 u   = normalized(vmul(ux_, uy_, uz_, ux_mul, uy_mul, uz_mul, i));
         float invMs = inv_Msat(Ms_, Ms_mul, i);

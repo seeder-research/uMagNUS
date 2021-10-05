@@ -15,32 +15,33 @@ addmagnetoelasticfield(__global float* __restrict  Bx, __global float* __restric
 					  __global float* __restrict Ms_, float Ms_mul,
                       int N) {
 
-	int I =  ( get_group_id(1)*get_num_groups(0) + get_group_id(0) ) * get_local_size(0) + get_local_id(0);
+    int gid = get_global_id(0);
+    int gsize = get_global_size(0);
 
-	if (I < N) {
+    for (int I = gid; I < N; I += gsize) {
 
-	    float Exx = amul(exx_, exx_mul, I);
-	    float Eyy = amul(eyy_, eyy_mul, I);
-	    float Ezz = amul(ezz_, ezz_mul, I);
-	    
-	    float Exy = amul(exy_, exy_mul, I);
-	    float Eyx = Exy;
+        float Exx = amul(exx_, exx_mul, I);
+        float Eyy = amul(eyy_, eyy_mul, I);
+        float Ezz = amul(ezz_, ezz_mul, I);
 
-	    float Exz = amul(exz_, exz_mul, I);
-	    float Ezx = Exz;
+        float Exy = amul(exy_, exy_mul, I);
+        float Eyx = Exy;
 
-	    float Eyz = amul(eyz_, eyz_mul, I);
-	    float Ezy = Eyz;
+        float Exz = amul(exz_, exz_mul, I);
+        float Ezx = Exz;
 
-		float invMs = inv_Msat(Ms_, Ms_mul, I);
+        float Eyz = amul(eyz_, eyz_mul, I);
+        float Ezy = Eyz;
 
-		float B1 = amul(B1_, B1_mul, I) * invMs;
-	    float B2 = amul(B2_, B2_mul, I) * invMs;
+        float invMs = inv_Msat(Ms_, Ms_mul, I);
 
-	    float3 m = {mx[I], my[I], mz[I]};
+        float B1 = amul(B1_, B1_mul, I) * invMs;
+        float B2 = amul(B2_, B2_mul, I) * invMs;
 
-	    Bx[I] += -(2.0f*B1*m.x*Exx + B2*(m.y*Exy + m.z*Exz));
-	    By[I] += -(2.0f*B1*m.y*Eyy + B2*(m.x*Eyx + m.z*Eyz));
-	    Bz[I] += -(2.0f*B1*m.z*Ezz + B2*(m.x*Ezx + m.y*Ezy));
-	}
+        float3 m = {mx[I], my[I], mz[I]};
+
+        Bx[I] += -(2.0f*B1*m.x*Exx + B2*(m.y*Exy + m.z*Exz));
+        By[I] += -(2.0f*B1*m.y*Eyy + B2*(m.x*Eyx + m.z*Eyz));
+        Bz[I] += -(2.0f*B1*m.z*Ezz + B2*(m.x*Ezx + m.y*Ezy));
+    }
 }

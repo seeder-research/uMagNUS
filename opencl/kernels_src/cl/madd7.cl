@@ -9,10 +9,10 @@ madd7(__global float* __restrict__ dst,
       __global float* __restrict src6, float fac6,
       __global float* __restrict src7, float fac7, int N) {
 
-	int i = ( get_group_id(1)*get_num_groups(0) + get_group_id(0) ) * get_local_size(0) + get_local_id(0);
+    int gid = get_global_id(0);
+    int gsize = get_global_size(0);
 
-	if(i < N) {
-		dst[i] = (fac1 * src1[i]) + (fac2 * src2[i]) + (fac3 * src3[i]) + (fac4 * src4[i]) + (fac5 * src5[i]) + (fac6 * src6[i]) + (fac7 * src7[i]);
-	}
+    for (int i = gid; i < N; i += gsize) {
+        dst[i] = (fac1 * src1[i]) + (fac2 * src2[i]) + (fac3 * src3[i]) + (fac4 * src4[i]) + (fac5 * src5[i]) + (fac6 * src6[i]) + (fac7 * src7[i]);
+    }
 }
-
