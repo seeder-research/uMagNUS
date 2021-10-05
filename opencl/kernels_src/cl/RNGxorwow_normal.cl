@@ -46,6 +46,7 @@ __kernel void xorwow_normal(
 
                 // For each thread that is launched, iterate until the index is out of bounds
                 for (uint pos = global_idx; pos < count; pos += grp_offset) {
+                        // Generate first value for Box-Muller algorithm
                         const uint t = x[0] ^ (x[0] >> 2);
                         x[0] = x[1];
                         x[1] = x[2];
@@ -55,9 +56,24 @@ __kernel void xorwow_normal(
 
                         d += 362437;
 
-	                float tmpRes = (float)(d + x[4]);
-                        tmpRes *= XORWOW_FLOAT_MULTI; // convert value to float
-                        d_data[pos] = normcdfinv_(tmpRes); // output normal random value
+	                float tmpRes1 = (float)(d + x[4]);
+                        tmpRes1 *= XORWOW_FLOAT_MULTI; // convert value to float
+
+                        // Generate second value for Box-Muller algorithm
+                        const uint t0 = x[0] ^ (x[0] >> 2);
+                        x[0] = x[1];
+                        x[1] = x[2];
+                        x[2] = x[3];
+                        x[3] = x[4];
+                        x[4] = (x[4] ^ (x[4] << 4)) ^ (t0 ^ (t0 << 1));
+
+                        d += 362437;
+
+	                float tmpRes2 = (float)(d + x[4]);
+                        tmpRes2 *= XORWOW_FLOAT_MULTI; // convert value to float
+
+                        float z0 = sqrt( -2.0f * log(tmpRes1)) * cospi(2.0f * tmpRes2);
+                        d_data[pos] = z0; // output normal random value
                 }
 
                 // update the state buffer with the latest state
