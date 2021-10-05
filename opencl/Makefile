@@ -11,8 +11,8 @@ WRAPPERS := $(WRAPPERFILES:.cl=_wrapper.go)
 
 
 all: ocl2go wrappers opencl2go
-	mv RNGmtgp*_wrapper.go RNGmtgp/.
-	sed -i "s/package opencl/package RNGmtgp/g" RNGmtgp/RNGmtgp*.go
+	mv RNGmtgp*_wrapper.go oclRAND/.
+	sed -i "s/package opencl/package oclRAND/g" oclRAND/RNGmtgp*.go
 	go install -v
 
 
@@ -35,7 +35,7 @@ opencl2go: ocl2go
 
 clean:
 	cd ./kernels_src && $(MAKE) clean
-	cd ./RNGmtgp && $(MAKE) clean
+	cd ./oclRAND && $(MAKE) clean
 	rm -vf *_wrapper.go ocl2go ./kernels/program_wrapper.go
 
 

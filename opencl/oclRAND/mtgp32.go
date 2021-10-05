@@ -1,4 +1,4 @@
-package RNGmtgp
+package oclRAND
 
 import (
 	"github.com/seeder-research/uMagNUS/opencl/cl"

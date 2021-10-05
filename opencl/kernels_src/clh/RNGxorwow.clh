@@ -7,6 +7,6 @@ Implements a 64-bit xorwow* generator that returns 32-bit values.
 // http://www.jstatsoft.org/v08/i14/paper
 */
 
-#define XORWOW_FLOAT_MULTI 2.3283064365386963e-10f
-#define XORWOW_DOUBLE2_MULTI 2.3283064365386963e-10
+#define XORWOW_FLOAT_MULTI 2.3283064e-10f
+#define XORWOW_DOUBLE2_MULTI 2.328306549295727688e-10
 #define XORWOW_DOUBLE_MULTI 5.4210108624275221700372640e-20

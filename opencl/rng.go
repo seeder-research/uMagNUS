@@ -6,8 +6,8 @@ import (
 	"unsafe"
 
 	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/opencl/RNGmtgp"
 	"github.com/seeder-research/uMagNUS/opencl/cl"
+	"github.com/seeder-research/uMagNUS/opencl/oclRAND"
 	"math/rand"
 	"time"
 )
@@ -30,19 +30,19 @@ type Generator struct {
 	sup_offset int
 }
 
-const MTGP32_MEXP = RNGmtgp.MTGPDC_MEXP
-const MTGP32_N = RNGmtgp.MTGPDC_N
-const MTGP32_FLOOR_2P = RNGmtgp.MTGPDC_FLOOR_2P
-const MTGP32_CEIL_2P = RNGmtgp.MTGPDC_CEIL_2P
-const MTGP32_TN = RNGmtgp.MTGPDC_TN
-const MTGP32_LS = RNGmtgp.MTGPDC_LS
-const MTGP32_TS = RNGmtgp.MTGPDC_TS
-const MTGP32_PARAM_NUM = RNGmtgp.MTGPDC_PARAMS_NUM
+const MTGP32_MEXP = oclRAND.MTGPDC_MEXP
+const MTGP32_N = oclRAND.MTGPDC_N
+const MTGP32_FLOOR_2P = oclRAND.MTGPDC_FLOOR_2P
+const MTGP32_CEIL_2P = oclRAND.MTGPDC_CEIL_2P
+const MTGP32_TN = oclRAND.MTGPDC_TN
+const MTGP32_LS = oclRAND.MTGPDC_LS
+const MTGP32_TS = oclRAND.MTGPDC_TS
+const MTGP32_PARAM_NUM = oclRAND.MTGPDC_PARAMS_NUM
 
 func NewGenerator(name string) *Generator {
 	switch name {
 	case "mtgp":
-		RNGmtgp.Init(ClCmdQueue, Synchronous, KernList)
+		oclRAND.Init(ClCmdQueue, Synchronous, KernList)
 		var prng_ptr Prng_
 		prng_ptr = NewMTGPRNGParams()
 		return &Generator{Name: "mtgp", PRNG: prng_ptr}
@@ -58,7 +58,7 @@ func NewGenerator(name string) *Generator {
 func (g *Generator) CreatePNG() {
 	switch g.Name {
 	case "mtgp":
-		RNGmtgp.Init(ClCmdQueue, Synchronous, KernList)
+		oclRAND.Init(ClCmdQueue, Synchronous, KernList)
 		var prng_ptr Prng_
 		prng_ptr = NewMTGPRNGParams()
 		g.PRNG = prng_ptr
@@ -194,11 +194,11 @@ func (g *Generator) Normal(data unsafe.Pointer, d_size int, events []*cl.Event) 
 	}
 }
 
-func NewMTGPRNGParams() *RNGmtgp.MTGP32dc_params_array_ptr {
+func NewMTGPRNGParams() *oclRAND.MTGP32dc_params_array_ptr {
 	var err error
 	var events_list []*cl.Event
 	var event *cl.Event
-	tmp := RNGmtgp.NewMTGPParams()
+	tmp := oclRAND.NewMTGPParams()
 	maxNumGroups, max_size := ClCUnits, MTGP32_PARAM_NUM
 	if maxNumGroups > max_size {
 		maxNumGroups = max_size
