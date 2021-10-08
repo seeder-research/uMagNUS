@@ -9,10 +9,15 @@ import (
 	"github.com/seeder-research/uMagNUS/timer"
 )
 
-func (p *MTGP32dc_params_array_ptr) Init(seed uint32, events []*cl.Event) {
+func (p *MTGP32dc_params_array_ptr) Init(seed uint64, events []*cl.Event) {
 
+	SeedVal := seed << 32
+	SeedVal = SeedVal >> 32
+	if SeedVal == 0 {
+		SeedVal = seed >> 32
+	}
 	event := k_mtgp32_init_seed_kernel_async(unsafe.Pointer(p.Rec_buf), unsafe.Pointer(p.Temper_buf), unsafe.Pointer(p.Flt_temper_buf), unsafe.Pointer(p.Pos_buf),
-		unsafe.Pointer(p.Sh1_buf), unsafe.Pointer(p.Sh2_buf), unsafe.Pointer(p.Status_buf), seed,
+		unsafe.Pointer(p.Sh1_buf), unsafe.Pointer(p.Sh2_buf), unsafe.Pointer(p.Status_buf), uint32(SeedVal),
 		&config{[]int{p.GetGroupCount() * p.GetGroupSize()}, []int{p.GetGroupSize()}}, events)
 
 	p.Ini = true

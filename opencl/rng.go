@@ -13,7 +13,7 @@ import (
 )
 
 type Prng_ interface {
-	Init(uint32, []*cl.Event)
+	Init(uint64, []*cl.Event)
 	GenerateUniform(unsafe.Pointer, int, []*cl.Event) *cl.Event
 	GenerateNormal(unsafe.Pointer, int, []*cl.Event) *cl.Event
 	GetGroupSize() int
@@ -80,7 +80,7 @@ func (g *Generator) CreatePNG() {
 	}
 }
 
-func (g *Generator) Init(seed *uint32, events []*cl.Event) {
+func (g *Generator) Init(seed *uint64, events []*cl.Event) {
 	g.buf_size = g.PRNG.RecommendSize()
 	if seed == nil {
 		g.PRNG.Init(initRNG(), events)
@@ -110,6 +110,10 @@ func (g *Generator) Uniform(data unsafe.Pointer, d_size int, events []*cl.Event)
 	err = cl.WaitForEvents(events)
 	if err != nil {
 		fmt.Printf("WaitForEvents prior to generating random numbers failed: %+v \n", err)
+	}
+	err = ClCmdQueue.Finish()
+	if err != nil {
+		fmt.Printf("Waiting for Command Queue to empty prior to generating random numbers failed: %+v \n", err)
 	}
 	for demand > 0 {
 		if g.supply <= 0 {
@@ -240,14 +244,14 @@ func NewMTGPRNGParams() *oclRAND.MTGP32dc_params_array_ptr {
 func NewXORWOWRNGParams() *oclRAND.XORWOW_status_array_ptr {
 	tmp := oclRAND.NewXORWOWStatus()
 	tmp.SetGroupCount(ClCUnits)
-	tmp.SetGroupSize(ClWGSize)
-	tmp.SetStatusSize(ClCUnits * ClWGSize)
+	tmp.SetGroupSize(ClPrefWGSz)
+	tmp.SetStatusSize(ClCUnits * ClPrefWGSz)
 	tmp.CreateStatusBuffer(ClCtx)
 
 	return tmp
 }
 
-func initRNG() uint32 {
+func initRNG() uint64 {
 	rand.Seed(time.Now().UTC().UnixNano())
-	return rand.Uint32()
+	return rand.Uint64()
 }

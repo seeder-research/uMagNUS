@@ -10,7 +10,7 @@ import (
 	"math/rand"
 )
 
-func (p *XORWOW_status_array_ptr) Init(seed uint32, events []*cl.Event) {
+func (p *XORWOW_status_array_ptr) Init(seed uint64, events []*cl.Event) {
 	// Generate random seed array to seed the PRNG
 	rand.Seed((int64)(seed))
 	totalCount := p.GetStatusSize()
