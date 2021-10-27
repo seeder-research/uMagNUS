@@ -32,7 +32,6 @@ __kernel void mtgp32_uniform(
     mtgp32_t mtgp;
     uint r;
     uint o;
-	float tmpNum;
 
     mtgp.status = status;
     mtgp.param_tbl = &param_tbl[MTGP32_TS * gid];
@@ -47,6 +46,7 @@ __kernel void mtgp32_uniform(
     // copy status data from global memory to shared memory.
     status_read(status, d_status, gid, lid);
 
+    uint tmpNum[6];
     // main loop
     for (int i = 0; i < size; i += MTGP32_LS) {
 	r = para_rec(&mtgp,
@@ -57,8 +57,7 @@ __kernel void mtgp32_uniform(
 	o = temper(&mtgp,
 			  r,
 			  status[MTGP32_LS - MTGP32_N + lid + pos - 1]);
-	tmpNum = convert_float(o);
-	d_data[size * gid + i + lid] = tmpNum * as_float(0x2f800000) + as_float(0x2f000000);
+	tmpNum[0] = o;
 	barrier(CLK_LOCAL_MEM_FENCE);
 	r = para_rec(&mtgp,
 		     status[(4 * MTGP32_TN - MTGP32_N + lid) % MTGP32_LS],
@@ -70,8 +69,7 @@ __kernel void mtgp32_uniform(
 	    &mtgp,
 	    r,
 	    status[(4 * MTGP32_TN - MTGP32_N + lid + pos - 1) % MTGP32_LS]);
-	tmpNum = convert_float(o);
-	d_data[size * gid + MTGP32_TN + i + lid] = tmpNum * as_float(0x2f800000) + as_float(0x2f000000);
+	tmpNum[1] = o;
 	barrier(CLK_LOCAL_MEM_FENCE);
 	r = para_rec(&mtgp,
 		     status[2 * MTGP32_TN - MTGP32_N + lid],
@@ -81,9 +79,115 @@ __kernel void mtgp32_uniform(
 	o = temper(&mtgp,
 			  r,
 			  status[lid + pos - 1 + 2 * MTGP32_TN - MTGP32_N]);
-	tmpNum = convert_float(o);
-	d_data[size * gid + 2 * MTGP32_TN + i + lid] = tmpNum * as_float(0x2f800000) + as_float(0x2f000000);;
+	tmpNum[2] = o;
 	barrier(CLK_LOCAL_MEM_FENCE);
+	r = para_rec(&mtgp,
+		     status[MTGP32_LS - MTGP32_N + lid],
+		     status[MTGP32_LS - MTGP32_N + lid + 1],
+		     status[MTGP32_LS - MTGP32_N + lid + pos]);
+	status[lid] = r;
+	o = temper(&mtgp,
+			  r,
+			  status[MTGP32_LS - MTGP32_N + lid + pos - 1]);
+	tmpNum[3] = o;
+	barrier(CLK_LOCAL_MEM_FENCE);
+	r = para_rec(&mtgp,
+		     status[(4 * MTGP32_TN - MTGP32_N + lid) % MTGP32_LS],
+		     status[(4 * MTGP32_TN - MTGP32_N + lid + 1) % MTGP32_LS],
+		     status[(4 * MTGP32_TN - MTGP32_N + lid + pos)
+			    % MTGP32_LS]);
+	status[lid + MTGP32_TN] = r;
+	o = temper(
+	    &mtgp,
+	    r,
+	    status[(4 * MTGP32_TN - MTGP32_N + lid + pos - 1) % MTGP32_LS]);
+	tmpNum[4] = o;
+	barrier(CLK_LOCAL_MEM_FENCE);
+	r = para_rec(&mtgp,
+		     status[2 * MTGP32_TN - MTGP32_N + lid],
+		     status[2 * MTGP32_TN - MTGP32_N + lid + 1],
+		     status[2 * MTGP32_TN - MTGP32_N + lid + pos]);
+	status[lid + 2 * MTGP32_TN] = r;
+	o = temper(&mtgp,
+			  r,
+			  status[lid + pos - 1 + 2 * MTGP32_TN - MTGP32_N]);
+	tmpNum[5] = o;
+	barrier(CLK_LOCAL_MEM_FENCE);
+
+	uint num1 = tmpNum[0];
+	uint num2 = tmpNum[1];
+	uint finalNum = 0;
+	uint expo = 32;
+	for (;expo > 0; expo--) {
+		uint flag0 = num1 & 0x80000000;
+		num1 <<= 1;
+		if (flag0 != 0) {
+			break;
+		}
+	}
+	if (expo < 23) {
+		uint maskbits = 0xffffffff;
+		uint shPos = 23 - expo;
+		maskbits >>= shPos;
+		maskbits <<= shPos;
+		maskbits = ~maskbits;
+		finalNum ^= (num2 & maskbits);
+	}
+	finalNum ^= (num1 >> 9);
+	uint newExpo = 94 + expo;
+	finalNum ^= newExpo << 23;
+	float tmpRes1 = as_float(finalNum); // output value
+	d_data[size * gid + i + lid] = tmpRes1;
+
+	num1 = tmpNum[2];
+	num2 = tmpNum[3];
+	finalNum = 0;
+	expo = 32;
+	for (;expo > 0; expo--) {
+		uint flag0 = num1 & 0x80000000;
+		num1 <<= 1;
+		if (flag0 != 0) {
+			break;
+		}
+	}
+	if (expo < 23) {
+		uint maskbits = 0xffffffff;
+		uint shPos = 23 - expo;
+		maskbits >>= shPos;
+		maskbits <<= shPos;
+		maskbits = ~maskbits;
+		finalNum ^= (num2 & maskbits);
+	}
+	finalNum ^= (num1 >> 9);
+	newExpo = 94 + expo;
+	finalNum ^= newExpo << 23;
+	tmpRes1 = as_float(finalNum); // output value
+	d_data[size * gid + MTGP32_TN + i + lid] = tmpRes1;
+
+	num1 = tmpNum[4];
+	num2 = tmpNum[5];
+	finalNum = 0;
+	expo = 32;
+	for (;expo > 0; expo--) {
+		uint flag0 = num1 & 0x80000000;
+		num1 <<= 1;
+		if (flag0 != 0) {
+			break;
+		}
+	}
+	if (expo < 23) {
+		uint maskbits = 0xffffffff;
+		uint shPos = 23 - expo;
+		maskbits >>= shPos;
+		maskbits <<= shPos;
+		maskbits = ~maskbits;
+		finalNum ^= (num2 & maskbits);
+	}
+	finalNum ^= (num1 >> 9);
+	newExpo = 94 + expo;
+	finalNum ^= newExpo << 23;
+	tmpRes1 = as_float(finalNum); // output value
+	d_data[size * gid + 2 * MTGP32_TN + i + lid] = tmpRes1;
     }
     // write back status for next call
     status_write(d_status, status, gid, lid);
