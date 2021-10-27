@@ -259,7 +259,7 @@ func (p *MTGP32dc_params_array_ptr) GetGroupCount() int {
 }
 
 func (p *MTGP32dc_params_array_ptr) RecommendSize() int {
-        return 8 * p.GroupCount * MTGPDC_TN
+        return 12 * p.GroupCount * MTGPDC_TN
 }
 
 var MTGP32_params_fast_11213 = []MTGP32dc_params_fast_t{
