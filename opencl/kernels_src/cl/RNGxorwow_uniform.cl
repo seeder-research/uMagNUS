@@ -46,7 +46,9 @@ __kernel void xorwow_uniform(
 
                 // For each thread that is launched, iterate until the index is out of bounds
                 for (uint pos = global_idx; pos < count; pos += grp_offset) {
-                        const uint t = x[0] ^ (x[0] >> 2);
+                        // generate a pair of uint32 (one uint64)
+                        // first number...
+                        uint t = x[0] ^ (x[0] >> 2);
                         x[0] = x[1];
                         x[1] = x[2];
                         x[2] = x[3];
@@ -55,8 +57,55 @@ __kernel void xorwow_uniform(
 
                         d += 362437;
 
-	                float tmpRes = (float)(d + x[4]);
-                        d_data[pos] = tmpRes * XORWOW_FLOAT_MULTI; // output value
+                        uint num1 = d+x[4];
+
+                        // second number...
+                        t = x[0] ^ (x[0] >> 2);
+                        x[0] = x[1];
+                        x[1] = x[2];
+                        x[2] = x[3];
+                        x[3] = x[4];
+                        x[4] = (x[4] ^ (x[4] << 4)) ^ (t ^ (t << 1));
+
+                        d += 362437;
+
+                        uint num2 = d+x[4];
+
+                        // Find single-precision floating point representation
+                        // for the integer formed by the pair of uint32...
+                        // the approach is to treat the uint64 as a 32-bit uint
+                        // with 32 fractional bits. We divide the number by
+                        // 2^32 to get the floating point number. The steps are
+                        // to first find the 23-bit mantissa based on the uint64.
+                        // We then use the position of the leading 1 to find the
+                        // relative exponent. For example, if the MSB in the 
+                        // first uint32 is 1, then the integer portion is at 
+                        // least 2^31, which means dividing by 2^32 gives a 
+                        // result between 0.5f (0x3f000000) and 1.0f (0x3f800000).
+                        // Hence, the exponent bits are 01111110 = 126. Note that 
+                        // the PRNG never returns uint32(0) so we are guaranteed.
+                        // that a leading 1 exists in the first uint32.
+                        uint finalNum = 0;
+                        uint expo = 32;
+                        for (;expo > 0; expo--) {
+                                uint flag0 = num1 & 0x80000000;
+                                num1 <<= 1;
+                                if (flag0 != 0) {
+                                        break;
+                                }
+                        }
+                        if (expo < 23) {
+                                uint maskbits = 0xffffffff;
+                                uint shPos = 23 - expo;
+                                maskbits >>= shPos;
+                                maskbits <<= shPos;
+                                maskbits = ~maskbits;
+                                finalNum ^= (num2 & maskbits);
+                        }
+                        finalNum ^= (num1 >> 9);
+                        uint newExpo = 94 + expo;
+                        finalNum ^= newExpo << 23;
+                        d_data[pos] = as_float(finalNum); // output value
                 }
 
                 // update the state buffer with the latest state
