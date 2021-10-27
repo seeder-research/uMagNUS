@@ -214,7 +214,8 @@ func NewMTGPRNGParams() *oclRAND.MTGP32dc_params_array_ptr {
 	var events_list []*cl.Event
 	var event *cl.Event
 	tmp := oclRAND.NewMTGPParams()
-	maxNumGroups, max_size := ClCUnits, MTGP32_PARAM_NUM
+	// maxNumGroups, max_size := ClCUnits, MTGP32_PARAM_NUM
+	maxNumGroups, max_size := 1, MTGP32_PARAM_NUM
 	if maxNumGroups > max_size {
 		maxNumGroups = max_size
 	}
