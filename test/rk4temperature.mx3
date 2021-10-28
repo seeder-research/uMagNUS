@@ -4,7 +4,7 @@
 
 c := 10e-9
 setcellsize(c, c, c)
-setgridsize(256, 256, 1)
+setgridsize(768, 768, 1)
 
 Msat  = 1e6 
 Aex   = 0 
@@ -13,7 +13,7 @@ AnisU = vector(0, 0, 1)
 m     = uniform(0, 0, 1)
 fixdt = 2e-12
 Temp  = 100              
-Ku1   = 1e4/8
+Ku1   = 1e4/4
 enabledemag = false
 setsolver(4)
 
