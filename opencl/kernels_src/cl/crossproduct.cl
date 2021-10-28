@@ -4,8 +4,9 @@ crossproduct(__global float* __restrict  dstx, __global float* __restrict  dsty,
            __global float* __restrict bx, __global float* __restrict by, __global float* __restrict bz,
            int N) {
 
-    int i =  ( get_group_id(1)*get_num_groups(0) + get_group_id(0) ) * get_local_size(0) + get_local_id(0);
-    if (i < N) {
+    int gid = get_global_id(0);
+    int gsize = get_global_size(0);
+    for (int i = gid; i < N; i += gsize) {
         float3 A = {ax[i], ay[i], az[i]};
         float3 B = {bx[i], by[i], bz[i]};
 	float3 AxB = cross(A, B);
@@ -14,4 +15,3 @@ crossproduct(__global float* __restrict  dstx, __global float* __restrict  dsty,
         dstz[i] = AxB.z;
     }
 }
-

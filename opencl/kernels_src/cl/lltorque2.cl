@@ -5,8 +5,9 @@ lltorque2(__global float* __restrict  tx, __global float* __restrict  ty, __glob
           __global float* __restrict  hx, __global float* __restrict  hy, __global float* __restrict  hz,
           __global float* __restrict  alpha_, float alpha_mul, int N) {
 
-    int i =  ( get_group_id(1)*get_num_groups(0) + get_group_id(0) ) * get_local_size(0) + get_local_id(0);
-    if (i < N) {
+    int gid = get_global_id(0);
+    int gsize = get_global_size(0);
+    for (int i = gid; i < N; i += gsize) {
 
         float3 m = {mx[i], my[i], mz[i]};
         float3 H = {hx[i], hy[i], hz[i]};
@@ -21,4 +22,3 @@ lltorque2(__global float* __restrict  tx, __global float* __restrict  ty, __glob
         tz[i] = torque.z;
     }
 }
-

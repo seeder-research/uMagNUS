@@ -14,6 +14,7 @@ var OCLHeadersList = []string{
 	"RNGmrg32k3a",
 	"RNGmtgp",
 	"RNG_common",
+	"RNGxorwow",
 	"sum"}
 
 var OCLKernelsList = []string{
@@ -70,12 +71,18 @@ var OCLKernelsList = []string{
 	"settemperature2",
 	"settopologicalcharge",
 	"settopologicalchargelattice",
+	"adduniaxialanisotropy",
 	"adduniaxialanisotropy2",
+	"addvoltagecontrolledanisotropy2",
 	"vecnorm",
 	"zeromask",
 	"addzhanglitorque2",
 	"mrg32k3a",
 	"mtgp32_init_seed_kernel",
-	"mtgp32_normal",
 	"mtgp32_uniform",
+	"mtgp32_normal",
+	"xorwow_seed",
+	"xorwow_uint",
+	"xorwow_uniform",
+	"xorwow_normal",
 	"square"}

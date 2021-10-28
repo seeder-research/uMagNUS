@@ -40,9 +40,9 @@ func (rk *RK23) Step() {
 	}
 
 	// FSAL cannot be used with temperature
-	//	if !Temp.isZero() {
-	//		torqueFn(rk.k1)
-	//	}
+	if !Temp.isZero() {
+		torqueFn(rk.k1)
+	}
 
 	t0 := Time
 	// backup magnetization
@@ -87,13 +87,44 @@ func (rk *RK23) Step() {
 
 	// adjust next time step
 	if err < MaxErr || Dt_si <= MinDt || FixDt != 0 { // mindt check to avoid infinite loop
-		// step OK
-		setLastErr(err)
-		setMaxTorque(k4)
-		NSteps++
-		Time = t0 + Dt_si
-		adaptDt(math.Pow(MaxErr/err, 1./3.))
-		data.Copy(rk.k1, k4) // FSAL
+		// Passed absolute error. Check relative error...
+		errnorm := opencl.Buffer(1, size)
+		defer opencl.Recycle(errnorm)
+		opencl.VecNorm(errnorm, Err)
+		ddtnorm := opencl.Buffer(1, size)
+		defer opencl.Recycle(ddtnorm)
+		opencl.VecNorm(ddtnorm, k4)
+		maxdm := opencl.MaxVecNorm(k4)
+		fail := 0
+		rlerr := float64(0.0)
+		if maxdm < MinSlope { // Only step using relerr if dmdt is big enough. Overcomes equilibrium problem
+			fail = 0
+		} else {
+			opencl.Div(errnorm, errnorm, ddtnorm) //re-use errnorm
+			rlerr = float64(opencl.MaxAbs(errnorm))
+			fail = 1
+		}
+		if fail == 0 || RelErr <= 0.0 || rlerr < RelErr || Dt_si <= MinDt || FixDt != 0 { // mindt check to avoid infinite loop
+			// step OK
+			setLastErr(err)
+			setMaxTorque(k4)
+			NSteps++
+			Time = t0 + Dt_si
+			if fail == 0 {
+				adaptDt(math.Pow(MaxErr/err, 1./3.))
+			} else {
+				adaptDt(math.Pow(RelErr/rlerr, 1./3.))
+			}
+			data.Copy(rk.k1, k4) // FSAL
+		} else {
+			// undo bad step
+			//util.Println("Bad step at t=", t0, ", err=", err)
+			util.Assert(FixDt == 0)
+			Time = t0
+			data.Copy(m, m0)
+			NUndone++
+			adaptDt(math.Pow(RelErr/rlerr, 1./4.))
+		}
 	} else {
 		// undo bad step
 		//util.Println("Bad step at t=", t0, ", err=", err)

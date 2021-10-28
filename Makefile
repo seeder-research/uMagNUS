@@ -29,7 +29,7 @@ hooks: .git/hooks/post-commit .git/hooks/pre-commit
 
 clean:
 	rm -frv $(GOPATH)/pkg/*/github.com/seeder-research/uMagNUS/*
-	rm -frv $(GOPATH)/bin/mumax3* $(GOPATH)/bin/uMagNUS*
+	rm -frv $(GOPATH)/bin/mumax3* $(GOPATH)/bin/uMagNUS* go.mod
 	cd ./opencl && $(MAKE) clean
 
 realclean: clean

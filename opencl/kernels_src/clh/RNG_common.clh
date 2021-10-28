@@ -1,7 +1,7 @@
-// Taken from PhD thessi of Thomas Luu (Department of Mathematics
+// Taken from PhD thesis of Thomas Luu (Department of Mathematics
 // at University College of London)
 
-static float normcdfinv_(float u) {
+static inline float normcdfinv_(float u) {
 	float	v;
 	float	p;
 	float	q;
@@ -65,4 +65,39 @@ static float normcdfinv_(float u) {
 	q = q * v + 1.0f;
 	v = 1.0f / q;
 	return p * v;
+}
+
+// auxiliary function to convert a pair of uint32 to a single-
+// precision float
+static inline float uint2float(uint a, uint b) {
+        uint num1 = a;
+        uint num2 = b;
+        uint finalNum = 0;
+        uint expo = 32;
+        for (;expo > 0; expo--) {
+                uint flag0 = num1 & 0x80000000;
+                num1 <<= 1;
+                if (flag0 != 0) {
+                        break;
+                }
+        }
+        if (expo < 23) {
+                uint maskbits = 0xffffffff;
+                uint shPos = 23 - expo;
+                maskbits >>= shPos;
+                maskbits <<= shPos;
+                maskbits = ~maskbits;
+                finalNum ^= (num2 & maskbits);
+        }
+        finalNum ^= (num1 >> 9);
+        uint newExpo = 94 + expo;
+        finalNum ^= newExpo << 23;
+        return as_float(finalNum); // return value
+}
+
+static inline void boxMuller(float* in, float* out, uint offset) {
+        uint u1idx = 2*offset;
+        uint u2idx = u1idx+1;
+        out[u1idx] = sqrt( -2.0f * log(in[u1idx]) ) * cospi(2.0f * in[u2idx]);
+        out[u2idx] = sqrt( -2.0f * log(in[u1idx]) ) * sinpi(2.0f * in[u2idx]);
 }

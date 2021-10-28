@@ -22,11 +22,8 @@ func make1DConf(N int) *config {
 	bl := make([]int, 3)
 	bl[0], bl[1], bl[2] = ClPrefWGSz, 1, 1
 
-	n2 := divUp(N, ClPrefWGSz) // N2 blocks left
-	nx := divUp(n2, MaxGridSize)
-	ny := divUp(n2, nx)
 	gr := make([]int, 3)
-	gr[0], gr[1], gr[2] = (nx * bl[0]), (ny * bl[1]), bl[2]
+	gr[0], gr[1], gr[2] = (ClCUnits * bl[0]), 1, 1
 
 	return &config{gr, bl}
 }

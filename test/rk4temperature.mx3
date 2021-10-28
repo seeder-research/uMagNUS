@@ -4,11 +4,11 @@
 
 c := 10e-9
 setcellsize(c, c, c)
-setgridsize(256, 256, 1)
+setgridsize(768, 768, 1)
 
 Msat  = 1e6 
 Aex   = 0 
-alpha = 0.1 
+alpha = 0.1
 AnisU = vector(0, 0, 1)
 m     = uniform(0, 0, 1)
 fixdt = 2e-12

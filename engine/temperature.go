@@ -23,7 +23,7 @@ var AddThermalEnergyDensity = makeEdensAdder(&B_therm, -1)
 
 // thermField calculates and caches thermal noise.
 type thermField struct {
-	seed      uint32            // seed for generator
+	seed      uint64            // seed for generator
 	generator *opencl.Generator //
 	noise     *data.Slice       // noise buffer
 	step      int               // solver step corresponding to noise
@@ -37,12 +37,12 @@ func init() {
 	DeclROnly("B_therm", &B_therm, "Thermal field (T)")
 }
 
-func initRNG() uint32 {
+func initRNG() uint64 {
 	rand.Seed(time.Now().UTC().UnixNano())
-	return rand.Uint32()
+	return rand.Uint64()
 }
 
-func (b *thermField) UpdateSeed(seedVal *uint32) {
+func (b *thermField) UpdateSeed(seedVal *uint64) {
 	if b.generator == nil {
 		b.generator = opencl.NewGenerator("mtgp")
 	}
@@ -138,7 +138,7 @@ func GetThermalEnergy() float64 {
 
 // Seeds the thermal noise generator
 func ThermSeed(seed int) {
-	seedVal := (uint32)(seed)
+	seedVal := (uint64)(seed)
 	B_therm.UpdateSeed(&seedVal)
 }
 

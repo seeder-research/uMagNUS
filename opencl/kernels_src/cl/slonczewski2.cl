@@ -18,8 +18,9 @@ addslonczewskitorque2(__global float* __restrict tx, __global float* __restrict 
                       float freeLayerPosition,
                       int N) {
 
-    int i =  ( get_group_id(1)*get_num_groups(0) + get_group_id(0) ) * get_local_size(0) + get_local_id(0);
-    if (i < N) {
+    int gid = get_global_id(0);
+    int gsize = get_global_size(0);
+    for (int i = gid; i < N; i += gsize) {
 
         float3 m = make_float3(mx[i], my[i], mz[i]);
         float  J = amul(jz_, jz_mul, i);
@@ -59,4 +60,3 @@ addslonczewskitorque2(__global float* __restrict tx, __global float* __restrict 
         tz[i] += mxpxmFac * mxpxm.z + pxmFac * pxm.z;
     }
 }
-
