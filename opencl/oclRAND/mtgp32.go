@@ -56,6 +56,7 @@ type MTGP32dc_params_array_ptr struct {
 	Status_size     int
 	GroupSize       int
 	GroupCount      int
+	ClCtx           *cl.Context
 }
 
 func NewMTGPParams() *MTGP32dc_params_array_ptr {
@@ -142,6 +143,7 @@ func (p *MTGP32dc_params_array_ptr) CreateParamBuffers(context *cl.Context) {
 	if err != nil {
 		log.Fatalln("Unable to create buffer for MTGP32 status array!")
 	}
+	p.SetContext(context)
 }
 
 func (p *MTGP32dc_params_array_ptr) LoadAllParamBuffersToDevice(eventWaitList []*cl.Event) ([]*cl.Event, error) {
@@ -259,7 +261,15 @@ func (p *MTGP32dc_params_array_ptr) GetGroupCount() int {
 }
 
 func (p *MTGP32dc_params_array_ptr) RecommendSize() int {
-        return 12 * p.GroupCount * MTGPDC_TN
+	return 12 * p.GroupCount * MTGPDC_TN
+}
+
+func (p *MTGP32dc_params_array_ptr) SetContext(context *cl.Context) {
+	p.ClCtx = context
+}
+
+func (p *MTGP32dc_params_array_ptr) GetContext() *cl.Context {
+	return p.ClCtx
 }
 
 var MTGP32_params_fast_11213 = []MTGP32dc_params_fast_t{
