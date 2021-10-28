@@ -32,7 +32,6 @@ __kernel void mtgp32_normal(
     mtgp32_t mtgp;
     uint r;
     uint o;
-	float tmpNum;
 
     mtgp.status = status;
     mtgp.param_tbl = &param_tbl[MTGP32_TS * gid];
@@ -47,43 +46,157 @@ __kernel void mtgp32_normal(
     // copy status data from global memory to shared memory.
     status_read(status, d_status, gid, lid);
 
+    uint tmpNum[12];
+    float unif[6];
+    float normf_[6];
     // main loop
-    for (int i = 0; i < size; i += MTGP32_LS) {
-	r = para_rec(&mtgp,
-		     status[MTGP32_LS - MTGP32_N + lid],
-		     status[MTGP32_LS - MTGP32_N + lid + 1],
-		     status[MTGP32_LS - MTGP32_N + lid + pos]);
-	status[lid] = r;
-	o = temper(&mtgp,
-			  r,
-			  status[MTGP32_LS - MTGP32_N + lid + pos - 1]);
-	tmpNum = convert_float(o);
-	d_data[size * gid + i + lid] = normcdfinv_(tmpNum * as_float(0x2f800000) + as_float(0x2f000000));
-	barrier(CLK_LOCAL_MEM_FENCE);
-	r = para_rec(&mtgp,
-		     status[(4 * MTGP32_TN - MTGP32_N + lid) % MTGP32_LS],
-		     status[(4 * MTGP32_TN - MTGP32_N + lid + 1) % MTGP32_LS],
-		     status[(4 * MTGP32_TN - MTGP32_N + lid + pos)
-			    % MTGP32_LS]);
-	status[lid + MTGP32_TN] = r;
-	o = temper(
-	    &mtgp,
-	    r,
-	    status[(4 * MTGP32_TN - MTGP32_N + lid + pos - 1) % MTGP32_LS]);
-	tmpNum = convert_float(o);
-	d_data[size * gid + MTGP32_TN + i + lid] = normcdfinv_(tmpNum * as_float(0x2f800000) + as_float(0x2f000000));
-	barrier(CLK_LOCAL_MEM_FENCE);
-	r = para_rec(&mtgp,
-		     status[2 * MTGP32_TN - MTGP32_N + lid],
-		     status[2 * MTGP32_TN - MTGP32_N + lid + 1],
-		     status[2 * MTGP32_TN - MTGP32_N + lid + pos]);
-	status[lid + 2 * MTGP32_TN] = r;
-	o = temper(&mtgp,
-			  r,
-			  status[lid + pos - 1 + 2 * MTGP32_TN - MTGP32_N]);
-	tmpNum = convert_float(o);
-	d_data[size * gid + 2 * MTGP32_TN + i + lid] = normcdfinv_(tmpNum * as_float(0x2f800000) + as_float(0x2f000000));
-	barrier(CLK_LOCAL_MEM_FENCE);
+    for (int i = 0; i < size/2; i += MTGP32_LS) {
+        r = para_rec(&mtgp,
+                     status[MTGP32_LS - MTGP32_N + lid],
+                     status[MTGP32_LS - MTGP32_N + lid + 1],
+                     status[MTGP32_LS - MTGP32_N + lid + pos]);
+        status[lid] = r;
+        o = temper(&mtgp,
+                          r,
+                          status[MTGP32_LS - MTGP32_N + lid + pos - 1]);
+        tmpNum[0] = o;
+        barrier(CLK_LOCAL_MEM_FENCE);
+        r = para_rec(&mtgp,
+                     status[(4 * MTGP32_TN - MTGP32_N + lid) % MTGP32_LS],
+                     status[(4 * MTGP32_TN - MTGP32_N + lid + 1) % MTGP32_LS],
+                     status[(4 * MTGP32_TN - MTGP32_N + lid + pos)
+                            % MTGP32_LS]);
+        status[lid + MTGP32_TN] = r;
+        o = temper(
+            &mtgp,
+            r,
+            status[(4 * MTGP32_TN - MTGP32_N + lid + pos - 1) % MTGP32_LS]);
+        tmpNum[1] = o;
+        barrier(CLK_LOCAL_MEM_FENCE);
+        r = para_rec(&mtgp,
+                     status[2 * MTGP32_TN - MTGP32_N + lid],
+                     status[2 * MTGP32_TN - MTGP32_N + lid + 1],
+                     status[2 * MTGP32_TN - MTGP32_N + lid + pos]);
+        status[lid + 2 * MTGP32_TN] = r;
+        o = temper(&mtgp,
+                          r,
+                          status[lid + pos - 1 + 2 * MTGP32_TN - MTGP32_N]);
+        tmpNum[2] = o;
+        barrier(CLK_LOCAL_MEM_FENCE);
+        r = para_rec(&mtgp,
+                     status[MTGP32_LS - MTGP32_N + lid],
+                     status[MTGP32_LS - MTGP32_N + lid + 1],
+                     status[MTGP32_LS - MTGP32_N + lid + pos]);
+        status[lid] = r;
+        o = temper(&mtgp,
+                          r,
+                          status[MTGP32_LS - MTGP32_N + lid + pos - 1]);
+        tmpNum[3] = o;
+        barrier(CLK_LOCAL_MEM_FENCE);
+        r = para_rec(&mtgp,
+                     status[(4 * MTGP32_TN - MTGP32_N + lid) % MTGP32_LS],
+                     status[(4 * MTGP32_TN - MTGP32_N + lid + 1) % MTGP32_LS],
+                     status[(4 * MTGP32_TN - MTGP32_N + lid + pos)
+                            % MTGP32_LS]);
+        status[lid + MTGP32_TN] = r;
+        o = temper(
+            &mtgp,
+            r,
+            status[(4 * MTGP32_TN - MTGP32_N + lid + pos - 1) % MTGP32_LS]);
+        tmpNum[4] = o;
+        barrier(CLK_LOCAL_MEM_FENCE);
+        r = para_rec(&mtgp,
+                     status[2 * MTGP32_TN - MTGP32_N + lid],
+                     status[2 * MTGP32_TN - MTGP32_N + lid + 1],
+                     status[2 * MTGP32_TN - MTGP32_N + lid + pos]);
+        status[lid + 2 * MTGP32_TN] = r;
+        o = temper(&mtgp,
+                          r,
+                          status[lid + pos - 1 + 2 * MTGP32_TN - MTGP32_N]);
+        tmpNum[5] = o;
+        barrier(CLK_LOCAL_MEM_FENCE);
+        r = para_rec(&mtgp,
+                     status[MTGP32_LS - MTGP32_N + lid],
+                     status[MTGP32_LS - MTGP32_N + lid + 1],
+                     status[MTGP32_LS - MTGP32_N + lid + pos]);
+        status[lid] = r;
+        o = temper(&mtgp,
+                          r,
+                          status[MTGP32_LS - MTGP32_N + lid + pos - 1]);
+        tmpNum[6] = o;
+        barrier(CLK_LOCAL_MEM_FENCE);
+        r = para_rec(&mtgp,
+                     status[(4 * MTGP32_TN - MTGP32_N + lid) % MTGP32_LS],
+                     status[(4 * MTGP32_TN - MTGP32_N + lid + 1) % MTGP32_LS],
+                     status[(4 * MTGP32_TN - MTGP32_N + lid + pos)
+                            % MTGP32_LS]);
+        status[lid + MTGP32_TN] = r;
+        o = temper(
+            &mtgp,
+            r,
+            status[(4 * MTGP32_TN - MTGP32_N + lid + pos - 1) % MTGP32_LS]);
+        tmpNum[7] = o;
+        barrier(CLK_LOCAL_MEM_FENCE);
+        r = para_rec(&mtgp,
+                     status[2 * MTGP32_TN - MTGP32_N + lid],
+                     status[2 * MTGP32_TN - MTGP32_N + lid + 1],
+                     status[2 * MTGP32_TN - MTGP32_N + lid + pos]);
+        status[lid + 2 * MTGP32_TN] = r;
+        o = temper(&mtgp,
+                          r,
+                          status[lid + pos - 1 + 2 * MTGP32_TN - MTGP32_N]);
+        tmpNum[8] = o;
+        barrier(CLK_LOCAL_MEM_FENCE);
+        r = para_rec(&mtgp,
+                     status[MTGP32_LS - MTGP32_N + lid],
+                     status[MTGP32_LS - MTGP32_N + lid + 1],
+                     status[MTGP32_LS - MTGP32_N + lid + pos]);
+        status[lid] = r;
+        o = temper(&mtgp,
+                          r,
+                          status[MTGP32_LS - MTGP32_N + lid + pos - 1]);
+        tmpNum[9] = o;
+        barrier(CLK_LOCAL_MEM_FENCE);
+        r = para_rec(&mtgp,
+                     status[(4 * MTGP32_TN - MTGP32_N + lid) % MTGP32_LS],
+                     status[(4 * MTGP32_TN - MTGP32_N + lid + 1) % MTGP32_LS],
+                     status[(4 * MTGP32_TN - MTGP32_N + lid + pos)
+                            % MTGP32_LS]);
+        status[lid + MTGP32_TN] = r;
+        o = temper(
+            &mtgp,
+            r,
+            status[(4 * MTGP32_TN - MTGP32_N + lid + pos - 1) % MTGP32_LS]);
+        tmpNum[10] = o;
+        barrier(CLK_LOCAL_MEM_FENCE);
+        r = para_rec(&mtgp,
+                     status[2 * MTGP32_TN - MTGP32_N + lid],
+                     status[2 * MTGP32_TN - MTGP32_N + lid + 1],
+                     status[2 * MTGP32_TN - MTGP32_N + lid + pos]);
+        status[lid + 2 * MTGP32_TN] = r;
+        o = temper(&mtgp,
+                          r,
+                          status[lid + pos - 1 + 2 * MTGP32_TN - MTGP32_N]);
+        tmpNum[11] = o;
+        barrier(CLK_LOCAL_MEM_FENCE);
+
+        unif[0] = uint2float(tmpNum[0], tmpNum[1]);
+        unif[1] = uint2float(tmpNum[2], tmpNum[3]);
+        unif[2] = uint2float(tmpNum[4], tmpNum[5]);
+        unif[3] = uint2float(tmpNum[6], tmpNum[7]);
+        unif[4] = uint2float(tmpNum[8], tmpNum[9]);
+        unif[5] = uint2float(tmpNum[10], tmpNum[11]);
+
+        boxMuller(unif, normf_, 0);
+        boxMuller(unif, normf_, 1);
+        boxMuller(unif, normf_, 2);
+
+	d_data[size * gid + i + lid] = normf_[0];
+	d_data[size * gid + MTGP32_TN + i + lid] = normf_[1];
+	d_data[size * gid + 2 * MTGP32_TN + i + lid] = normf_[2];
+	d_data[size * gid + (size / 2) + i + lid] = normf_[3];
+	d_data[size * gid + (size / 2) + MTGP32_TN + i + lid] = normf_[4];
+	d_data[size * gid + (size / 2) + 2 * MTGP32_TN + i + lid] = normf_[5];
     }
     // write back status for next call
     status_write(d_status, status, gid, lid);

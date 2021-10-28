@@ -114,79 +114,13 @@ __kernel void mtgp32_uniform(
 	tmpNum[5] = o;
 	barrier(CLK_LOCAL_MEM_FENCE);
 
-	uint num1 = tmpNum[0];
-	uint num2 = tmpNum[1];
-	uint finalNum = 0;
-	uint expo = 32;
-	for (;expo > 0; expo--) {
-		uint flag0 = num1 & 0x80000000;
-		num1 <<= 1;
-		if (flag0 != 0) {
-			break;
-		}
-	}
-	if (expo < 23) {
-		uint maskbits = 0xffffffff;
-		uint shPos = 23 - expo;
-		maskbits >>= shPos;
-		maskbits <<= shPos;
-		maskbits = ~maskbits;
-		finalNum ^= (num2 & maskbits);
-	}
-	finalNum ^= (num1 >> 9);
-	uint newExpo = 94 + expo;
-	finalNum ^= newExpo << 23;
-	float tmpRes1 = as_float(finalNum); // output value
+	float tmpRes1 = uint2float(tmpNum[0], tmpNum[1]); // output value
 	d_data[size * gid + i + lid] = tmpRes1;
 
-	num1 = tmpNum[2];
-	num2 = tmpNum[3];
-	finalNum = 0;
-	expo = 32;
-	for (;expo > 0; expo--) {
-		uint flag0 = num1 & 0x80000000;
-		num1 <<= 1;
-		if (flag0 != 0) {
-			break;
-		}
-	}
-	if (expo < 23) {
-		uint maskbits = 0xffffffff;
-		uint shPos = 23 - expo;
-		maskbits >>= shPos;
-		maskbits <<= shPos;
-		maskbits = ~maskbits;
-		finalNum ^= (num2 & maskbits);
-	}
-	finalNum ^= (num1 >> 9);
-	newExpo = 94 + expo;
-	finalNum ^= newExpo << 23;
-	tmpRes1 = as_float(finalNum); // output value
+	tmpRes1 = uint2float(tmpNum[2], tmpNum[3]); // output value
 	d_data[size * gid + MTGP32_TN + i + lid] = tmpRes1;
 
-	num1 = tmpNum[4];
-	num2 = tmpNum[5];
-	finalNum = 0;
-	expo = 32;
-	for (;expo > 0; expo--) {
-		uint flag0 = num1 & 0x80000000;
-		num1 <<= 1;
-		if (flag0 != 0) {
-			break;
-		}
-	}
-	if (expo < 23) {
-		uint maskbits = 0xffffffff;
-		uint shPos = 23 - expo;
-		maskbits >>= shPos;
-		maskbits <<= shPos;
-		maskbits = ~maskbits;
-		finalNum ^= (num2 & maskbits);
-	}
-	finalNum ^= (num1 >> 9);
-	newExpo = 94 + expo;
-	finalNum ^= newExpo << 23;
-	tmpRes1 = as_float(finalNum); // output value
+	tmpRes1 = uint2float(tmpNum[4], tmpNum[5]); // output value
 	d_data[size * gid + 2 * MTGP32_TN + i + lid] = tmpRes1;
     }
     // write back status for next call
