@@ -42,42 +42,120 @@ Implements threefry RNG.
 State of threefry RNG. We will store in global buffer as a set of uint
 **
 typedef struct{
-        uint2 counter;
-        uint2 result;
-        uint2 key;
+        uint counter[4];
+        uint result[4];
+        uint key[4];
         uint tracker;
 } threefry_state;
 **/
 
-
-__kernel void threefry_uint32(__global uint *state_counter, __global uint *state_result, __global uint *state_key, __global uint *state_tracker, uint* output, uint rng_count){
+/**
+Generates a random 32-bit unsigned integer using threefry RNG.
+@param state State of the RNG to use.
+*/
+__kernel void threefry_uint32(__global uint *state_counter,
+                              __global uint *state_result,
+                              __global uint *state_key,
+                              __global uint *state_tracker,
+                              uint *output,
+                              uint data_size) {
     uint index = get_group_id(0) * ELEMENTS_PER_BLOCK + get_local_id(0);
-    threefry_state state;
+    uint totalWorkItems = get_global_size(0);
+    uint tmpIdx = index;
+    threefry_state state_;
+    threefry_state *state = &state_;
 
+    // For first out of four sets...
     // Read in counter
-    state.counter.x = state_counter[index];
-    state.counter.y = state_counter[index + rng_count];
-
+    state->counter[0] = state_counter[tmpIdx];
     // Read in result
-    state.result.x = state_result[index];
-    state.result.y = state_result[index + rng_count];
-
+    state->result[0] = state_result[tmpIdx];
     // Read in key
-    state.key.x = state_key[index];
-    state.key.y = state_key[index + rng_count];
-
+    state->key[0] = state_key[tmpIdx];
     // Read in tracker
-    state.tracker.x = state_tracker[index];
+    state->tracker = state_tracker[tmpIdx];
 
-    if (state.tracker == 1) {
-        uint tmp = state.result.y;
-        state.counter.x += index;
-        state.counter.y += (state.counter.y < index);
-        threefry_round(state);
-        state.tracker = 0;
-        return tmp;
-    } else {
-        state->tracker++;
-        return state.result.x;
+    // For second out of four sets...
+    tmpIdx += totalWorkItems;
+    // Read in counter
+    state->counter[1] = state_counter[tmpIdx];
+    // Read in result
+    state->result[1] = state_result[tmpIdx];
+    // Read in key
+    state->key[1] = state_key[tmpIdx];
+
+    // For third out of four sets...
+    tmpIdx += totalWorkItems;
+    // Read in counter
+    state->counter[2] = state_counter[tmpIdx];
+    // Read in result
+    state->result[2] = state_result[tmpIdx];
+    // Read in key
+    state->key[2] = state_key[tmpIdx];
+
+    // For last out of four sets...
+    tmpIdx += totalWorkItems;
+    // Read in counter
+    state->counter[3] = state_counter[tmpIdx];
+    // Read in result
+    state->result[3] = state_result[tmpIdx];
+    // Read in key
+    state->key[3] = state_key[tmpIdx];
+
+    for (uint outIndex = index; index < data_size; index += totalWorkItems) {
+        if (state->tracker == 3) {
+            uint tmp = state.result[3];
+            if (++state->counter[0] == 0) {
+                if (++state->counter[1] == 0) {
+                    if (++state->counter[2] == 0) {
+                        ++state->counter[3];
+                    }
+                }
+            }
+            threefry_round(&state);
+            state->tracker = 0;
+            output[outIndex] = tmp;
+        } else {
+            output[outIndex] = state->result[state->tracker++];
+        }
     }
+    
+    // For first out of four sets...
+    // Write out counter
+    tmpIdx = index;
+    state_counter[tmpIdx] = state.counter[0];
+    // Write out result
+    state_result[tmpIdx] = state.result[0];
+    // Write out key
+    state_key[tmpIdx] = state.key[0];
+    // Write out tracker
+    state_tracker[tmpIdx] = state.tracker;
+
+    // For second out of four sets...
+    // Write out counter
+    tmpIdx += totalWorkItems;
+    state_counter[tmpIdx] = state.counter[1];
+    // Write out result
+    state_result[tmpIdx] = state.result[1];
+    // Write out key
+    state_key[tmpIdx] = state.key[1];
+
+    // For third out of four sets...
+    // Write out counter
+    tmpIdx += totalWorkItems;
+    state_counter[tmpIdx] = state.counter[2];
+    // Write out result
+    state_result[tmpIdx] = state.result[2];
+    // Write out key
+    state_key[tmpIdx] = state.key[2];
+
+    // For last out of four sets...
+    // Write out counter
+    tmpIdx += totalWorkItems;
+    state_counter[tmpIdx] = state.counter[3];
+    // Write out result
+    state_result[tmpIdx] = state.result[3];
+    // Write out key
+    state_key[tmpIdx] = state.key[3];
+
 }

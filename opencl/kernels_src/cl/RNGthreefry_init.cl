@@ -41,10 +41,14 @@ Implements threefry RNG.
 /**
 State of threefry RNG. We will store in global buffer as a set of uint
 **
+counter: uint[4]
+key:     uint[4]
+state:   uint[4]
+index:   uint
 typedef struct{
-        uint2 counter;
-        uint2 result;
-        uint2 key;
+        uint counter[4];
+        uint result[4];
+        uint key[4];
         uint tracker;
 } threefry_state;
 **/
@@ -54,9 +58,20 @@ Seeds threefry RNG.
 @param state Variable, that holds state of the generator to be seeded.
 @param seed Value used for seeding. Should be randomly generated for each instance of generator (thread).
 */
-void threefry_seed(__global uint *state_key, __global ulong *seed, uint rng_count){
-    int gid = get_global_id(0);
-    ulong localJ = seed[gid];
-    state_key[gid] = (uint)(localJ & 0x0000ffff);
-    state_key[gid+rng_count] = (uint)(localJ >> 32);
+void threefry_seed(__global uint *state_counter, __global uint *state_key, __global uint *seed, uint rng_count){
+    for (uint gid = get_global_id(0); gid < rng_count; gid += get_global_size(0)) {
+        uint idx = gid;
+        uint localJ = seed[gid];
+        state_key[idx] = localJ;
+        state_counter[idx] = 0x00000000;
+        idx += rng_count;
+        state_key[idx] = 0x00000000;
+        state_counter[idx] = 0x00000000;
+        idx += rng_count;
+        state_key[idx] = 0x00000000;
+        state_counter[idx] = 0x00000000;
+        idx += rng_count;
+        state_key[idx] = 0x00000000;
+        state_counter[idx] = 0x00000000;
+    }
 }

@@ -15,6 +15,7 @@ var OCLHeadersList = []string{
 	"RNGmtgp",
 	"RNG_common",
 	"RNGxorwow",
+	"RNG_threefry",
 	"sum"}
 
 var OCLKernelsList = []string{
@@ -85,4 +86,6 @@ var OCLKernelsList = []string{
 	"xorwow_uint",
 	"xorwow_uniform",
 	"xorwow_normal",
+	"threefry_seed",
+	"threefry_uint32",
 	"square"}
