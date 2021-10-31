@@ -1,7 +1,7 @@
 /**
 @file
 Implements threefry RNG.
-/*******************************************************
+*******************************************************
  * Modified version of Random123 library:
  * https://www.deshawresearch.com/downloads/download_random123.cgi/
  * The original copyright can be seen here:
@@ -52,7 +52,7 @@ typedef struct{
 /**
 Generates a random 32-bit unsigned integer using threefry RNG.
 @param state State of the RNG to use.
-*/
+**/
 __kernel void
 threefry_uint32(__global uint __restrict *state_counter,
                 __global uint __restrict *state_result,
@@ -105,7 +105,7 @@ threefry_uint32(__global uint __restrict *state_counter,
 
     for (uint outIndex = index; index < data_size; index += totalWorkItems) {
         if (state->tracker == 3) {
-            uint tmp = state.result[3];
+            uint tmp = state->result[3];
             if (++state->counter[0] == 0) {
                 if (++state->counter[1] == 0) {
                     if (++state->counter[2] == 0) {
@@ -113,7 +113,7 @@ threefry_uint32(__global uint __restrict *state_counter,
                     }
                 }
             }
-            threefry_round(&state);
+            threefry_round(state);
             state->tracker = 0;
             output[outIndex] = tmp;
         } else {
@@ -124,39 +124,39 @@ threefry_uint32(__global uint __restrict *state_counter,
     // For first out of four sets...
     // Write out counter
     tmpIdx = index;
-    state_counter[tmpIdx] = state.counter[0];
+    state_counter[tmpIdx] = state->counter[0];
     // Write out result
-    state_result[tmpIdx] = state.result[0];
+    state_result[tmpIdx] = state->result[0];
     // Write out key
-    state_key[tmpIdx] = state.key[0];
+    state_key[tmpIdx] = state->key[0];
     // Write out tracker
-    state_tracker[tmpIdx] = state.tracker;
+    state_tracker[tmpIdx] = state->tracker;
 
     // For second out of four sets...
     // Write out counter
     tmpIdx += totalWorkItems;
-    state_counter[tmpIdx] = state.counter[1];
+    state_counter[tmpIdx] = state->counter[1];
     // Write out result
-    state_result[tmpIdx] = state.result[1];
+    state_result[tmpIdx] = state->result[1];
     // Write out key
-    state_key[tmpIdx] = state.key[1];
+    state_key[tmpIdx] = state->key[1];
 
     // For third out of four sets...
     // Write out counter
     tmpIdx += totalWorkItems;
-    state_counter[tmpIdx] = state.counter[2];
+    state_counter[tmpIdx] = state->counter[2];
     // Write out result
-    state_result[tmpIdx] = state.result[2];
+    state_result[tmpIdx] = state->result[2];
     // Write out key
-    state_key[tmpIdx] = state.key[2];
+    state_key[tmpIdx] = state->key[2];
 
     // For last out of four sets...
     // Write out counter
     tmpIdx += totalWorkItems;
-    state_counter[tmpIdx] = state.counter[3];
+    state_counter[tmpIdx] = state->counter[3];
     // Write out result
-    state_result[tmpIdx] = state.result[3];
+    state_result[tmpIdx] = state->result[3];
     // Write out key
-    state_key[tmpIdx] = state.key[3];
+    state_key[tmpIdx] = state->key[3];
 
 }

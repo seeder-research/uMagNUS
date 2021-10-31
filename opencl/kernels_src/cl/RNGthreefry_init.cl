@@ -1,7 +1,7 @@
 /**
 @file
 Implements threefry RNG.
-/*******************************************************
+*******************************************************
  * Modified version of Random123 library:
  * https://www.deshawresearch.com/downloads/download_random123.cgi/
  * The original copyright can be seen here:
@@ -57,7 +57,7 @@ typedef struct{
 Seeds threefry RNG.
 @param state Variable, that holds state of the generator to be seeded.
 @param seed Value used for seeding. Should be randomly generated for each instance of generator (thread).
-*/
+**/
 __kernel void
 threefry_seed(__global uint __restrict *state_counter,
               __global uint __restrict *state_key,
