@@ -54,13 +54,13 @@ Generates a random 32-bit unsigned integer using threefry RNG.
 @param state State of the RNG to use.
 **/
 __kernel void
-threefry_uint(__global uint __restrict *state_counter,
+threefry_uint(__global uint __restrict *state_key,
+              __global uint __restrict *state_counter,
               __global uint __restrict *state_result,
-              __global uint __restrict *state_key,
               __global uint __restrict *state_tracker,
               __global uint __restrict *output,
               int data_size) {
-    uint index = get_group_id(0) * ELEMENTS_PER_BLOCK + get_local_id(0);
+    uint index = get_group_id(0) * THREEFRY_ELEMENTS_PER_BLOCK + get_local_id(0);
     uint totalWorkItems = get_global_size(0);
     uint tmpIdx = index;
     threefry_state state_;
@@ -104,7 +104,11 @@ threefry_uint(__global uint __restrict *state_counter,
     state->key[3] = state_key[tmpIdx];
 
     for (uint outIndex = index; index < data_size; index += totalWorkItems) {
-        if (state->tracker == 3) {
+        if (state->tracker > 3) {
+            threefry_round(state);
+            state->tracker = 1;
+            output[outIndex] = state->result[0];
+        } else if (state->tracker == 3) {
             uint tmp = state->result[3];
             if (++state->counter[0] == 0) {
                 if (++state->counter[1] == 0) {

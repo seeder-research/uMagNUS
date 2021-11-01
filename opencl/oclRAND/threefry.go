@@ -85,5 +85,5 @@ func (p *THREEFRY_status_array_ptr) GetGroupCount() int {
 }
 
 func (p *THREEFRY_status_array_ptr) RecommendSize() int {
-	return 8 * p.Status_size
+	return 16 * p.Status_size
 }

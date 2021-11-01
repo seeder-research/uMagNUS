@@ -61,6 +61,7 @@ Seeds threefry RNG.
 __kernel void
 threefry_seed(__global uint __restrict *state_key,
               __global uint __restrict *state_counter,
+              __global uint __restrict *state_tracker,
               __global uint __restrict *seed,
               uint rng_count) {
     for (uint gid = get_global_id(0); gid < rng_count; gid += get_global_size(0)) {
@@ -68,6 +69,7 @@ threefry_seed(__global uint __restrict *state_key,
         uint localJ = seed[gid];
         state_key[idx] = localJ;
         state_counter[idx] = 0x00000000;
+        state_tracker[idx] = 4;
         idx += rng_count;
         state_key[idx] = 0x00000000;
         state_counter[idx] = 0x00000000;

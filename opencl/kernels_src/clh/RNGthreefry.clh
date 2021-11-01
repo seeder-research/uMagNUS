@@ -1,8 +1,8 @@
-#define ELEMENTS_PER_BLOCK 256
+#define THREEFRY_ELEMENTS_PER_BLOCK 256
 #define SKEIN_KS_PARITY64 0x1BD11BDAA9FC1A22
 #define SKEIN_KS_PARITY32 0x1BD11BDA
 constant int THREEFRY2X64_ROTATION[] = {16, 42, 12, 31, 16, 32, 24, 21};
-                                            
+
 constant int THREEFRY4X32_ROTATION_0[] = {10, 26};
 constant int THREEFRY4X32_ROTATION_1[] = {11, 21};
 constant int THREEFRY4X32_ROTATION_2[] = {13, 27};
