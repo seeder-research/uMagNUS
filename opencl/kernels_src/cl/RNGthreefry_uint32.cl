@@ -59,7 +59,7 @@ threefry_uint32(__global uint __restrict *state_counter,
                 __global uint __restrict *state_key,
                 __global uint __restrict *state_tracker,
                 __global uint __restrict *output,
-                uint data_size) {
+                int data_size) {
     uint index = get_group_id(0) * ELEMENTS_PER_BLOCK + get_local_id(0);
     uint totalWorkItems = get_global_size(0);
     uint tmpIdx = index;

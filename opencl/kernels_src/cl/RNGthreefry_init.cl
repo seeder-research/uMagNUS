@@ -59,8 +59,8 @@ Seeds threefry RNG.
 @param seed Value used for seeding. Should be randomly generated for each instance of generator (thread).
 **/
 __kernel void
-threefry_seed(__global uint __restrict *state_counter,
-              __global uint __restrict *state_key,
+threefry_seed(__global uint __restrict *state_key,
+              __global uint __restrict *state_counter,
               __global uint __restrict *seed,
               uint rng_count) {
     for (uint gid = get_global_id(0); gid < rng_count; gid += get_global_size(0)) {
