@@ -75,41 +75,7 @@ __kernel void xorwow_normal(
 
                                 uint num2 = d+x[4];
 
-                                // Find single-precision floating point representation
-                                // for the integer formed by the pair of uint32...
-                                // the approach is to treat the uint64 as a 32-bit uint
-                                // with 32 fractional bits. We divide the number by
-                                // 2^32 to get the floating point number. The steps are
-                                // to first find the 23-bit mantissa based on the uint64.
-                                // We then use the position of the leading 1 to find the
-                                // relative exponent. For example, if the MSB in the
-                                // first uint32 is 1, then the integer portion is at
-                                // least 2^31, which means dividing by 2^32 gives a
-                                // result between 0.5f (0x3f000000) and 1.0f (0x3f800000).
-                                // Hence, the exponent bits are 01111110 = 126. Note that
-                                // the PRNG never returns uint32(0) so we are guaranteed.
-                                // that a leading 1 exists in the first uint32.
-                                uint finalNum = 0;
-                                uint expo = 32;
-                                for (;expo > 0; expo--) {
-                                        uint flag0 = num1 & 0x80000000;
-                                        num1 <<= 1;
-                                        if (flag0 != 0) {
-                                                break;
-                                        }
-                                }
-                                if (expo < 23) {
-                                        uint maskbits = 0xffffffff;
-                                        uint shPos = 23 - expo;
-                                        maskbits >>= shPos;
-                                        maskbits <<= shPos;
-                                        maskbits = ~maskbits;
-                                        finalNum ^= (num2 & maskbits);
-                                }
-                                finalNum ^= (num1 >> 9);
-                                uint newExpo = 94 + expo;
-                                finalNum ^= newExpo << 23;
-                                float tmpRes1 = as_float(finalNum); // output value
+                                float tmpRes1 = uint2float(num1, num2); // output value
 
                                 // Repeat for second float...
                                 // generate a pair of uint32 (one uint64)
@@ -137,29 +103,7 @@ __kernel void xorwow_normal(
 
                                 num2 = d+x[4];
 
-                                // Find single-precision floating point representation
-                                // for the integer formed by the pair of uint32...
-                                finalNum = 0;
-                                expo = 32;
-                                for (;expo > 0; expo--) {
-                                        uint flag0 = num1 & 0x80000000;
-                                        num1 <<= 1;
-                                        if (flag0 != 0) {
-                                                break;
-                                        }
-                                }
-                                if (expo < 23) {
-                                        uint maskbits = 0xffffffff;
-                                        uint shPos = 23 - expo;
-                                        maskbits >>= shPos;
-                                        maskbits <<= shPos;
-                                        maskbits = ~maskbits;
-                                        finalNum ^= (num2 & maskbits);
-                                }
-                                finalNum ^= (num1 >> 9);
-                                newExpo = 94 + expo;
-                                finalNum ^= newExpo << 23;
-                                float tmpRes2 = as_float(finalNum); // output value
+                                float tmpRes2 = uint2float(num1, num2); // output value
 
                                 z0 = sqrt( -2.0f * log(tmpRes1)) * cospi(2.0f * tmpRes2);
                                 z1 = sqrt( -2.0f * log(tmpRes1)) * sinpi(2.0f * tmpRes2);
