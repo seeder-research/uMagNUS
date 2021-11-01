@@ -2,6 +2,7 @@ package oclRAND
 
 import (
 	"github.com/seeder-research/uMagNUS/opencl/cl"
+	"fmt"
 	"log"
 	"unsafe"
 )
@@ -71,6 +72,7 @@ func (p *MTGP32dc_params_array_ptr) GetMTGPArrays() {
 	if (p.GroupSize > mtgpdc_params_num) || (p.GroupSize < 0) {
 		log.Fatalln("Input range: 0 < GroupSize < ", mtgpdc_params_num)
 	}
+        fmt.Printf("Building parmeters for %+v number of groups \n", p.GroupCount)
 	rec_array := make([]uint32, (MTGPDC_TS * p.GroupCount))
 	temper_array := make([]uint32, (MTGPDC_TS * p.GroupCount))
 	flt_temper_array := make([]uint32, (MTGPDC_TS * p.GroupCount))

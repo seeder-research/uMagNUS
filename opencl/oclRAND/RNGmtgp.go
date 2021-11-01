@@ -16,6 +16,7 @@ func (p *MTGP32dc_params_array_ptr) Init(seed uint64, events []*cl.Event) {
 	rand.Seed((int64)(seed))
 	totalCount := p.GetGroupCount()
 	seed_arr := make([]uint32, totalCount)
+        fmt.Printf("Generating seed for %+v mtgp rngs \n", totalCount)
 	for idx := 0; idx < totalCount; idx++ {
 		tmpNum := rand.Uint32()
 		for tmpNum == 0 {
