@@ -255,8 +255,8 @@ func NewMTGPRNGParams() *oclRAND.MTGP32dc_params_array_ptr {
 func NewTHREEFRYRNGParams() *oclRAND.THREEFRY_status_array_ptr {
 	tmp := oclRAND.NewTHREEFRYStatus()
 	tmp.SetGroupCount(ClCUnits)
-	tmp.SetGroupSize(256)
-	tmp.SetStatusSize(ClCUnits * 256)
+	tmp.SetGroupSize(ClPrefWGSz)
+	tmp.SetStatusSize(ClCUnits * ClPrefWGSz)
 	tmp.CreateStatusBuffer(ClCtx)
 
 	return tmp

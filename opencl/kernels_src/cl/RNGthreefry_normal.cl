@@ -60,9 +60,9 @@ threefry_normal(__global uint __restrict *state_key,
                 __global uint __restrict *state_tracker,
                 __global uint __restrict *output,
                 int data_size) {
-    uint index = get_group_id(0) * THREEFRY_ELEMENTS_PER_BLOCK + get_local_id(0);
-    uint totalWorkItems = get_global_size(0);
-    uint tmpIdx = index;
+    uint gid = get_global_id(0);
+    uint rng_count = get_global_size(0);
+    uint tmpIdx = gid;
     threefry_state state_;
     threefry_state *state = &state_;
 
@@ -77,7 +77,7 @@ threefry_normal(__global uint __restrict *state_key,
     state->tracker = state_tracker[tmpIdx];
 
     // For second out of four sets...
-    tmpIdx += totalWorkItems;
+    tmpIdx += rng_count;
     // Read in counter
     state->counter[1] = state_counter[tmpIdx];
     // Read in result
@@ -86,7 +86,7 @@ threefry_normal(__global uint __restrict *state_key,
     state->key[1] = state_key[tmpIdx];
 
     // For third out of four sets...
-    tmpIdx += totalWorkItems;
+    tmpIdx += rng_count;
     // Read in counter
     state->counter[2] = state_counter[tmpIdx];
     // Read in result
@@ -95,7 +95,7 @@ threefry_normal(__global uint __restrict *state_key,
     state->key[2] = state_key[tmpIdx];
 
     // For last out of four sets...
-    tmpIdx += totalWorkItems;
+    tmpIdx += rng_count;
     // Read in counter
     state->counter[3] = state_counter[tmpIdx];
     // Read in result
@@ -103,7 +103,7 @@ threefry_normal(__global uint __restrict *state_key,
     // Read in key
     state->key[3] = state_key[tmpIdx];
 
-    for (uint outIndex = index; index < data_size / 2; index += totalWorkItems) {
+    for (uint outIndex = gid; outIndex < data_size / 2; outIndex += rng_count) {
         uint num1[2];
         float res1[4];
         uint lidx = 0;
@@ -182,7 +182,7 @@ threefry_normal(__global uint __restrict *state_key,
     
     // For first out of four sets...
     // Write out counter
-    tmpIdx = index;
+    tmpIdx = gid;
     state_counter[tmpIdx] = state->counter[0];
     // Write out result
     state_result[tmpIdx] = state->result[0];
@@ -193,7 +193,7 @@ threefry_normal(__global uint __restrict *state_key,
 
     // For second out of four sets...
     // Write out counter
-    tmpIdx += totalWorkItems;
+    tmpIdx += rng_count;
     state_counter[tmpIdx] = state->counter[1];
     // Write out result
     state_result[tmpIdx] = state->result[1];
@@ -202,7 +202,7 @@ threefry_normal(__global uint __restrict *state_key,
 
     // For third out of four sets...
     // Write out counter
-    tmpIdx += totalWorkItems;
+    tmpIdx += rng_count;
     state_counter[tmpIdx] = state->counter[2];
     // Write out result
     state_result[tmpIdx] = state->result[2];
@@ -211,7 +211,7 @@ threefry_normal(__global uint __restrict *state_key,
 
     // For last out of four sets...
     // Write out counter
-    tmpIdx += totalWorkItems;
+    tmpIdx += rng_count;
     state_counter[tmpIdx] = state->counter[3];
     // Write out result
     state_result[tmpIdx] = state->result[3];
