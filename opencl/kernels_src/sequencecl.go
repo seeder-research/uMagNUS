@@ -87,5 +87,7 @@ var OCLKernelsList = []string{
 	"xorwow_uniform",
 	"xorwow_normal",
 	"threefry_seed",
-	"threefry_uint32",
+	"threefry_uint",
+	"threefry_uniform",
+	"threefry_normal",
 	"square"}

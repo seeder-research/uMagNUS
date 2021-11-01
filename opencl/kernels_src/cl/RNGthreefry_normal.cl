@@ -138,7 +138,7 @@ threefry_normal(__global uint __restrict *state_key,
             num1[lidx] = state->result[state->tracker++];
         }
         res1[0] = uint2float(num1[0], num1[1]);
-        uint lidx = 0;
+        lidx = 0;
         if (state->tracker == 3) {
             uint tmp = state->result[3];
             if (++state->counter[0] == 0) {
