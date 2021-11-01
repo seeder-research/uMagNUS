@@ -11,11 +11,11 @@ var OCLHeadersList = []string{
 	"atomicf",
 	"reduce",
 	"amul",
+	"RNG_common",
 	"RNGmrg32k3a",
 	"RNGmtgp",
-	"RNG_common",
+	"RNGthreefry",
 	"RNGxorwow",
-	"RNG_threefry",
 	"sum"}
 
 var OCLKernelsList = []string{
