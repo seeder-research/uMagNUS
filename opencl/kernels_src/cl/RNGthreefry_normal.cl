@@ -58,7 +58,7 @@ threefry_normal(__global uint __restrict *state_key,
                 __global uint __restrict *state_counter,
                 __global uint __restrict *state_result,
                 __global uint __restrict *state_tracker,
-                __global uint __restrict *output,
+                __global float __restrict *output,
                 int data_size) {
     uint gid = get_global_id(0);
     uint rng_count = get_global_size(0);

@@ -43,8 +43,9 @@ func (p *THREEFRY_status_array_ptr) Init(seed uint64, events []*cl.Event) {
 	}
 
 	// Seed the RNG
-	event := k_threefry_seed_async(unsafe.Pointer(p.Status_key), unsafe.Pointer(p.Status_counter), unsafe.Pointer(p.Status_tracker),
-		unsafe.Pointer(seed_buf), &config{[]int{totalCount}, []int{p.GetGroupSize()}}, []*cl.Event{seed_event})
+	event := k_threefry_seed_async(unsafe.Pointer(p.Status_key), unsafe.Pointer(p.Status_counter),
+		unsafe.Pointer(p.Status_result), unsafe.Pointer(p.Status_tracker), unsafe.Pointer(seed_buf),
+		&config{[]int{totalCount}, []int{p.GetGroupSize()}}, []*cl.Event{seed_event})
 
 	p.Ini = true
 	err = cl.WaitForEvents([]*cl.Event{event})
