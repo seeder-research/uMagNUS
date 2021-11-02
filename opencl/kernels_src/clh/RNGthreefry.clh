@@ -1,0 +1,252 @@
+#define THREEFRY_ELEMENTS_PER_BLOCK 256
+#define SKEIN_KS_PARITY64 0x1BD11BDAA9FC1A22
+#define SKEIN_KS_PARITY32 0x1BD11BDA
+constant int THREEFRY2X64_ROTATION[] = {16, 42, 12, 31, 16, 32, 24, 21};
+
+constant int THREEFRY4X32_ROTATION_0[] = {10, 26};
+constant int THREEFRY4X32_ROTATION_1[] = {11, 21};
+constant int THREEFRY4X32_ROTATION_2[] = {13, 27};
+constant int THREEFRY4X32_ROTATION_3[] = {23,  5};
+constant int THREEFRY4X32_ROTATION_4[] = { 6, 20};
+constant int THREEFRY4X32_ROTATION_5[] = {17, 11};
+constant int THREEFRY4X32_ROTATION_6[] = {25, 10};
+constant int THREEFRY4X32_ROTATION_7[] = {18, 20};
+
+/**
+State of threefry RNG.
+*/
+typedef struct{
+    uint counter[4];
+    uint result[4];
+    uint key[4];
+    uint tracker;
+} threefry_state;
+
+static inline ulong RotL64(ulong x, uint N){
+    return (x << (N & 63)) | (x >> ((64 - N) & 63));
+}
+
+static inline ulong RotL32(uint x, uint N){
+    return (x << (N & 31)) | (x >> ((32 - N) & 31));
+}
+
+static inline void threefry_round(threefry_state* state){
+    uint ks[5]; //
+    ks[4] = SKEIN_KS_PARITY32;
+
+    // Unrolled for loop
+    ks[0] = state->key[0];
+    state->result[0]  = state->counter[0];
+    ks[4] ^= state->key[0];
+    ks[1] = state->key[1];
+    state->result[1]  = state->counter[1];
+    ks[4] ^= state->key[1];
+    ks[2] = state->key[2];
+    state->result[2]  = state->counter[2];
+    ks[4] ^= state->key[2];
+    ks[3] = state->key[3];
+    state->result[3]  = state->counter[3];
+    ks[4] ^= state->key[3];
+
+    /* Insert initial key before round 0 */
+    state->result[0] += ks[0];
+    state->result[1] += ks[1];
+    state->result[2] += ks[2];
+    state->result[3] += ks[3];
+
+    /* First round */
+    state->result[0] += state->result[1];
+    state->result[1] = RotL32(state->result[1], THREEFRY4X32_ROTATION_0[0]);
+    state->result[1] ^= state->result[0];
+    state->result[2] += state->result[3];
+    state->result[3] = RotL32(state->result[3], THREEFRY4X32_ROTATION_0[1]);
+    state->result[3] ^= state->result[2];
+
+    /* Second round */
+    state->result[0] += state->result[3];
+    state->result[3] = RotL32(state->result[3], THREEFRY4X32_ROTATION_1[0]);
+    state->result[3] ^= state->result[0];
+    state->result[2] += state->result[1];
+    state->result[1] = RotL32(state->result[1], THREEFRY4X32_ROTATION_1[1]);
+    state->result[1] ^= state->result[2];
+
+    /* Third round */
+    state->result[0] += state->result[1];
+    state->result[1] = RotL32(state->result[1], THREEFRY4X32_ROTATION_2[0]);
+    state->result[1] ^= state->result[0];
+    state->result[2] += state->result[3];
+    state->result[3] = RotL32(state->result[3], THREEFRY4X32_ROTATION_2[1]);
+    state->result[3] ^= state->result[2];
+
+    /* Fourth round */
+    state->result[0] += state->result[3];
+    state->result[3] = RotL32(state->result[3], THREEFRY4X32_ROTATION_3[0]);
+    state->result[3] ^= state->result[0];
+    state->result[2] += state->result[1];
+    state->result[1] = RotL32(state->result[1], THREEFRY4X32_ROTATION_3[1]);
+    state->result[1] ^= state->result[2];
+
+    /* InjectKey(r=1) */
+    state->result[0] += ks[1];
+    state->result[1] += ks[2];
+    state->result[2] += ks[3];
+    state->result[3] += ks[4];
+    state->result[3] += 1; /* X[4-1] += r */
+
+    /* Fifth round */
+    state->result[0] += state->result[1];
+    state->result[1] = RotL32(state->result[1], THREEFRY4X32_ROTATION_4[0]);
+    state->result[1] ^= state->result[0];
+    state->result[2] += state->result[3];
+    state->result[3] = RotL32(state->result[3], THREEFRY4X32_ROTATION_4[1]);
+    state->result[3] ^= state->result[2];
+
+    /* Sixth round */
+    state->result[0] += state->result[3];
+    state->result[3] = RotL32(state->result[3], THREEFRY4X32_ROTATION_5[0]);
+    state->result[3] ^= state->result[0];
+    state->result[2] += state->result[1];
+    state->result[1] = RotL32(state->result[1], THREEFRY4X32_ROTATION_5[1]);
+    state->result[1] ^= state->result[2];
+
+    /* Seventh round */
+    state->result[0] += state->result[1];
+    state->result[1] = RotL32(state->result[1], THREEFRY4X32_ROTATION_6[0]);
+    state->result[1] ^= state->result[0];
+    state->result[2] += state->result[3];
+    state->result[3] = RotL32(state->result[3], THREEFRY4X32_ROTATION_6[1]);
+    state->result[3] ^= state->result[2];
+
+    /* Eighth round */
+    state->result[0] += state->result[3];
+    state->result[3] = RotL32(state->result[3], THREEFRY4X32_ROTATION_7[0]);
+    state->result[3] ^= state->result[0];
+    state->result[2] += state->result[1];
+    state->result[1] = RotL32(state->result[1], THREEFRY4X32_ROTATION_7[1]);
+    state->result[1] ^= state->result[2];
+
+    /* InjectKey(r=2) */
+    state->result[0] += ks[2];
+    state->result[1] += ks[3];
+    state->result[2] += ks[4];
+    state->result[3] += ks[0];
+    state->result[3] += 2; /* X[4-1] += r */
+
+    /* 9-th round */
+    state->result[0] += state->result[1];
+    state->result[1] = RotL32(state->result[1], THREEFRY4X32_ROTATION_0[0]);
+    state->result[1] ^= state->result[0];
+    state->result[2] += state->result[3];
+    state->result[3] = RotL32(state->result[3], THREEFRY4X32_ROTATION_0[1]);
+    state->result[3] ^= state->result[2];
+
+    /* 10-th round */
+    state->result[0] += state->result[3];
+    state->result[3] = RotL32(state->result[3], THREEFRY4X32_ROTATION_1[0]);
+    state->result[3] ^= state->result[0];
+    state->result[2] += state->result[1];
+    state->result[1] = RotL32(state->result[1], THREEFRY4X32_ROTATION_1[1]);
+    state->result[1] ^= state->result[2];
+
+    /* 11-th round */
+    state->result[0] += state->result[1];
+    state->result[1] = RotL32(state->result[1], THREEFRY4X32_ROTATION_2[0]);
+    state->result[1] ^= state->result[0];
+    state->result[2] += state->result[3];
+    state->result[3] = RotL32(state->result[3], THREEFRY4X32_ROTATION_2[1]);
+    state->result[3] ^= state->result[2];
+
+    /* 12-th round */
+    state->result[0] += state->result[3];
+    state->result[3] = RotL32(state->result[3], THREEFRY4X32_ROTATION_3[0]);
+    state->result[3] ^= state->result[0];
+    state->result[2] += state->result[1];
+    state->result[1] = RotL32(state->result[1], THREEFRY4X32_ROTATION_3[1]);
+    state->result[1] ^= state->result[2];
+
+    /* InjectKey(r=3) */
+    state->result[0] += ks[3];
+    state->result[1] += ks[4];
+    state->result[2] += ks[0];
+    state->result[3] += ks[1];
+    state->result[3] += 3; /* X[4-1] += r */
+
+    /* 13-th round */
+    state->result[0] += state->result[1];
+    state->result[1] = RotL32(state->result[1], THREEFRY4X32_ROTATION_4[0]);
+    state->result[1] ^= state->result[0];
+    state->result[2] += state->result[3];
+    state->result[3] = RotL32(state->result[3], THREEFRY4X32_ROTATION_4[1]);
+    state->result[3] ^= state->result[2];
+
+    /* 14-th round */
+    state->result[0] += state->result[3];
+    state->result[3] = RotL32(state->result[3], THREEFRY4X32_ROTATION_5[0]);
+    state->result[3] ^= state->result[0];
+    state->result[2] += state->result[1];
+    state->result[1] = RotL32(state->result[1], THREEFRY4X32_ROTATION_5[1]);
+    state->result[1] ^= state->result[2];
+
+    /* 15-th round */
+    state->result[0] += state->result[1];
+    state->result[1] = RotL32(state->result[1], THREEFRY4X32_ROTATION_6[0]);
+    state->result[1] ^= state->result[0];
+    state->result[2] += state->result[3];
+    state->result[3] = RotL32(state->result[3], THREEFRY4X32_ROTATION_6[1]);
+    state->result[3] ^= state->result[2];
+
+    /* 16-th round */
+    state->result[0] += state->result[3];
+    state->result[3] = RotL32(state->result[3], THREEFRY4X32_ROTATION_7[0]);
+    state->result[3] ^= state->result[0];
+    state->result[2] += state->result[1];
+    state->result[1] = RotL32(state->result[1], THREEFRY4X32_ROTATION_7[1]);
+    state->result[1] ^= state->result[2];
+
+    /* InjectKey(r=4) */
+    state->result[0] += ks[4];
+    state->result[1] += ks[0];
+    state->result[2] += ks[1];
+    state->result[3] += ks[2];
+    state->result[3] += 4; /* X[4-1] += r */
+
+    /* 17-th round */
+    state->result[0] += state->result[1];
+    state->result[1] = RotL32(state->result[1], THREEFRY4X32_ROTATION_0[0]);
+    state->result[1] ^= state->result[0];
+    state->result[2] += state->result[3];
+    state->result[3] = RotL32(state->result[3], THREEFRY4X32_ROTATION_0[1]);
+    state->result[3] ^= state->result[2];
+
+    /* 18-th round */
+    state->result[0] += state->result[3];
+    state->result[3] = RotL32(state->result[3], THREEFRY4X32_ROTATION_1[0]);
+    state->result[3] ^= state->result[0];
+    state->result[2] += state->result[1];
+    state->result[1] = RotL32(state->result[1], THREEFRY4X32_ROTATION_1[1]);
+    state->result[1] ^= state->result[2];
+
+    /* 19-th round */
+    state->result[0] += state->result[1];
+    state->result[1] = RotL32(state->result[1], THREEFRY4X32_ROTATION_2[0]);
+    state->result[1] ^= state->result[0];
+    state->result[2] += state->result[3];
+    state->result[3] = RotL32(state->result[3], THREEFRY4X32_ROTATION_2[1]);
+    state->result[3] ^= state->result[2];
+
+    /* 20-th round */
+    state->result[0] += state->result[3];
+    state->result[3] = RotL32(state->result[3], THREEFRY4X32_ROTATION_3[0]);
+    state->result[3] ^= state->result[0];
+    state->result[2] += state->result[1];
+    state->result[1] = RotL32(state->result[1], THREEFRY4X32_ROTATION_3[1]);
+    state->result[1] ^= state->result[2];
+
+    /* InjectKey(r=5) */
+    state->result[0] += ks[0];
+    state->result[1] += ks[1];
+    state->result[2] += ks[2];
+    state->result[3] += ks[3];
+    state->result[3] += 5; /* X[4-1] += r */
+
+}

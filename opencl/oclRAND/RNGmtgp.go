@@ -7,21 +7,48 @@ import (
 
 	"github.com/seeder-research/uMagNUS/opencl/cl"
 	"github.com/seeder-research/uMagNUS/timer"
+	"math/rand"
 )
 
 func (p *MTGP32dc_params_array_ptr) Init(seed uint64, events []*cl.Event) {
 
-	SeedVal := seed << 32
-	SeedVal = SeedVal >> 32
-	if SeedVal == 0 {
-		SeedVal = seed >> 32
+	// Generate random seed array to seed the PRNG
+	rand.Seed((int64)(seed))
+	totalCount := p.GetGroupCount()
+	seed_arr := make([]uint32, totalCount)
+	for idx := 0; idx < totalCount; idx++ {
+		tmpNum := rand.Uint32()
+		for tmpNum == 0 {
+			tmpNum = rand.Uint32()
+		}
+		seed_arr[idx] = tmpNum
 	}
+
+	// Copy random seed array to GPU
+	context := p.GetContext()
+	seed_buf, err := context.CreateBufferUnsafe(cl.MemReadWrite, int(unsafe.Sizeof(seed_arr[0]))*totalCount, nil)
+	defer seed_buf.Release()
+	if err != nil {
+		log.Fatalln("Unable to create buffer for mtgp32 seed array!")
+	}
+	var seed_event *cl.Event
+	seed_event, err = ClCmdQueue.EnqueueWriteBuffer(seed_buf, false, 0, int(unsafe.Sizeof(seed_arr[0]))*totalCount, unsafe.Pointer(&seed_arr[0]), nil)
+	if err != nil {
+		log.Fatalln("Unable to write seed buffer to device: ", err)
+	}
+	if events != nil {
+		err = cl.WaitForEvents(events)
+		if err != nil {
+			fmt.Printf("First WaitForEvents failed in InitRNG: %+v \n", err)
+		}
+	}
+
 	event := k_mtgp32_init_seed_kernel_async(unsafe.Pointer(p.Rec_buf), unsafe.Pointer(p.Temper_buf), unsafe.Pointer(p.Flt_temper_buf), unsafe.Pointer(p.Pos_buf),
-		unsafe.Pointer(p.Sh1_buf), unsafe.Pointer(p.Sh2_buf), unsafe.Pointer(p.Status_buf), uint32(SeedVal),
-		&config{[]int{p.GetGroupCount() * p.GetGroupSize()}, []int{p.GetGroupSize()}}, events)
+		unsafe.Pointer(p.Sh1_buf), unsafe.Pointer(p.Sh2_buf), unsafe.Pointer(p.Status_buf), unsafe.Pointer(seed_buf),
+		&config{[]int{p.GetGroupCount() * p.GetGroupSize()}, []int{p.GetGroupSize()}}, []*cl.Event{seed_event})
 
 	p.Ini = true
-	err := cl.WaitForEvents([]*cl.Event{event})
+	err = cl.WaitForEvents([]*cl.Event{event})
 	if err != nil {
 		fmt.Printf("WaitForEvents failed in InitRNG: %+v \n", err)
 	}

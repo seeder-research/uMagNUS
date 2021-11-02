@@ -1,3 +1,24 @@
+package oclRAND
+
+import (
+	"github.com/seeder-research/uMagNUS/opencl/cl"
+	"log"
+	"unsafe"
+)
+
+const MTGPDC_MEXP = 11213
+const MTGPDC_N = 351
+const MTGPDC_FLOOR_2P = 256
+const MTGPDC_CEIL_2P = 512
+const MTGPDC_TN = MTGPDC_FLOOR_2P
+const MTGPDC_LS = (MTGPDC_TN * 3)
+const MTGPDC_TS = 16
+
+const MTGPDC_PARAMS_NUM = mtgpdc_params_11213_num
+
+var mtgpdc_params_num = mtgpdc_params_11213_num
+var MTGP32_params_fast_ = MTGP32_params_fast_11213
+
 type MTGP32dc_params_fast_t struct {
 	mexp        int        /**< Mersenne exponent. This is redundant. */
 	pos         int        /**< pick up position. */
@@ -56,7 +77,7 @@ func (p *MTGP32dc_params_array_ptr) GetMTGPArrays() {
 	pos_array := make([]int, p.GroupCount)
 	sh1_array := make([]int, p.GroupCount)
 	sh2_array := make([]int, p.GroupCount)
-	status_array := make([]uint32, (MTGPDC_N * p.GroupCount))
+	status_array := make([]uint32, MTGPDC_N*p.GroupCount)
 	for i := 0; i < p.GroupCount; i++ {
 		for j := 0; j < MTGPDC_TS; j++ {
 			rec_array[(i*MTGPDC_TS)+j] = MTGP32_params_fast_[i].tbl[j]

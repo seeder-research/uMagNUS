@@ -44,7 +44,7 @@ func initRNG() uint64 {
 
 func (b *thermField) UpdateSeed(seedVal *uint64) {
 	if b.generator == nil {
-		b.generator = opencl.NewGenerator("mtgp")
+		b.generator = opencl.NewGenerator("threefry")
 	}
 	if seedVal == nil {
 		b.seed = initRNG()
@@ -69,7 +69,7 @@ func (b *thermField) update() {
 	}
 
 	if b.generator == nil {
-		b.generator = opencl.NewGenerator("mtgp")
+		b.generator = opencl.NewGenerator("threefry")
 		b.seed = initRNG()
 		b.UpdateSeed(&b.seed)
 	}

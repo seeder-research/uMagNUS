@@ -22,18 +22,22 @@ __kernel void mtgp32_init_seed_kernel(
     __constant uint* sh1_tbl,
     __constant uint* sh2_tbl,
     __global uint* d_status,
-    uint seed)
+    __global uint* seed)
 {
     const int gid = get_group_id(0);
     const int lid = get_local_id(0);
     const int local_size = get_local_size(0);
     __local uint status[MTGP32_N];
+    __local uint seedVal;
     mtgp32_t mtgp;
     mtgp.status = status;
     mtgp.param_tbl = &param_tbl[MTGP32_TS * gid];
 
     // initialize
-    mtgp32_init_state(&mtgp, seed + gid);
+    if (lid == 0) {
+        seedVal = seed[gid];
+    }
+    mtgp32_init_state(&mtgp, seedVal);
     barrier(CLK_LOCAL_MEM_FENCE);
 
     d_status[gid * MTGP32_N + lid] = status[lid];

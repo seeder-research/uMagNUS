@@ -25,11 +25,11 @@ func NewXORWOWStatus() *XORWOW_status_array_ptr {
 }
 
 func (p *XORWOW_status_array_ptr) SetContext(context *cl.Context) {
-        p.ClCtx = context
+	p.ClCtx = context
 }
 
 func (p *XORWOW_status_array_ptr) GetContext() *cl.Context {
-        return p.ClCtx
+	return p.ClCtx
 }
 
 func (p *XORWOW_status_array_ptr) SetStatusSize(N int) {
@@ -70,5 +70,5 @@ func (p *XORWOW_status_array_ptr) GetGroupCount() int {
 }
 
 func (p *XORWOW_status_array_ptr) RecommendSize() int {
-        return 8 * p.Status_size
+	return 8 * p.Status_size
 }
