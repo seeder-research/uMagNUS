@@ -50,6 +50,11 @@ func NewGenerator(name string) *Generator {
 	case "mrg32k3a":
 		fmt.Println("mrg32k3a not yet implemented")
 		return nil
+	case "threefry":
+		oclRAND.Init(ClCmdQueue, Synchronous, KernList)
+		var prng_ptr Prng_
+		prng_ptr = NewTHREEFRYRNGParams()
+		return &Generator{Name: "threefry", PRNG: prng_ptr}
 	case "xorwow":
 		oclRAND.Init(ClCmdQueue, Synchronous, KernList)
 		var prng_ptr Prng_
@@ -70,6 +75,11 @@ func (g *Generator) CreatePNG() {
 		g.PRNG = prng_ptr
 	case "mrg32k3a":
 		fmt.Println("mrg32k3a not yet implemented")
+	case "threefry":
+		oclRAND.Init(ClCmdQueue, Synchronous, KernList)
+		var prng_ptr Prng_
+		prng_ptr = NewTHREEFRYRNGParams()
+		g.PRNG = prng_ptr
 	case "xorwow":
 		oclRAND.Init(ClCmdQueue, Synchronous, KernList)
 		var prng_ptr Prng_
@@ -214,7 +224,7 @@ func NewMTGPRNGParams() *oclRAND.MTGP32dc_params_array_ptr {
 	var events_list []*cl.Event
 	var event *cl.Event
 	tmp := oclRAND.NewMTGPParams()
-	// maxNumGroups, max_size := ClCUnits, MTGP32_PARAM_NUM
+	//maxNumGroups, max_size := ClCUnits, MTGP32_PARAM_NUM
 	maxNumGroups, max_size := 1, MTGP32_PARAM_NUM
 	if maxNumGroups > max_size {
 		maxNumGroups = max_size
@@ -239,6 +249,16 @@ func NewMTGPRNGParams() *oclRAND.MTGP32dc_params_array_ptr {
 		log.Fatalln("Unable to load RNG status to device")
 	}
 	err = cl.WaitForEvents(append(events_list, event))
+	return tmp
+}
+
+func NewTHREEFRYRNGParams() *oclRAND.THREEFRY_status_array_ptr {
+	tmp := oclRAND.NewTHREEFRYStatus()
+	tmp.SetGroupCount(ClCUnits)
+	tmp.SetGroupSize(ClPrefWGSz)
+	tmp.SetStatusSize(ClCUnits * ClPrefWGSz)
+	tmp.CreateStatusBuffer(ClCtx)
+
 	return tmp
 }
 

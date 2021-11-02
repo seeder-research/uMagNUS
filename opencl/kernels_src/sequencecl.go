@@ -11,9 +11,10 @@ var OCLHeadersList = []string{
 	"atomicf",
 	"reduce",
 	"amul",
+	"RNG_common",
 	"RNGmrg32k3a",
 	"RNGmtgp",
-	"RNG_common",
+	"RNGthreefry",
 	"RNGxorwow",
 	"sum"}
 
@@ -85,4 +86,8 @@ var OCLKernelsList = []string{
 	"xorwow_uint",
 	"xorwow_uniform",
 	"xorwow_normal",
+	"threefry_seed",
+	"threefry_uint",
+	"threefry_uniform",
+	"threefry_normal",
 	"square"}
