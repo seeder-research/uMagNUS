@@ -9,24 +9,24 @@ static inline float normcdfinv_(float u) {
 	float   tmp;
 
     if ((u < 0.0f) || (u > 1.0f)) {
-	    return FLT_MIN;
-	} else if ((u == 0.0f) || (u == 1.0f)) {
-	    return 0.0f;
-	} else {
-		tmp = u;
-	}
+        return FLT_MIN;
+    } else if ((u == 0.0f) || (u == 1.0f)) {
+        return 0.0f;
+    } else {
+        tmp = u;
+    }
 
-	ushift = tmp - 0.5f;
+    ushift = tmp - 0.5f;
 
-	v = copysign(ushift, 0.0f);
-	
-	if (v < 0.499433f) {
-		v = rsqrt((-tmp*tmp) + tmp);
-		v *= 0.5f;
-		p = 0.001732781974270904f;
-		p = p * v + 0.1788417306083325f;
-		p = p * v + 2.804338363421083f;
-		p = p * v + 9.35716893191325f;
+    v = copysign(ushift, 0.0f);
+
+    if (v < 0.499433f) {
+        v = rsqrt((-tmp*tmp) + tmp);
+        v *= 0.5f;
+        p = 0.001732781974270904f;
+        p = p * v + 0.1788417306083325f;
+        p = p * v + 2.804338363421083f;
+        p = p * v + 9.35716893191325f;
 		p = p * v + 5.283080058166861f;
 		p = p * v + 0.07885390444279965f;
 		p *= ushift;
@@ -35,69 +35,69 @@ static inline float normcdfinv_(float u) {
 		q = q * v + 0.4893072798067982f;
 		q = q * v + 2.406460595830034f;
 		q = q * v + 3.142947488363618f;
-	} else {
-		if (ushift > 0.0f) {
-			tmp = 1.0f - tmp;
-		}
-		v = log2(tmp+tmp);
-		v *= -0.6931471805599453f;
-		if (v < 22.0f) {
-			p = 0.000382438382914666f;
-			p = p * v + 0.03679041341785685f;
-			p = p * v + 0.5242351532484291f;
-			p = p * v + 1.21642047402659f;
-			q = 9.14019972725528e-6f;
-			q = q * v + 0.003523083799369908f;
-			q = q * v + 0.126802543865968f;
-			q = q * v + 0.8502031783957995f;
-		} else {
-			p = 0.00001016962895771568f;
-			p = p * v + 0.003330096951634844f;
-			p = p * v + 0.1540146885433827f;
-			p = p * v + 1.045480394868638f;
-			q = 1.303450553973082e-7f;
-			q = q * v + 0.0001728926914526662f;
-			q = q * v + 0.02031866871146244f;
-			q = q * v + 0.3977137974626933f;
-		}
-		p *= copysign(v, ushift);
-	}
-	q = q * v + 1.0f;
-	v = 1.0f / q;
-	return p * v;
+    } else {
+        if (ushift > 0.0f) {
+            tmp = 1.0f - tmp;
+        }
+        v = log2(tmp+tmp);
+        v *= -0.6931471805599453f;
+        if (v < 22.0f) {
+            p = 0.000382438382914666f;
+            p = p * v + 0.03679041341785685f;
+            p = p * v + 0.5242351532484291f;
+            p = p * v + 1.21642047402659f;
+            q = 9.14019972725528e-6f;
+            q = q * v + 0.003523083799369908f;
+            q = q * v + 0.126802543865968f;
+            q = q * v + 0.8502031783957995f;
+        } else {
+            p = 0.00001016962895771568f;
+            p = p * v + 0.003330096951634844f;
+            p = p * v + 0.1540146885433827f;
+            p = p * v + 1.045480394868638f;
+            q = 1.303450553973082e-7f;
+            q = q * v + 0.0001728926914526662f;
+            q = q * v + 0.02031866871146244f;
+            q = q * v + 0.3977137974626933f;
+        }
+        p *= copysign(v, ushift);
+    }
+    q = q * v + 1.0f;
+    v = 1.0f / q;
+    return p * v;
 }
 
 // auxiliary function to convert a pair of uint32 to a single-
 // precision float
 static inline float uint2float(uint a, uint b) {
-        uint num1 = a;
-        uint num2 = b;
-        uint finalNum = 0;
-        uint expo = 32;
-        for (;expo > 0; expo--) {
-                uint flag0 = num1 & 0x80000000;
-                num1 <<= 1;
-                if (flag0 != 0) {
-                        break;
-                }
+    uint num1 = a;
+    uint num2 = b;
+    uint finalNum = 0;
+    uint expo = 32;
+    for (;expo > 0; expo--) {
+        uint flag0 = num1 & 0x80000000;
+        num1 <<= 1;
+        if (flag0 != 0) {
+            break;
         }
-        if (expo < 23) {
-                uint maskbits = 0xffffffff;
-                uint shPos = 23 - expo;
-                maskbits >>= shPos;
-                maskbits <<= shPos;
-                maskbits = ~maskbits;
-                finalNum ^= (num2 & maskbits);
-        }
-        finalNum ^= (num1 >> 9);
-        uint newExpo = 94 + expo;
-        finalNum ^= newExpo << 23;
-        return as_float(finalNum); // return value
+    }
+    if (expo < 23) {
+        uint maskbits = 0xffffffff;
+        uint shPos = 23 - expo;
+        maskbits >>= shPos;
+        maskbits <<= shPos;
+        maskbits = ~maskbits;
+        finalNum ^= (num2 & maskbits);
+    }
+    finalNum ^= (num1 >> 9);
+    uint newExpo = 94 + expo;
+    finalNum ^= newExpo << 23;
+    return as_float(finalNum); // return value
 }
 
 static inline void boxMuller(float* in, float* out, uint offset) {
-        uint u1idx = 2*offset;
-        uint u2idx = u1idx+1;
-        out[u1idx] = sqrt( -2.0f * log(in[u1idx]) ) * cospi(2.0f * in[u2idx]);
-        out[u2idx] = sqrt( -2.0f * log(in[u1idx]) ) * sinpi(2.0f * in[u2idx]);
+    uint u1idx = 2*offset;
+    uint u2idx = u1idx+1;
+    out[u1idx] = sqrt( -2.0f * log(in[u1idx]) ) * cospi(2.0f * in[u2idx]);
+    out[u2idx] = sqrt( -2.0f * log(in[u1idx]) ) * sinpi(2.0f * in[u2idx]);
 }
