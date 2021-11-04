@@ -7,43 +7,39 @@ import (
 
 	"github.com/seeder-research/uMagNUS/opencl/cl"
 	"github.com/seeder-research/uMagNUS/timer"
-	"math/rand"
 )
 
 func (p *XORWOW_status_array_ptr) Init(seed uint64, events []*cl.Event) {
-	// Generate random seed array to seed the PRNG
-	rand.Seed((int64)(seed))
-	totalCount := p.GetStatusSize()
-	seed_arr := make([]uint64, totalCount)
-	for idx := 0; idx < totalCount; idx++ {
-		tmpNum := rand.Uint64()
-		for tmpNum == 0 {
-			tmpNum = rand.Uint64()
-		}
-		seed_arr[idx] = tmpNum
-	}
-
-	// Copy random seed array to GPU
 	context := p.GetContext()
-	seed_buf, err := context.CreateBufferUnsafe(cl.MemReadWrite, int(unsafe.Sizeof(seed_arr[0]))*totalCount, nil)
-	defer seed_buf.Release()
+	totalCount := p.GetStatusSize()
+
+	// Set up jump matrices on GPU...
+	//    ....Creating device buffer to hold matrices
+	jump_mat, err := context.CreateBufferUnsafe(cl.MemReadWrite, int(unsafe.Sizeof(h_xorwow_sequence_jump_matrices[0][0]))*int(XORWOW_SIZE*XORWOW_JUMP_MATRICES), nil)
+	defer jump_mat.Release()
 	if err != nil {
-		log.Fatalln("Unable to create buffer for XORWOW seed array!")
+		log.Fatalln("Unable to create buffer for XORWOW jump matrices array!")
 	}
-	var seed_event *cl.Event
-	seed_event, err = ClCmdQueue.EnqueueWriteBuffer(seed_buf, false, 0, int(unsafe.Sizeof(seed))*totalCount, unsafe.Pointer(&seed_arr[0]), nil)
-	if err != nil {
-		log.Fatalln("Unable to write seed buffer to device: ", err)
-	}
-	if events != nil {
-		err = cl.WaitForEvents(events)
+	//    ....Copying jump matrices from host side to device side
+	var jump_event *cl.Event
+	for idx := 0; idx < int(XORWOW_JUMP_MATRICES); idx++ {
+		jump_event, err = ClCmdQueue.EnqueueWriteBuffer(jump_mat, false, idx*int(XORWOW_SIZE)*int(unsafe.Sizeof(h_xorwow_sequence_jump_matrices[0][0])), int(unsafe.Sizeof(h_xorwow_sequence_jump_matrices[0][0]))*int(XORWOW_SIZE), unsafe.Pointer(&h_xorwow_sequence_jump_matrices[idx][0]), nil)
 		if err != nil {
-			fmt.Printf("First WaitForEvents failed in InitRNG: %+v \n", err)
+			log.Fatalln("Unable to write jump matrices to device: ", err)
+		}
+		err = cl.WaitForEvents([]*cl.Event{jump_event})
+		if err != nil {
+			log.Fatalln("WaitForEvents failed on copying jump matrices to devices: %+v \n", err)
 		}
 	}
 
 	// Seed the RNG
-	event := k_xorwow_seed_async(unsafe.Pointer(p.Status_buf), unsafe.Pointer(seed_buf), &config{[]int{totalCount}, []int{p.GetGroupSize()}}, []*cl.Event{seed_event})
+	var seed_events []*cl.Event
+	seed_events = nil
+	if events != nil {
+		seed_events = events
+	}
+	event := k_xorwow_seed_async(unsafe.Pointer(p.Status_buf), unsafe.Pointer(jump_mat), seed, &config{[]int{totalCount}, []int{p.GetGroupSize()}}, seed_events)
 
 	p.Ini = true
 	err = cl.WaitForEvents([]*cl.Event{event})

@@ -24,8 +24,9 @@ Seeds xorwow RNG.
 @param seed Value used for seeding. Should be randomly generated for each instance of generator (thread).
 */
 __kernel void xorwow_seed(
-	__global uint* state_buf,
-        __global ulong* seed){
+	__global uint* __restrict state_buf,
+	__global uint* __restrict g_jump_matrices,
+        ulong seed) {
         // Calculate indices
         int local_idx = get_local_id(0); // Work-item index within workgroup
         int grp_sz = get_local_size(0); // Total number of work-items in each workgroup
@@ -34,7 +35,7 @@ __kernel void xorwow_seed(
         int grp_offset = get_num_groups(0) * grp_sz; // Offset for memory access
 
 	// Using local registers to compute state from seed	
-	uint x[5];
+	uint x[XORWOW_N];
 	uint d;
 
 	// Initialize state buffer and Weyl sequence number
@@ -47,9 +48,8 @@ __kernel void xorwow_seed(
 
 	// Update RNG state with seed value
         // Constants are arbitrary prime numbers
-	ulong local_seed = seed[global_idx];
-        const uint s0 = (uint)(local_seed) ^ 0x2c7f967fU;
-        const uint s1 = (uint)(local_seed >> 32) ^ 0xa03697cbU;
+        const uint s0 = (uint)(seed) ^ 0x2c7f967fU;
+        const uint s1 = (uint)(seed >> 32) ^ 0xa03697cbU;
         const uint t0 = 1228688033U * s0;
         const uint t1 = 2073658381U * s1;
         x[0] += t0;
@@ -58,6 +58,11 @@ __kernel void xorwow_seed(
         x[3] ^= t1;
         x[4] += t0;
         d += t1 + t0;
+
+        // discarding subsequences to obtain non-overlapping random bit streams via parallelism...
+        if (global_idx != 0) {
+                xorwow_discard_subsequence(global_idx, x, g_jump_matrices);
+        }
 
 	// Write out state to global buffer
 	int idx = global_idx;

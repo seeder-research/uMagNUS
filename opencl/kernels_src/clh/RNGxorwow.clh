@@ -10,3 +10,50 @@ Implements a 64-bit xorwow* generator that returns 32-bit values.
 #define XORWOW_FLOAT_MULTI 2.3283064e-10f
 #define XORWOW_DOUBLE2_MULTI 2.328306549295727688e-10
 #define XORWOW_DOUBLE_MULTI 5.4210108624275221700372640e-20
+
+// defines from rocRAND for skipping XORWOW
+#define XORWOW_N 5
+#define XORWOW_M 32
+#define XORWOW_SIZE (XORWOW_M * XORWOW_N * XORWOW_N)
+#define XORWOW_JUMP_MATRICES 32
+#define XORWOW_JUMP_LOG2 2
+
+static inline void copy_vec(uint* dst, const uint* src) {
+    for (int i = 0; i < XORWOW_N; i++) {
+        dst[i] = src[i];
+    }
+}
+
+static inline void mul_mat_vec_inplace(__global uint* m, uint* v) {
+    uint r[XORWOW_N] = { 0 };
+    for (int ij = 0; ij < XORWOW_N * XORWOW_M; ij++) {
+        const int i = ij / XORWOW_M;
+        const int j = ij % XORWOW_M;
+        const uint b = (v[i] & (1 << j)) ? 0xffffffff : 0x0;
+        for (int k = 0; k < XORWOW_N; k++) {
+            r[k] ^= b & m[i * XORWOW_M * XORWOW_N + j * XORWOW_N + k];
+        }
+    }
+    copy_vec(v, r);
+}
+
+static inline void xorwow_jump(ulong v, __global uint* jump_matrices, uint* xorwow_state) {
+    ulong vi = v;
+    uint mi = 0;
+    while (vi > 0) {
+        const uint is = (uint)(vi) & ((1 << XORWOW_JUMP_LOG2) - 1);
+        for (uint i = 0; i < is; i++) {
+            mul_mat_vec_inplace(&jump_matrices[mi*XORWOW_SIZE], xorwow_state);
+        }
+        mi++;
+        vi >>= XORWOW_JUMP_LOG2;
+    }
+}
+
+static inline void xorwow_discard(ulong offset, uint* xorwow_state, __global uint* h_xorwow_jump_matrices) {
+    xorwow_jump(offset, h_xorwow_jump_matrices, xorwow_state);
+}
+
+static inline void xorwow_discard_subsequence(ulong subsequence, uint* xorwow_state, __global uint* h_xorwow_sequence_jump_matrices) {
+    xorwow_jump(subsequence, h_xorwow_sequence_jump_matrices, xorwow_state);
+}
