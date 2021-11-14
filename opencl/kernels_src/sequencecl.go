@@ -67,6 +67,8 @@ var OCLKernelsList = []string{
 	"addmagnetoelasticfield",
 	"getmagnetoelasticforce",
 	"addslonczewskitorque2",
+	"tworegionexchange_field",
+	"tworegionexchange_edens",
 	"setPhi",
 	"setTheta",
 	"settemperature2",
