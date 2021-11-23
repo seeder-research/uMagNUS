@@ -34,7 +34,7 @@ type RegionExchange struct {
 }
 
 // Define a region with id (0-255) to be inside the Shape.
-func DefRegionExchange(id int, regionA int, regionB int, delX int, delY int, delZ int, sig float32, sig2 float32) {
+func DefRegionExchange(id int, regionA int, regionB int, delX int, delY int, delZ int, sig float64, sig2 float64) {
 	defRegionExchangeId(id)
 	if regionA < 0 || regionA > NREGION {
 		util.Fatalf("regionA id should be 0 -%v, have: %v", NREGION, regionA)
@@ -56,14 +56,14 @@ func DeleteRegionExchange(id int) {
         delete(regionexchangelinks,byte(id))
 }
 
-func createRegionExchangeLink(id byte, regionA int, regionB int, delX int, delY int, delZ int, sig float32, sig2 float32) {
+func createRegionExchangeLink(id byte, regionA int, regionB int, delX int, delY int, delZ int, sig float64, sig2 float64) {
         regionexchangelinks[id] = RegionExchange{}
         rr := regionexchangelinks[id]
         rPtr := &rr
         rPtr.SetRegionA(regionA)
         rPtr.SetRegionB(regionB)
-        rPtr.SetSig(sig)
-        rPtr.SetSig2(sig2)
+        rPtr.SetSig(float32(sig))
+        rPtr.SetSig2(float32(sig2))
         rPtr.SetDisplacement(delX, delY, delZ)
 }
 

@@ -23,3 +23,49 @@
         m.setRegion(1, uniform(10, 1, 0))
         m.setRegion(2, uniform(10, 1, 0))
         m.setRegion(3, uniform(10, 1, 0))
+
+// Demagnetizing field formulation
+        EnableDemag = false
+        EnableNewellDemag = true
+
+// Bias field template
+        biasField := newVectorMask(80, 40, 3)
+        for i0:=0; i0<80; i0++ {
+                for j0:=0; j0<40; j0++ {
+                        for k0:=1; k0<3; k0++ {
+                                biasField.setVector(i0, j0, k0, vector(0.0, 0.0, 0.0))
+                        }
+                        biasField.setVector(i0, j0, 0, vector(0.05, 0.0, 0.0))
+                }
+        }
+
+// Region-wise exchange to emulate two surface exchange
+        ext_NewRegionExchange(1, 1, 3, 0, 0, 2, -1e-4, 0.0)
+
+// Solver parameters
+        SetSolver(5)
+        MaxErr = 0.2
+        RelErr = 0.2
+
+// Output format
+        OutputFormat = OVF2_TEXT
+
+// B-field sweep and run
+        for idx:=0.0; idx<25.0;idx+=1.0{
+                B_ext = vector(0.2*idx, 0.002*idx, 0.0)
+                B_ext.add(biasField, 1.0)
+                runwhile(maxTorque.Get() > 1e-2)
+                save(m)
+        }
+        for idx:=25.0; idx>-25.0;idx-=2.0{
+                B_ext = vector(0.2*idx, 0.002*idx, 0.0)
+                B_ext.add(biasField, 1.0)
+                runwhile(maxTorque.Get() > 1e-2)
+                save(m)
+        }
+        for idx:=-25.0; idx<=25.0;idx+=2.0{
+                B_ext = vector(0.2*idx, 0.002*idx, 0.0)
+                B_ext.add(biasField, 1.0)
+                runwhile(maxTorque.Get() > 1e-2)
+                save(m)
+        }
