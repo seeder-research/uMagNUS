@@ -78,9 +78,8 @@ func AddRegionExchangeField(dst *data.Slice) {
 		linkPtr := &linkpair
 		sX, sY, sZ := linkPtr.GetDisplacement()
 		opencl.AddRegionExchangeField(buf, M.Buffer(), ms, regions.Gpu(), uint8(linkPtr.GetRegionA()), uint8(linkPtr.GetRegionB()), sX, sY, sZ, linkPtr.GetSig(), linkPtr.GetSig2(), M.Mesh())
-		opencl.Add(dst, dst, buf)
-		opencl.Recycle(buf)
 	}
+	opencl.Add(dst, dst, buf)
 }
 
 // Adds the region exchange energy densities
@@ -94,9 +93,8 @@ func AddRegionExchangeEnergyDensity(dst *data.Slice) {
 		linkPtr := &linkpair
 		sX, sY, sZ := linkPtr.GetDisplacement()
 		opencl.AddRegionExchangeField(buf, M.Buffer(), ms, regions.Gpu(), uint8(linkPtr.GetRegionA()), uint8(linkPtr.GetRegionB()), sX, sY, sZ, linkPtr.GetSig(), linkPtr.GetSig2(), M.Mesh())
-		opencl.Add(dst, dst, buf)
-		opencl.Recycle(buf)
 	}
+	opencl.Add(dst, dst, buf)
 }
 
 func GetRegionExchangeEnergy() float64 {
