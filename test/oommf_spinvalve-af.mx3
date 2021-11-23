@@ -1,0 +1,25 @@
+/*
+        spinvalve-af.mif in Object-Oriented MicroMagnetic Framework (OOMMF) 2.0 alpha 3 examples
+        http://math.nist.gov/oommf/software-20.html
+*/
+
+// geometry
+        setcellsize(5e-9, 5e-9, 3e-9)
+        setgridsize(80, 40, 3)
+        defregion(1, zrange(0, 3e-9))
+        defregion(2, zrange(3e-9, 6e-9))
+        defregion(3, zrange(6e-9, 9e-9))
+
+// material
+        Aex = 30e-12
+        Aex.setRegion(2, 0.0)
+        ext_ScaleExchange(1, 2, 0.0)
+        ext_ScaleExchange(3, 2, 0.0)
+        Msat.setRegion(1, 1400.0e3)
+        Msat.setRegion(2, 0.0)
+        Msat.setRegion(3, 1400.0e3)
+        
+        alpha = 0.5
+        m.setRegion(1, uniform(10, 1, 0))
+        m.setRegion(2, uniform(10, 1, 0))
+        m.setRegion(3, uniform(10, 1, 0))
