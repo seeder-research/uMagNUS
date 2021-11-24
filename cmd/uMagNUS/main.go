@@ -158,11 +158,15 @@ func goServeGUI() string {
 func printVersion() {
 	engine.LogOut("//", engine.UNAME, "\n")
 	engine.LogOut("//", opencl.GPUInfo, "\n")
-	engine.LogOut("//(c) Xuanyao Fong, SEEDER Research Group, National University of Singapore, Singapore", "\n")
+	engine.LogOut("//(c) Xuanyao Fong, SEEDER Research Group", "\n")
+	engine.LogOut("//@ National University of Singapore, Singapore", "\n")
+	engine.LogOut("//Web site: https://blog.nus.edu.sg/seeder", "\n")
+	engine.LogOut("//Email: kelvin.xy.fong@nus.edu.sg", "\n")
+	engine.LogOut("//Source code can be downloaded at https://github.com/seeder-research/uMagNUS", "\n")
 	engine.LogOut("This is free software without any warranty. See license.txt")
 	engine.LogOut("********************************************************************//")
 	engine.LogOut("  If you use uMagNUS in any work or publication,                    //")
 	engine.LogOut("  we kindly ask you to cite the references in references.bib        //")
 	engine.LogOut("********************************************************************//")
-	engine.LogOut("//Frontend is based on MuMax 3.10: (c) Arne Vansteenkiste, Dynamat LAB, Ghent University, Belgium", "\n")
+	engine.LogOut("//uMagNUS is an OpenCL-based derivative of MuMax 3.10: (c) Arne Vansteenkiste, Dynamat LAB, Ghent University, Belgium", "\n")
 }

@@ -2,20 +2,20 @@
 // H = - δUmel / δM, 
 // where Umel is magneto-elastic energy denstiy given by the eq. (12.18) of Gurevich&Melkov "Magnetization Oscillations and Waves", CRC Press, 1996
 __kernel void
-addmagnetoelasticfield(__global float* __restrict  Bx, __global float* __restrict  By, __global float* __restrict  Bz,
-                       __global float* __restrict  mx, __global float* __restrict  my, __global float* __restrict  mz,
-					  __global float* __restrict exx_, float exx_mul,
-					  __global float* __restrict eyy_, float eyy_mul,
-					  __global float* __restrict ezz_, float ezz_mul,
-					  __global float* __restrict exy_, float exy_mul,
-					  __global float* __restrict exz_, float exz_mul,
-					  __global float* __restrict eyz_, float eyz_mul,
-					  __global float* __restrict B1_, float B1_mul, 
-					  __global float* __restrict B2_, float B2_mul,
-					  __global float* __restrict Ms_, float Ms_mul,
-                      int N) {
+addmagnetoelasticfield(__global float* __restrict   Bx, __global float* __restrict      By, __global float* __restrict  Bz,
+                       __global float* __restrict   mx, __global float* __restrict      my, __global float* __restrict  mz,
+                       __global float* __restrict exx_,                      float exx_mul,
+                       __global float* __restrict eyy_,                      float eyy_mul,
+                       __global float* __restrict ezz_,                      float ezz_mul,
+                       __global float* __restrict exy_,                      float exy_mul,
+                       __global float* __restrict exz_,                      float exz_mul,
+                       __global float* __restrict eyz_,                      float eyz_mul,
+                       __global float* __restrict  B1_,                      float  B1_mul, 
+                       __global float* __restrict  B2_,                      float  B2_mul,
+                       __global float* __restrict  Ms_,                      float  Ms_mul,
+                                              int    N) {
 
-    int gid = get_global_id(0);
+    int   gid = get_global_id(0);
     int gsize = get_global_size(0);
 
     for (int I = gid; I < N; I += gsize) {
