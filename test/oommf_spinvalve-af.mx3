@@ -44,8 +44,8 @@
 
 // Solver parameters
         SetSolver(5)
-        MaxErr = 0.2
-        RelErr = 0.2
+        MaxErr = 1e-7
+        RelErr = 1e-8
 
 // Output format
         OutputFormat = OVF2_TEXT
@@ -54,18 +54,18 @@
         for idx:=0.0; idx<25.0;idx+=1.0{
                 B_ext = vector(0.2*idx, 0.002*idx, 0.0)
                 B_ext.add(biasField, 1.0)
-                runwhile(maxTorque.Get() > 1e-2)
+                relax()
                 save(m)
         }
         for idx:=25.0; idx>-25.0;idx-=2.0{
                 B_ext = vector(0.2*idx, 0.002*idx, 0.0)
                 B_ext.add(biasField, 1.0)
-                runwhile(maxTorque.Get() > 1e-2)
+                relax()
                 save(m)
         }
         for idx:=-25.0; idx<=25.0;idx+=2.0{
                 B_ext = vector(0.2*idx, 0.002*idx, 0.0)
                 B_ext.add(biasField, 1.0)
-                runwhile(maxTorque.Get() > 1e-2)
+                relax()
                 save(m)
         }

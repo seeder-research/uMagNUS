@@ -11,7 +11,7 @@ import (
 // exchange or other phenomena between the coupled cells
 
 var (
-        regionexchangelinks map[byte]RegionExchange // global links map
+	regionexchangelinks map[byte]RegionExchange // global links map
 	B_tworegionexch     = NewVectorField("B_tworegionexch", "T", "Two Region Exchange field", AddRegionExchangeField)
 	E_tworegionexch     = NewScalarValue("E_tworegionexch", "J", "Total two region exchange energy", GetRegionExchangeEnergy)
 	Edens_tworegionexch = NewScalarField("Edens_tworegionexch", "J/m3", "Total two region exchange energy density", AddRegionExchangeEnergyDensity)
@@ -53,28 +53,28 @@ func defRegionExchangeId(id int) {
 }
 
 func DeleteRegionExchange(id int) {
-        delete(regionexchangelinks,byte(id))
+	delete(regionexchangelinks, byte(id))
 }
 
 func createRegionExchangeLink(id byte, regionA int, regionB int, delX int, delY int, delZ int, sig float64, sig2 float64) {
-        regionexchangelinks[id] = RegionExchange{}
-        rr := regionexchangelinks[id]
-        rPtr := &rr
-        rPtr.SetRegionA(regionA)
-        rPtr.SetRegionB(regionB)
-        rPtr.SetSig(float32(sig))
-        rPtr.SetSig2(float32(sig2))
-        rPtr.SetDisplacement(delX, delY, delZ)
+	regionexchangelinks[id] = RegionExchange{}
+	rr := regionexchangelinks[id]
+	rPtr := &rr
+	rPtr.SetRegionA(regionA)
+	rPtr.SetRegionB(regionB)
+	rPtr.SetSig(float32(sig))
+	rPtr.SetSig2(float32(sig2))
+	rPtr.SetDisplacement(delX, delY, delZ)
 }
 
 // Adds the current region exchange field to dst
 func AddRegionExchangeField(dst *data.Slice) {
-        ms := Msat.MSlice()
+	ms := Msat.MSlice()
 	defer ms.Recycle()
 	buf := opencl.Buffer(3, Mesh().Size())
 	defer opencl.Recycle(buf)
 	opencl.Zero(buf)
-        for _, linkpair := range regionexchangelinks {
+	for _, linkpair := range regionexchangelinks {
 		linkPtr := &linkpair
 		sX, sY, sZ := linkPtr.GetDisplacement()
 		opencl.AddRegionExchangeField(buf, M.Buffer(), ms, regions.Gpu(), uint8(linkPtr.GetRegionA()), uint8(linkPtr.GetRegionB()), sX, sY, sZ, linkPtr.GetSig(), linkPtr.GetSig2(), M.Mesh())
@@ -84,15 +84,15 @@ func AddRegionExchangeField(dst *data.Slice) {
 
 // Adds the region exchange energy densities
 func AddRegionExchangeEnergyDensity(dst *data.Slice) {
-        ms := Msat.MSlice()
+	ms := Msat.MSlice()
 	defer ms.Recycle()
 	buf := opencl.Buffer(1, Mesh().Size())
 	defer opencl.Recycle(buf)
 	opencl.Zero(buf)
-        for _, linkpair := range regionexchangelinks {
+	for _, linkpair := range regionexchangelinks {
 		linkPtr := &linkpair
 		sX, sY, sZ := linkPtr.GetDisplacement()
-		opencl.AddRegionExchangeField(buf, M.Buffer(), ms, regions.Gpu(), uint8(linkPtr.GetRegionA()), uint8(linkPtr.GetRegionB()), sX, sY, sZ, linkPtr.GetSig(), linkPtr.GetSig2(), M.Mesh())
+		opencl.AddRegionExchangeEdens(buf, M.Buffer(), ms, regions.Gpu(), uint8(linkPtr.GetRegionA()), uint8(linkPtr.GetRegionB()), sX, sY, sZ, linkPtr.GetSig(), linkPtr.GetSig2(), M.Mesh())
 	}
 	opencl.Add(dst, dst, buf)
 }
@@ -106,48 +106,47 @@ func GetRegionExchangeEnergy() float64 {
 }
 
 func (r *RegionExchange) SetSig(s float32) {
-        r.sig = s
+	r.sig = s
 }
 
 func (r *RegionExchange) GetSig() float32 {
-        return r.sig
+	return r.sig
 }
 
 func (r *RegionExchange) SetSig2(s float32) {
-        r.sig2 = s
+	r.sig2 = s
 }
 
 func (r *RegionExchange) GetSig2() float32 {
-        return r.sig2
+	return r.sig2
 }
 
 func (r *RegionExchange) SetRegionA(rA int) {
-        ptr := &r.link
-        ptr.SetRegionA(rA)
+	ptr := &r.link
+	ptr.SetRegionA(rA)
 }
 
 func (r *RegionExchange) GetRegionA() int {
-        ptr := &r.link
-        return ptr.GetRegionA()
+	ptr := &r.link
+	return ptr.GetRegionA()
 }
 
 func (r *RegionExchange) SetRegionB(rB int) {
-        ptr := &r.link
-        ptr.SetRegionB(rB)
+	ptr := &r.link
+	ptr.SetRegionB(rB)
 }
 
 func (r *RegionExchange) GetRegionB() int {
-        ptr := &r.link
-        return ptr.GetRegionB()
+	ptr := &r.link
+	return ptr.GetRegionB()
 }
 
 func (r *RegionExchange) SetDisplacement(x int, y int, z int) {
-        ptr := &r.link
-        ptr.SetDisplacement(x, y, z)
+	ptr := &r.link
+	ptr.SetDisplacement(x, y, z)
 }
 
 func (r *RegionExchange) GetDisplacement() (int, int, int) {
-        ptr := &r.link
-        return ptr.GetDisplacement()
+	ptr := &r.link
+	return ptr.GetDisplacement()
 }
-
