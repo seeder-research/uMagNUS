@@ -48,6 +48,7 @@ var OCLKernelsList = []string{
 	"mul",
 	"normalize2",
 	"addoommfslonczewskitorque",
+	"addtworegionoommfslonczewskitorque",
 	"reducedot",
 	"reducemaxabs",
 	"reducemaxdiff",
