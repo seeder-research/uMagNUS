@@ -13,8 +13,7 @@ addtworegionoommfslonczewskitorque(  __global float* __restrict            tx, _
                                                           float         pfix_,                      float           pfree_,
                                                           float    lambdafix_,                      float      lambdafree_,
                                                           float epsilonPrime_,
-                                                          float          flt_,
-                                                            int             N) {
+                                                          float          flt_) {
 
     int ix = get_group_id(0) * get_local_size(0) + get_local_id(0);
     int iy = get_group_id(1) * get_local_size(1) + get_local_id(1);
@@ -101,7 +100,7 @@ addtworegionoommfslonczewskitorque(  __global float* __restrict            tx, _
     tz[I] += mxpxmFac * mxpxm.z + pxmFac * pxm.z;
 
     // Now calculate for cell in regionB
-    beta        = -1.0f * beta0 / Ms1;
+    beta        = beta0 / Ms1;
     plus_ratio  = lambdafixPlus / lambdafreePlus;
     minus_ratio = 1.0f;
 
