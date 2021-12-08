@@ -1,22 +1,20 @@
 // Original implementation by Mykola Dvornik for mumax2
 // Modified for mumax3 by Arne Vansteenkiste, 2013
 __kernel void
-addtworegionoommfslonczewskitorque(__global float* __restrict            tx, __global float* __restrict               ty, __global float* __restrict      tz,
-                                   __global float* __restrict            mx, __global float* __restrict               my, __global float* __restrict      mz,
-                                   __global float* __restrict           Ms_,                      float           Ms_mul,
-                                 __global uint8_t* __restrict       regions,
-                                                      uint8_t       regionA,                    uint8_t          regionB,
-                                                          int       strideX,                        int          strideY,                        int strideZ,
-                                                          int            Nx,                        int               Ny,                        int      Nz,
-                                                        float            j_,
-                                                        float        alpha_,
-                                                        float         pfix_,
-                                                        float        pfree_,
-                                                        float    lambdafix_,
-                                                        float   lambdafree_,
-                                                        float epsilonPrime_,
-                                                        float          flt_,
-                                                          int             N) {
+addtworegionoommfslonczewskitorque(  __global float* __restrict            tx, __global float* __restrict               ty, __global float* __restrict      tz,
+                                     __global float* __restrict            mx, __global float* __restrict               my, __global float* __restrict      mz,
+                                     __global float* __restrict           Ms_,                      float           Ms_mul,
+                                   __global uint8_t* __restrict       regions,
+                                                        uint8_t       regionA,                    uint8_t          regionB,
+                                                            int       strideX,                        int          strideY,                        int strideZ,
+                                                            int            Nx,                        int               Ny,                        int      Nz,
+                                                          float            j_,
+                                                          float        alpha_,
+                                                          float         pfix_,                      float           pfree_,
+                                                          float    lambdafix_,                      float      lambdafree_,
+                                                          float epsilonPrime_,
+                                                          float          flt_,
+                                                            int             N) {
 
     int ix = get_group_id(0) * get_local_size(0) + get_local_id(0);
     int iy = get_group_id(1) * get_local_size(1) + get_local_id(1);
