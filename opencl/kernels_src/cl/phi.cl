@@ -1,7 +1,7 @@
 __kernel void
-setPhi(__global float* __restrict phi,
-       __global float* __restrict  mx, __global float* __restrict my,
-                              int  Nx,                        int Ny, int Nz) {
+setPhi(__global real_t* __restrict phi,
+       __global real_t* __restrict  mx, __global real_t* __restrict my,
+                               int  Nx,                         int Ny, int Nz) {
 
     int ix = get_group_id(0) * get_local_size(0) + get_local_id(0);
     int iy = get_group_id(1) * get_local_size(1) + get_local_id(1);

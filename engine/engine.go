@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-const VERSION = "uMagNUS 1.3.0"
+const VERSION = "uMagNUS 2.0.0"
 
 var UNAME = VERSION + " " + runtime.GOOS + "_" + runtime.GOARCH + " " + runtime.Version() + " (" + runtime.Compiler + ")"
 

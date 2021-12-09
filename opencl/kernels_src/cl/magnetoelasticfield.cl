@@ -2,43 +2,43 @@
 // H = - δUmel / δM, 
 // where Umel is magneto-elastic energy denstiy given by the eq. (12.18) of Gurevich&Melkov "Magnetization Oscillations and Waves", CRC Press, 1996
 __kernel void
-addmagnetoelasticfield(__global float* __restrict   Bx, __global float* __restrict      By, __global float* __restrict  Bz,
-                       __global float* __restrict   mx, __global float* __restrict      my, __global float* __restrict  mz,
-                       __global float* __restrict exx_,                      float exx_mul,
-                       __global float* __restrict eyy_,                      float eyy_mul,
-                       __global float* __restrict ezz_,                      float ezz_mul,
-                       __global float* __restrict exy_,                      float exy_mul,
-                       __global float* __restrict exz_,                      float exz_mul,
-                       __global float* __restrict eyz_,                      float eyz_mul,
-                       __global float* __restrict  B1_,                      float  B1_mul, 
-                       __global float* __restrict  B2_,                      float  B2_mul,
-                       __global float* __restrict  Ms_,                      float  Ms_mul,
-                                              int    N) {
+addmagnetoelasticfield(__global real_t* __restrict   Bx, __global real_t* __restrict      By, __global real_t* __restrict  Bz,
+                       __global real_t* __restrict   mx, __global real_t* __restrict      my, __global real_t* __restrict  mz,
+                       __global real_t* __restrict exx_,                      real_t exx_mul,
+                       __global real_t* __restrict eyy_,                      real_t eyy_mul,
+                       __global real_t* __restrict ezz_,                      real_t ezz_mul,
+                       __global real_t* __restrict exy_,                      real_t exy_mul,
+                       __global real_t* __restrict exz_,                      real_t exz_mul,
+                       __global real_t* __restrict eyz_,                      real_t eyz_mul,
+                       __global real_t* __restrict  B1_,                      real_t  B1_mul, 
+                       __global real_t* __restrict  B2_,                      real_t  B2_mul,
+                       __global real_t* __restrict  Ms_,                      real_t  Ms_mul,
+                                               int    N) {
 
     int   gid = get_global_id(0);
     int gsize = get_global_size(0);
 
     for (int I = gid; I < N; I += gsize) {
 
-        float Exx = amul(exx_, exx_mul, I);
-        float Eyy = amul(eyy_, eyy_mul, I);
-        float Ezz = amul(ezz_, ezz_mul, I);
+        real_t Exx = amul(exx_, exx_mul, I);
+        real_t Eyy = amul(eyy_, eyy_mul, I);
+        real_t Ezz = amul(ezz_, ezz_mul, I);
 
-        float Exy = amul(exy_, exy_mul, I);
-        float Eyx = Exy;
+        real_t Exy = amul(exy_, exy_mul, I);
+        real_t Eyx = Exy;
 
-        float Exz = amul(exz_, exz_mul, I);
-        float Ezx = Exz;
+        real_t Exz = amul(exz_, exz_mul, I);
+        real_t Ezx = Exz;
 
-        float Eyz = amul(eyz_, eyz_mul, I);
-        float Ezy = Eyz;
+        real_t Eyz = amul(eyz_, eyz_mul, I);
+        real_t Ezy = Eyz;
 
-        float invMs = inv_Msat(Ms_, Ms_mul, I);
+        real_t invMs = inv_Msat(Ms_, Ms_mul, I);
 
-        float B1 = amul(B1_, B1_mul, I) * invMs;
-        float B2 = amul(B2_, B2_mul, I) * invMs;
+        real_t B1 = amul(B1_, B1_mul, I) * invMs;
+        real_t B2 = amul(B2_, B2_mul, I) * invMs;
 
-        float3 m = {mx[I], my[I], mz[I]};
+        real_t3 m = {mx[I], my[I], mz[I]};
 
         Bx[I] += -(2.0f*B1*m.x*Exx + B2*(m.y*Exy + m.z*Exz));
         By[I] += -(2.0f*B1*m.y*Eyy + B2*(m.x*Eyx + m.z*Eyz));

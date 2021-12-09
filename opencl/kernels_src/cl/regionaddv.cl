@@ -1,8 +1,8 @@
 // add region-based vector to dst:
 // dst[i] += LUT[region[i]]
 __kernel void
-regionaddv(__global   float* __restrict    dstx, __global float* __restrict dsty, __global float* __restrict dstz,
-           __global   float* __restrict    LUTx, __global float* __restrict LUTy, __global float* __restrict LUTz,
+regionaddv(__global  real_t* __restrict    dstx, __global real_t* __restrict dsty, __global real_t* __restrict dstz,
+           __global  real_t* __restrict    LUTx, __global real_t* __restrict LUTy, __global real_t* __restrict LUTz,
            __global uint8_t* __restrict regions,
                                     int       N) {
 

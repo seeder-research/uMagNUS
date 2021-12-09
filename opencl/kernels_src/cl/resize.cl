@@ -1,16 +1,16 @@
 // Select and resize one layer for interactive output
 __kernel void
-resize(__global float* __restrict   dst, int     Dx, int     Dy, int Dz,
-       __global float* __restrict   src, int     Sx, int     Sy, int Sz,
-                              int layer, int scalex, int scaley) {
+resize(__global real_t* __restrict   dst, int     Dx, int     Dy, int Dz,
+       __global real_t* __restrict   src, int     Sx, int     Sy, int Sz,
+                               int layer, int scalex, int scaley) {
 
     int ix = get_group_id(0) * get_local_size(0) + get_local_id(0);
     int iy = get_group_id(1) * get_local_size(1) + get_local_id(1);
 
     if (ix<Dx && iy<Dy) {
 
-        float sum = 0.0f;
-        float   n = 0.0f;
+        real_t sum = 0.0f;
+        real_t   n = 0.0f;
 
         for (int J=0; J<scaley; J++) {
             int j2 = iy*scaley+J;

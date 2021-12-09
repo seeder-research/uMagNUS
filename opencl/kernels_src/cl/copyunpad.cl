@@ -1,7 +1,7 @@
 // Copy src (size S, larger) to dst (size D, smaller)
 __kernel void
-copyunpad(__global float* __restrict dst, int Dx, int Dy, int Dz,
-          __global float* __restrict src, int Sx, int Sy, int Sz) {
+copyunpad(__global real_t* __restrict dst, int Dx, int Dy, int Dz,
+          __global real_t* __restrict src, int Sx, int Sy, int Sz) {
 
     int ix = get_group_id(0) * get_local_size(0) + get_local_id(0);
     int iy = get_group_id(1) * get_local_size(1) + get_local_id(1);

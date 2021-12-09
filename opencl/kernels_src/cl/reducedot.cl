@@ -1,9 +1,9 @@
 __kernel void
-reducedot(         __global float* __restrict       x1, __global float* __restrict       x2,
-          volatile __global float* __restrict      dst,
-                                        float  initVal,
-                                          int        n,
-                               __local float* scratch1,             __local float* scratch2) {
+reducedot(         __global real_t* __restrict       x1, __global real_t* __restrict       x2,
+          volatile __global real_t* __restrict      dst,
+                                        real_t  initVal,
+                                           int        n,
+                               __local real_t* scratch1,             __local real_t* scratch2) {
 
     // Initialize indices
     int  local_idx = get_local_id(0);
@@ -13,13 +13,13 @@ reducedot(         __global float* __restrict       x1, __global float* __restri
     grp_offset *= get_num_groups(0);
 
     // Initialize memory
-    float currVal = 0.0f;
-    float currErr = 0.0f;
-    float   tmpR0 = 0.0f;
-    float   tmpR1 = 0.0f;
-    float   tmpR2 = 0.0f;
-    float   tmpR3 = 0.0f;
-    float   tmpR4 = 0.0f;
+    real_t currVal = 0.0f;
+    real_t currErr = 0.0f;
+    real_t   tmpR0 = 0.0f;
+    real_t   tmpR1 = 0.0f;
+    real_t   tmpR2 = 0.0f;
+    real_t   tmpR3 = 0.0f;
+    real_t   tmpR4 = 0.0f;
     
     // Set the accumulator value to initVal for the first work-item only
     if (global_idx == 0) {

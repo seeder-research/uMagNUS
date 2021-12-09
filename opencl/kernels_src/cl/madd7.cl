@@ -1,13 +1,13 @@
 // dst[i] = src1[i] * fac1 + src2[i] * fac2 + src3[i] * fac3 + src4[i] * fac4 + src5[i] * fac5 + src6[i] * fac6 + src7[i] * fac7
 __kernel void
-madd7(__global float* __restrict  dst,
-      __global float* __restrict src1, float fac1,
-      __global float* __restrict src2, float fac2,
-      __global float* __restrict src3, float fac3,
-      __global float* __restrict src4, float fac4,
-      __global float* __restrict src5, float fac5,
-      __global float* __restrict src6, float fac6,
-      __global float* __restrict src7, float fac7, int N) {
+madd7(__global real_t* __restrict  dst,
+      __global real_t* __restrict src1, real_t fac1,
+      __global real_t* __restrict src2, real_t fac2,
+      __global real_t* __restrict src3, real_t fac3,
+      __global real_t* __restrict src4, real_t fac4,
+      __global real_t* __restrict src5, real_t fac5,
+      __global real_t* __restrict src6, real_t fac6,
+      __global real_t* __restrict src7, real_t fac7, int N) {
 
     int   gid = get_global_id(0);
     int gsize = get_global_size(0);

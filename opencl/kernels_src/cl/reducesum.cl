@@ -1,6 +1,6 @@
 __kernel void
-reducesum(__global float* __restrict      src, __global float* __restrict      dst, float initVal, int n,
-                      __local float* scratch1,             __local float* scratch2) {
+reducesum(__global real_t* __restrict      src, __global real_t* __restrict      dst, real_t initVal, int n,
+                      __local real_t* scratch1,             __local real_t* scratch2) {
     // Calculate indices
     int  local_idx = get_local_id(0); // Work-item index within workgroup
     int     grp_sz = get_local_size(0); // Total number of work-items in each workgroup
@@ -9,18 +9,18 @@ reducesum(__global float* __restrict      src, __global float* __restrict      d
     int grp_offset = get_num_groups(0) * grp_sz; // Offset for memory access
 
     // Initialize registers for work-item
-    float grpSum = 0.0f; // Accumulator for workgroup
-    float grpErr = 0.0f; // Error for workgroup accumulator
-    float   aVal = 0.0f; // Register to track operand A
-    float   bVal = 0.0f; // Register to track operand B
-    float   lsum = 0.0f; // Register to temporarily store A + B
-    float   lerr = 0.0f; // Register to temporarily store error from A + B
-    float  lerr2 = 0.0f;
-    float2 tmpR0 = 0.0f; // Temporary register
-    float2 tmpR1 = 0.0f; // Temporary register
-    float2 tmpR2 = 0.0f; // Temporary register
-    float2 tmpR3 = 0.0f; // Temporary register
-    float2 tmpR4 = 0.0f; // Temporary register
+    real_t grpSum = 0.0f; // Accumulator for workgroup
+    real_t grpErr = 0.0f; // Error for workgroup accumulator
+    real_t   aVal = 0.0f; // Register to track operand A
+    real_t   bVal = 0.0f; // Register to track operand B
+    real_t   lsum = 0.0f; // Register to temporarily store A + B
+    real_t   lerr = 0.0f; // Register to temporarily store error from A + B
+    real_t  lerr2 = 0.0f;
+    real_t2 tmpR0 = 0.0f; // Temporary register
+    real_t2 tmpR1 = 0.0f; // Temporary register
+    real_t2 tmpR2 = 0.0f; // Temporary register
+    real_t2 tmpR3 = 0.0f; // Temporary register
+    real_t2 tmpR4 = 0.0f; // Temporary register
     
     // Set the accumulator value to initVal for the first work-item only
     if (global_idx == 0) {

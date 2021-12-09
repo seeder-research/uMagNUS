@@ -24,14 +24,14 @@
 //             2A dzMz = 0
 //
 __kernel void
-adddmibulk(__global float*   __restrict      Hx, __global float* __restrict     Hy, __global float* __restrict Hz,
-           __global float*   __restrict      mx, __global float* __restrict     my, __global float* __restrict mz,
-           __global float*   __restrict     Ms_,                      float Ms_mul,
-           __global float*   __restrict  aLUT2d, __global float* __restrict DLUT2d,
+adddmibulk(__global  real_t* __restrict      Hx, __global real_t* __restrict     Hy, __global real_t* __restrict Hz,
+           __global  real_t* __restrict      mx, __global real_t* __restrict     my, __global real_t* __restrict mz,
+           __global  real_t* __restrict     Ms_,                      real_t Ms_mul,
+           __global  real_t* __restrict  aLUT2d, __global real_t* __restrict DLUT2d,
            __global uint8_t* __restrict regions,
-                                  float      cx,                      float     cy,                      float cz,
-                                    int      Nx,                        int     Ny,                        int Nz,
-                                uint8_t     PBC,                    uint8_t OpenBC) {
+                                 real_t      cx,                      real_t     cy,                      real_t cz,
+                                    int      Nx,                         int     Ny,                         int Nz,
+                                uint8_t     PBC,                     uint8_t OpenBC) {
 
     int ix = get_group_id(0) * get_local_size(0) + get_local_id(0);
     int iy = get_group_id(1) * get_local_size(1) + get_local_id(1);
@@ -41,11 +41,11 @@ adddmibulk(__global float*   __restrict      Hx, __global float* __restrict     
         return;
     }
 
-    int      I = idx(ix, iy, iz);                  // central cell index
-    float3   h = make_float3(0.0, 0.0, 0.0);       // add to H
-    float3  m0 = make_float3(mx[I], my[I], mz[I]); // central m
+    int      I = idx(ix, iy, iz);                   // central cell index
+    real_t3  h = make_float3(0.0, 0.0, 0.0);       // add to H
+    real_t3 m0 = make_float3(mx[I], my[I], mz[I]); // central m
     uint8_t r0 = regions[I];
-    int i_;                                        // neighbor index
+    int i_;                                         // neighbor index
 
     if(is0(m0)) {
         return;
@@ -53,15 +53,15 @@ adddmibulk(__global float*   __restrict      Hx, __global float* __restrict     
 
     // x derivatives (along length)
     {
-        float3 m1 = make_float3(0.0f, 0.0f, 0.0f);     // left neighbor
-               i_ = idx(lclampx(ix-1), iy, iz);        // load neighbor m if inside grid, keep 0 otherwise
+        real_t3 m1 = make_float3(0.0f, 0.0f, 0.0f);    // left neighbor
+                i_ = idx(lclampx(ix-1), iy, iz);        // load neighbor m if inside grid, keep 0 otherwise
         if ((ix-1 >= 0) || PBCx) {
             m1 = make_float3(mx[i_], my[i_], mz[i_]);
         }
-        int     r1 = is0(m1)? r0 : regions[i_];
-        float    A = aLUT2d[symidx(r0, r1)];
-        float    D = DLUT2d[symidx(r0, r1)];
-        float D_2A = D/(2.0f*A);
+        int      r1 = is0(m1)? r0 : regions[i_];
+        real_t    A = aLUT2d[symidx(r0, r1)];
+        real_t    D = DLUT2d[symidx(r0, r1)];
+        real_t D_2A = D/(2.0f*A);
         if ((!is0(m1)) || (!OpenBC)) {                 // do nothing at an open boundary
             if (is0(m1)) {                             // neighbor missing
                 m1.x = m0.x;
@@ -76,15 +76,15 @@ adddmibulk(__global float*   __restrict      Hx, __global float* __restrict     
 
 
     {
-        float3 m2 = make_float3(0.0f, 0.0f, 0.0f);     // right neighbor
+        real_t3 m2 = make_float3(0.0f, 0.0f, 0.0f);   // right neighbor
         i_ = idx(hclampx(ix+1), iy, iz);
         if ((ix+1 < Nx) || PBCx) {
             m2 = make_float3(mx[i_], my[i_], mz[i_]);
         }
-        int     r1 = is0(m2) ? r0 : regions[i_];
-        float    A = aLUT2d[symidx(r0, r1)];
-        float    D = DLUT2d[symidx(r0, r1)];
-        float D_2A = D/(2.0f*A);
+        int      r1 = is0(m2) ? r0 : regions[i_];
+        real_t    A = aLUT2d[symidx(r0, r1)];
+        real_t    D = DLUT2d[symidx(r0, r1)];
+        real_t D_2A = D/(2.0f*A);
         if ((!is0(m2)) || (!OpenBC)) {
             if (is0(m2)) {
                 m2.x = m0.x;
@@ -99,15 +99,15 @@ adddmibulk(__global float*   __restrict      Hx, __global float* __restrict     
 
     // y derivatives (along height)
     {
-        float3 m1 = make_float3(0.0f, 0.0f, 0.0f);
+        real_t3 m1 = make_float3(0.0f, 0.0f, 0.0f);
         i_ = idx(ix, lclampy(iy-1), iz);
         if ((iy-1 >= 0) || PBCy) {
             m1 = make_float3(mx[i_], my[i_], mz[i_]);
         }
-        int     r1 = is0(m1) ? r0 : regions[i_];
-        float    A = aLUT2d[symidx(r0, r1)];
-        float    D = DLUT2d[symidx(r0, r1)];
-        float D_2A = D/(2.0f*A);
+        int      r1 = is0(m1) ? r0 : regions[i_];
+        real_t    A = aLUT2d[symidx(r0, r1)];
+        real_t    D = DLUT2d[symidx(r0, r1)];
+        real_t D_2A = D/(2.0f*A);
         if ((!is0(m1)) || (!OpenBC)) {
             if (is0(m1)) {
                 m1.x = m0.x + (-cy * D_2A * m0.z);
@@ -121,15 +121,15 @@ adddmibulk(__global float*   __restrict      Hx, __global float* __restrict     
     }
 
     {
-        float3 m2 = make_float3(0.0f, 0.0f, 0.0f);
+        real_t3 m2 = make_float3(0.0f, 0.0f, 0.0f);
         i_ = idx(ix, hclampy(iy+1), iz);
         if  ((iy+1 < Ny) || PBCy) {
             m2 = make_float3(mx[i_], my[i_], mz[i_]);
         }
-        int     r1 = is0(m2) ? r0 : regions[i_];
-        float    A = aLUT2d[symidx(r0, r1)];
-        float    D = DLUT2d[symidx(r0, r1)];
-        float D_2A = D/(2.0f*A);
+        int      r1 = is0(m2) ? r0 : regions[i_];
+        real_t    A = aLUT2d[symidx(r0, r1)];
+        real_t    D = DLUT2d[symidx(r0, r1)];
+        real_t D_2A = D/(2.0f*A);
         if ((!is0(m2)) || (!OpenBC)) {
             if (is0(m2)) {
                 m2.x = m0.x + (+cy * D_2A * m0.z);
@@ -146,15 +146,15 @@ adddmibulk(__global float*   __restrict      Hx, __global float* __restrict     
     if (Nz != 1) {
         // bottom neighbor
         {
-            float3 m1 = make_float3(0.0f, 0.0f, 0.0f);
+            real_t3 m1 = make_float3(0.0f, 0.0f, 0.0f);
             i_ = idx(ix, iy, lclampz(iz-1));
             if ((iz-1 >= 0) || PBCz) {
                 m1 = make_float3(mx[i_], my[i_], mz[i_]);
             }
-            int     r1 = is0(m1) ? r0 : regions[i_];
-            float    A = aLUT2d[symidx(r0, r1)];
-            float    D = DLUT2d[symidx(r0, r1)];
-            float D_2A = D/(2.0f*A);
+            int      r1 = is0(m1) ? r0 : regions[i_];
+            real_t    A = aLUT2d[symidx(r0, r1)];
+            real_t    D = DLUT2d[symidx(r0, r1)];
+            real_t D_2A = D/(2.0f*A);
             if ((!is0(m1)) || (!OpenBC)) {
                 if (is0(m1)) {
                     m1.x = m0.x - (-cz * D_2A * m0.y);
@@ -169,15 +169,15 @@ adddmibulk(__global float*   __restrict      Hx, __global float* __restrict     
 
         // top neighbor
         {
-            float3 m2 = make_float3(0.0f, 0.0f, 0.0f);
+            real_t3 m2 = make_float3(0.0f, 0.0f, 0.0f);
             i_ = idx(ix, iy, hclampz(iz+1));
             if ((iz+1 < Nz) || PBCz) {
                 m2 = make_float3(mx[i_], my[i_], mz[i_]);
             }
-            int     r1 = is0(m2) ? r0 : regions[i_];
-            float    A = aLUT2d[symidx(r0, r1)];
-            float    D = DLUT2d[symidx(r0, r1)];
-            float D_2A = D/(2.0f*A);
+            int      r1 = is0(m2) ? r0 : regions[i_];
+            real_t    A = aLUT2d[symidx(r0, r1)];
+            real_t    D = DLUT2d[symidx(r0, r1)];
+            real_t D_2A = D/(2.0f*A);
             if ((!is0(m2)) || (!OpenBC)) {
                 if (is0(m2)) {
                     m2.x = m0.x - (+cz * D_2A * m0.y);
@@ -192,7 +192,7 @@ adddmibulk(__global float*   __restrict      Hx, __global float* __restrict     
     }
 
     // write back, result is H + Hdmi + Hex
-    float invMs = inv_Msat(Ms_, Ms_mul, I);
+    real_t invMs = inv_Msat(Ms_, Ms_mul, I);
 
     Hx[I] += h.x*invMs;
     Hy[I] += h.y*invMs;

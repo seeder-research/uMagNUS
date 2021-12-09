@@ -3,13 +3,13 @@
 //     B: effective field in Tesla
 //     Aex_red: Aex / (Msat * 1e18 m2)
 __kernel void
-addexchange(__global float* __restrict     Bx, __global   float* __restrict      By, __global float* __restrict Bz,
-            __global float* __restrict     mx, __global   float* __restrict      my, __global float* __restrict mz,
-            __global float* __restrict    Ms_,                        float  Ms_mul,
-            __global float* __restrict aLUT2d, __global uint8_t* __restrict regions,
-                                 float     wx,                        float      wy,                      float wz,
-                                   int     Nx,                          int      Ny,                        int Nz,
-                               uint8_t    PBC) {
+addexchange(__global real_t* __restrict     Bx, __global  real_t* __restrict      By, __global real_t* __restrict Bz,
+            __global real_t* __restrict     mx, __global  real_t* __restrict      my, __global real_t* __restrict mz,
+            __global real_t* __restrict    Ms_,                       real_t  Ms_mul,
+            __global real_t* __restrict aLUT2d, __global uint8_t* __restrict regions,
+                                 real_t     wx,                       real_t      wy,                      real_t wz,
+                                    int     Nx,                          int      Ny,                         int Nz,
+                                uint8_t    PBC) {
 
     int ix = get_group_id(0) * get_local_size(0) + get_local_id(0);
     int iy = get_group_id(1) * get_local_size(1) + get_local_id(1);
@@ -20,19 +20,19 @@ addexchange(__global float* __restrict     Bx, __global   float* __restrict     
     }
 
     // central cell
-    int     I = idx(ix, iy, iz);
-    float3 m0 = make_float3(mx[I], my[I], mz[I]);
+    int      I = idx(ix, iy, iz);
+    real_t3 m0 = make_float3(mx[I], my[I], mz[I]);
 
     if (is0(m0)) {
         return;
     }
 
     uint8_t r0 = regions[I];
-    float3   B = make_float3(0.0, 0.0, 0.0);
+    real_t3  B = make_float3(0.0, 0.0, 0.0);
 
     int     i_; // neighbor index
-    float3  m_; // neighbor mag
-    float  a__; // inter-cell exchange stiffness
+    real_t3 m_; // neighbor mag
+    real_t  a__; // inter-cell exchange stiffness
 
     // left neighbor
     i_  = idx(lclampx(ix-1), iy, iz);           // clamps or wraps index according to PBC
@@ -79,7 +79,7 @@ addexchange(__global float* __restrict     Bx, __global   float* __restrict     
         B  += wz * a__ *(m_ - m0);
     }
 
-    float invMs = inv_Msat(Ms_, Ms_mul, I);
+    real_t invMs = inv_Msat(Ms_, Ms_mul, I);
 
     Bx[I] += B.x*invMs;
     By[I] += B.y*invMs;

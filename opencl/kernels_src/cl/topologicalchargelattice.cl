@@ -1,9 +1,9 @@
 // Returns the topological charge contribution on an elementary triangle ijk
 // Order of arguments is important here to preserve the same measure of chirality
 // Note: the result is zero if an argument is zero, or when two arguments are the same
-inline float triangleCharge(float3 mi, float3 mj, float3 mk) {
-    float numer   = dot(mi, cross(mj, mk));
-    float denom   = 1.0f + dot(mi, mj) + dot(mi, mk) + dot(mj, mk);
+inline real_t triangleCharge(real_t3 mi, real_t3 mj, real_t3 mk) {
+    real_t numer   = dot(mi, cross(mj, mk));
+    real_t denom   = 1.0f + dot(mi, mj) + dot(mi, mk) + dot(mj, mk);
     return 2.0f * atan2(numer, denom);
 }
 
@@ -19,11 +19,11 @@ inline float triangleCharge(float3 mi, float3 mj, float3 mk) {
 // A unit cell comprises two triangles, but s is a site-dependent quantity so we
 // double-count and average over four triangles.
 __kernel void
-settopologicalchargelattice(__global float* __restrict     s,
-                            __global float* __restrict    mx, __global float* __restrict my, __global float* __restrict mz,
-                                                 float icxcy,
-                                                   int    Nx,                        int Ny,                        int Nz,
-                                               uint8_t   PBC) {
+settopologicalchargelattice(__global real_t* __restrict     s,
+                            __global real_t* __restrict    mx, __global real_t* __restrict my, __global real_t* __restrict mz,
+                                                 real_t icxcy,
+                                                    int    Nx,                         int Ny,                         int Nz,
+                                                uint8_t   PBC) {
 
     int ix = get_group_id(0) * get_local_size(0) + get_local_id(0);
     int iy = get_group_id(1) * get_local_size(1) + get_local_id(1);
@@ -33,8 +33,8 @@ settopologicalchargelattice(__global float* __restrict     s,
         return;
     }
 
-    int    i0 = idx(ix, iy, iz);                     // central cell index
-    float3 m0 = make_float3(mx[i0], my[i0], mz[i0]); // central cell magnetization
+    int     i0 = idx(ix, iy, iz);                     // central cell index
+    real_t3 m0 = make_float3(mx[i0], my[i0], mz[i0]); // central cell magnetization
 
     if (is0(m0)) {
         s[i0] = 0.0f;
@@ -48,45 +48,45 @@ settopologicalchargelattice(__global float* __restrict     s,
     int i4 = idx(ix, lclampy(iy-1), iz); // (i,j-1)
 
     // magnetization of the 4 neighbors
-    float3 m1 = make_float3(mx[i1], my[i1], mz[i1]);
-    float3 m2 = make_float3(mx[i2], my[i2], mz[i2]);
-    float3 m3 = make_float3(mx[i3], my[i3], mz[i3]);
-    float3 m4 = make_float3(mx[i4], my[i4], mz[i4]);
+    real_t3 m1 = make_float3(mx[i1], my[i1], mz[i1]);
+    real_t3 m2 = make_float3(mx[i2], my[i2], mz[i2]);
+    real_t3 m3 = make_float3(mx[i3], my[i3], mz[i3]);
+    real_t3 m4 = make_float3(mx[i4], my[i4], mz[i4]);
 
     // local topological charge (accumulator)
-    float topcharge = 0.0f;
+    real_t topcharge = 0.0f;
 
     // charge contribution from the upper right triangle
     // if diagonally opposite neighbor is not zero, use a weight of 1/2 to avoid counting charges twice
     if (((ix+1<Nx) || PBCx) && ((iy+1<Ny) || PBCy)) { 
-        int        i_ = idx(hclampx(ix+1), hclampy(iy+1), iz); // diagonal opposite neighbor in upper right quadrant
-        float3     m_ = make_float3(mx[i_], my[i_], mz[i_]);
-        float  weight = is0(m_) ? 1.0f : 0.5f;
-        topcharge += weight * triangleCharge(m0, m1, m2);
+        int         i_ = idx(hclampx(ix+1), hclampy(iy+1), iz); // diagonal opposite neighbor in upper right quadrant
+        real_t3     m_ = make_float3(mx[i_], my[i_], mz[i_]);
+        real_t  weight = is0(m_) ? 1.0f : 0.5f;
+        topcharge     += weight * triangleCharge(m0, m1, m2);
     }
 
     // upper left
     if (((ix-1>=0) || PBCx) && ((iy+1<Ny) || PBCy)) { 
-        int        i_ = idx(lclampx(ix-1), hclampy(iy+1), iz); 
-        float3     m_ = make_float3(mx[i_], my[i_], mz[i_]);
-        float  weight = is0(m_) ? 1.0f : 0.5f;
-        topcharge += weight * triangleCharge(m0, m2, m3);
+        int         i_ = idx(lclampx(ix-1), hclampy(iy+1), iz); 
+        real_t3     m_ = make_float3(mx[i_], my[i_], mz[i_]);
+        real_t  weight = is0(m_) ? 1.0f : 0.5f;
+        topcharge     += weight * triangleCharge(m0, m2, m3);
     }
 
     // bottom left
     if (((ix-1>=0) || PBCx) && ((iy-1>=0) || PBCy)) { 
-        int        i_ = idx(lclampx(ix-1), lclampy(iy-1), iz); 
-        float3     m_ = make_float3(mx[i_], my[i_], mz[i_]);
-        float  weight = is0(m_) ? 1.0f : 0.5f;
-        topcharge += weight * triangleCharge(m0, m3, m4);
+        int         i_ = idx(lclampx(ix-1), lclampy(iy-1), iz); 
+        real_t3     m_ = make_float3(mx[i_], my[i_], mz[i_]);
+        real_t  weight = is0(m_) ? 1.0f : 0.5f;
+        topcharge     += weight * triangleCharge(m0, m3, m4);
     }
 
     // bottom right
     if (((ix+1<Nx) || PBCx) && ((iy-1>=0) || PBCy)) { 
-        int        i_ = idx(hclampx(ix+1), lclampy(iy-1), iz); 
-        float3     m_ = make_float3(mx[i_], my[i_], mz[i_]);
-        float  weight = is0(m_) ? 1.0f : 0.5f;
-        topcharge += weight * triangleCharge(m0, m4, m1);
+        int         i_ = idx(hclampx(ix+1), lclampy(iy-1), iz); 
+        real_t3     m_ = make_float3(mx[i_], my[i_], mz[i_]);
+        real_t  weight = is0(m_) ? 1.0f : 0.5f;
+        topcharge     += weight * triangleCharge(m0, m4, m1);
     }
 
     s[i0] = icxcy * topcharge;

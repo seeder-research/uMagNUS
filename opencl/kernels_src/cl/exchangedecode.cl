@@ -1,9 +1,9 @@
 // Finds the average exchange strength around each cell, for debugging.
 __kernel void
-exchangedecode(__global float* __restrict dst, __global float* __restrict aLUT2d, __global uint8_t* __restrict regions,
-                                    float  wx,                      float     wy,                        float      wz,
-                                      int  Nx,                        int     Ny,                          int      Nz,
-                                  uint8_t PBC) {
+exchangedecode(__global real_t* __restrict dst, __global real_t* __restrict aLUT2d, __global uint8_t* __restrict regions,
+                                    real_t  wx,                      real_t     wy,                       real_t      wz,
+                                       int  Nx,                         int     Ny,                          int      Nz,
+                                   uint8_t PBC) {
 
     int ix = get_group_id(0) * get_local_size(0) + get_local_id(0);
     int iy = get_group_id(1) * get_local_size(1) + get_local_id(1);
@@ -18,7 +18,7 @@ exchangedecode(__global float* __restrict dst, __global float* __restrict aLUT2d
     uint8_t r0 = regions[I];
 
     int i_;    // neighbor index
-    float avg = 0.0f;
+    real_t avg = 0.0f;
 
     // left neighbor
     i_   = idx(lclampx(ix-1), iy, iz);           // clamps or wraps index according to PBC

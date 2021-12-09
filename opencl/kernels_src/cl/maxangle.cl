@@ -1,10 +1,10 @@
 // See maxangle.go for more details.
 __kernel void
-setmaxangle(__global float* __restrict    dst,
-            __global float* __restrict     mx, __global   float* __restrict      my, __global float* __restrict mz,
-            __global float* __restrict aLUT2d, __global uint8_t* __restrict regions,
-                                   int     Nx,                          int      Ny,                        int Nz,
-                               uint8_t    PBC) {
+setmaxangle(__global real_t* __restrict    dst,
+            __global real_t* __restrict     mx, __global  real_t* __restrict      my, __global real_t* __restrict mz,
+            __global real_t* __restrict aLUT2d, __global uint8_t* __restrict regions,
+                                    int     Nx,                          int      Ny,                         int Nz,
+                                uint8_t    PBC) {
 
     int ix = get_group_id(0) * get_local_size(0) + get_local_id(0);
     int iy = get_group_id(1) * get_local_size(1) + get_local_id(1);
@@ -15,19 +15,19 @@ setmaxangle(__global float* __restrict    dst,
     }
 
     // central cell
-    int     I = idx(ix, iy, iz);
-    float3 m0 = make_float3(mx[I], my[I], mz[I]);
+    int      I = idx(ix, iy, iz);
+    real_t3 m0 = make_float3(mx[I], my[I], mz[I]);
 
     if (is0(m0)) {
         return;
     }
 
     uint8_t    r0 = regions[I];
-    float   angle = 0.0f;
+    real_t  angle = 0.0f;
 
-    int     i_; // neighbor index
-    float3  m_; // neighbor mag
-    float  a__; // inter-cell exchange stiffness
+    int      i_; // neighbor index
+    real_t3  m_; // neighbor mag
+    real_t  a__; // inter-cell exchange stiffness
 
     // left neighbor
     i_  = idx(lclampx(ix-1), iy, iz);           // clamps or wraps index according to PBC

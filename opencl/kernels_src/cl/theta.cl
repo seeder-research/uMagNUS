@@ -1,7 +1,7 @@
 __kernel void
-setTheta(__global float* __restrict theta,
-         __global float* __restrict    mz,
-                                int    Nx, int Ny, int Nz) {
+setTheta(__global real_t* __restrict theta,
+         __global real_t* __restrict    mz,
+                                 int    Nx, int Ny, int Nz) {
 
     int ix = get_group_id(0) * get_local_size(0) + get_local_id(0);
     int iy = get_group_id(1) * get_local_size(1) + get_local_id(1);

@@ -1,8 +1,8 @@
 // add region-based scalar to dst:
 // dst[i] += LUT[region[i]]
 __kernel void
-regionadds(__global   float* __restrict     dst,
-           __global   float* __restrict     LUT,
+regionadds(__global  real_t* __restrict     dst,
+           __global  real_t* __restrict     LUT,
            __global uint8_t* __restrict regions, int N) {
 
     int   gid = get_global_id(0);

@@ -25,10 +25,10 @@
 // -aaaa
 
 __kernel void
-kernmulRSymm3D(__global float* __restrict  fftMx, __global float* __restrict  fftMy, __global float* __restrict  fftMz,
-               __global float* __restrict fftKxx, __global float* __restrict fftKyy, __global float* __restrict fftKzz,
-               __global float* __restrict fftKyz, __global float* __restrict fftKxz, __global float* __restrict fftKxy,
-                                      int     Nx,                        int     Ny,                        int     Nz) {
+kernmulRSymm3D(__global real_t* __restrict  fftMx, __global real_t* __restrict  fftMy, __global real_t* __restrict  fftMz,
+               __global real_t* __restrict fftKxx, __global real_t* __restrict fftKyy, __global real_t* __restrict fftKzz,
+               __global real_t* __restrict fftKyz, __global real_t* __restrict fftKxz, __global real_t* __restrict fftKxy,
+                                       int     Nx,                         int     Ny,                         int     Nz) {
 
     int ix = get_group_id(0) * get_local_size(0) + get_local_id(0);
     int iy = get_group_id(1) * get_local_size(1) + get_local_id(1);
@@ -42,20 +42,20 @@ kernmulRSymm3D(__global float* __restrict  fftMx, __global float* __restrict  ff
     int I = (iz*Ny + iy)*Nx + ix;
     int e = 2 * I;
 
-    float reMx = fftMx[e  ];
-    float imMx = fftMx[e+1];
-    float reMy = fftMy[e  ];
-    float imMy = fftMy[e+1];
-    float reMz = fftMz[e  ];
-    float imMz = fftMz[e+1];
+    real_t reMx = fftMx[e  ];
+    real_t imMx = fftMx[e+1];
+    real_t reMy = fftMy[e  ];
+    real_t imMy = fftMy[e+1];
+    real_t reMz = fftMz[e  ];
+    real_t imMz = fftMz[e+1];
 
     // fetch kernel
 
     // minus signs are added to some elements if
     // reconstructed from symmetry.
-    float signYZ = 1.0f;
-    float signXZ = 1.0f;
-    float signXY = 1.0f;
+    real_t signYZ = 1.0f;
+    real_t signXZ = 1.0f;
+    real_t signXY = 1.0f;
 
     // use symmetry to fetch from redundant parts:
     // mirror index into first quadrant and set signs.
@@ -74,12 +74,12 @@ kernmulRSymm3D(__global float* __restrict  fftMx, __global float* __restrict  ff
     // and apply minus signs for mirrored parts.
     I = (iz*(Ny/2+1) + iy)*Nx + ix; // Ny/2+1: only half is stored
 
-    float Kxx = fftKxx[I];
-    float Kyy = fftKyy[I];
-    float Kzz = fftKzz[I];
-    float Kyz = fftKyz[I] * signYZ;
-    float Kxz = fftKxz[I] * signXZ;
-    float Kxy = fftKxy[I] * signXY;
+    real_t Kxx = fftKxx[I];
+    real_t Kyy = fftKyy[I];
+    real_t Kzz = fftKzz[I];
+    real_t Kyz = fftKyz[I] * signYZ;
+    real_t Kxz = fftKxz[I] * signXZ;
+    real_t Kxy = fftKxy[I] * signXY;
 
     // m * K matrix multiplication, overwrite m with result.
     fftMx[e  ] = reMx * Kxx + reMy * Kxy + reMz * Kxz;

@@ -1,19 +1,19 @@
 __kernel void
-reducemaxvecdiff2(__global float* __restrict      x1, __global float* __restrict y1, __global float* __restrict      z1,
-                  __global float* __restrict      x2, __global float* __restrict y2, __global float* __restrict      z2,
-                  __global float* __restrict     dst,
-                                       float initVal,                        int  n,             __local float* scratch) {
+reducemaxvecdiff2(__global real_t* __restrict      x1, __global real_t* __restrict y1, __global real_t* __restrict      z1,
+                  __global real_t* __restrict      x2, __global real_t* __restrict y2, __global real_t* __restrict      z2,
+                  __global real_t* __restrict     dst,
+                                       real_t initVal,                         int  n,             __local real_t* scratch) {
     // Initialize memory
     int global_idx = get_global_id(0);
     int  local_idx = get_local_id(0);
-    float  currVal = initVal;
+    real_t currVal = initVal;
 
     // Loop over input elements in chunks and accumulate each chunk into local memory
     while (global_idx < n) {
-        float dx = x1[global_idx] - x2[global_idx];
-        float dy = y1[global_idx] - y2[global_idx];
-        float dz = z1[global_idx] - z2[global_idx];
-        float element = dx*dx + dy*dy + dz*dz;
+        real_t      dx = x1[global_idx] - x2[global_idx];
+        real_t      dy = y1[global_idx] - y2[global_idx];
+        real_t      dz = z1[global_idx] - z2[global_idx];
+        real_t element = dx*dx + dy*dy + dz*dz;
         currVal = fmax(currVal, element);
         global_idx += get_global_size(0);
     }
@@ -25,8 +25,8 @@ reducemaxvecdiff2(__global float* __restrict      x1, __global float* __restrict
 
     for (int offset = get_local_size(0) / 2; offset > 0; offset = offset / 2) {
         if (local_idx < offset) {
-            float other = scratch[local_idx + offset];
-            float mine = scratch[local_idx];
+            real_t other = scratch[local_idx + offset];
+            real_t  mine = scratch[local_idx];
             scratch[local_idx] = fmax(mine, other);
         }
         // barrier for syncing work group
