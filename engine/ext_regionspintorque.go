@@ -163,7 +163,7 @@ func (r *RegionSpinTorque) GetRegionB() int {
 	return ptr.GetRegionB()
 }
 
-func (r *RegionSpinTorque) SetDisplacement(x int, y int, z int) {
+func (r *RegionSpinTorque) SetDisplacement(x, y, z int) {
 	ptr := &r.link
 	ptr.SetDisplacement(x, y, z)
 }
