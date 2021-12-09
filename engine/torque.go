@@ -101,6 +101,7 @@ func SetTorque(dst *data.Slice) {
 	AddSTTorque(dst)
 	AddSTTorque1(dst)
 	AddSTTorque2(dst)
+	AddRegionLinkSpinTorque(dst)
 	FreezeSpins(dst)
 }
 
