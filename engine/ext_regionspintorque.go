@@ -1,8 +1,8 @@
 package engine
 
 import (
-//	"github.com/seeder-research/uMagNUS/data"
-//	"github.com/seeder-research/uMagNUS/opencl"
+	"github.com/seeder-research/uMagNUS/data"
+	"github.com/seeder-research/uMagNUS/opencl"
 	"github.com/seeder-research/uMagNUS/util"
 )
 
@@ -73,6 +73,20 @@ func createRegionSpinTorqueLink(id byte, regionA, regionB, delX, delY, delZ int,
 	rPtr.SetDisplacement(delX, delY, delZ)
 }
 
+func AddRegionLinkSpinTorque(dst *data.Slice) {
+	ms := Msat.MSlice()
+	defer ms.Recycle()
+	buf := opencl.Buffer(3, Mesh().Size())
+	defer opencl.Recycle(buf)
+	opencl.Zero(buf)
+	for _, linkpair := range regionspintorquelinks {
+		linkPtr := &linkpair
+		sX, sY, sZ := linkPtr.GetDisplacement()
+		opencl.AddRegionSpinTorque(buf, M.Buffer(), ms, regions.Gpu(), uint8(linkPtr.GetRegionA()), uint8(linkPtr.GetRegionB()), sX, sY, sZ, linkPtr.GetJ(), linkPtr.GetAlpha(), linkPtr.GetPfix(), linkPtr.GetPfree(), linkPtr.GetLambdafix(), linkPtr.GetLambdafree(), linkPtr.GetEPrime(), M.Mesh())
+	}
+	opencl.Add(dst, dst, buf)
+}
+
 func (r *RegionSpinTorque) SetJ(s float32) {
 	r.J = s
 }
@@ -83,6 +97,10 @@ func (r *RegionSpinTorque) GetJ() float32 {
 
 func (r *RegionSpinTorque) SetAlpha(s float32) {
 	r.alpha = s
+}
+
+func (r *RegionSpinTorque) GetAlpha() float32 {
+	return r.alpha
 }
 
 func (r *RegionSpinTorque) SetPfix(s float32) {
