@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/opencl/cl"
+	"github.com/seeder-research/uMagNUS/cl"
 )
 
 // Landau-Lifshitz torque divided by gamma0:

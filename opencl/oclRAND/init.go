@@ -1,7 +1,7 @@
 package oclRAND
 
 import (
-	"github.com/seeder-research/uMagNUS/opencl/cl"
+	"github.com/seeder-research/uMagNUS/cl"
 	"log"
 	"unsafe"
 )

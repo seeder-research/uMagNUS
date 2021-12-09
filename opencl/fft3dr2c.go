@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/opencl/cl"
+	"github.com/seeder-research/uMagNUS/cl"
 	"github.com/seeder-research/uMagNUS/timer"
 	"github.com/seeder-research/uMagNUS/util"
 )

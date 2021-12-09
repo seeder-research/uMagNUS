@@ -5,7 +5,7 @@ import (
 	"unsafe"
 
 	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/opencl/cl"
+	"github.com/seeder-research/uMagNUS/cl"
 )
 
 // Sets vector dst to zero where mask != 0.

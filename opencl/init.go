@@ -6,7 +6,7 @@ import (
 	"runtime"
 
 	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/opencl/cl"
+	"github.com/seeder-research/uMagNUS/cl"
 )
 
 type GPU struct {

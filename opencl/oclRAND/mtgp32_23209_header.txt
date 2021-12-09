@@ -1,7 +1,7 @@
 package RNGmtgp
 
 import (
-	"github.com/mumax/3cl/opencl/cl"
+	"github.com/mumax/3cl/cl"
 	"log"
 	"unsafe"
 )

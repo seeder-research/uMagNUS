@@ -4,7 +4,7 @@ package opencl
 // Base implementation for all FFT plans.
 
 import (
-	"github.com/seeder-research/uMagNUS/opencl/cl"
+	"github.com/seeder-research/uMagNUS/cl"
 )
 
 // Base implementation for all FFT plans.

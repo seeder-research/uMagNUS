@@ -7,7 +7,7 @@ import (
 
 	"github.com/seeder-research/uMagNUS/data"
 	"github.com/seeder-research/uMagNUS/mag"
-	//	"github.com/seeder-research/uMagNUS/opencl/cl"
+	//	"github.com/seeder-research/uMagNUS/cl"
 )
 
 // Stores the necessary state to perform FFT-accelerated convolution

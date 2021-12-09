@@ -5,7 +5,7 @@ import (
 	"log"
 	"unsafe"
 
-	"github.com/seeder-research/uMagNUS/opencl/cl"
+	"github.com/seeder-research/uMagNUS/cl"
 	"github.com/seeder-research/uMagNUS/timer"
 	"math/rand"
 )
