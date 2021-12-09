@@ -1,0 +1,71 @@
+/*
+        spinvalve-af.mif in Object-Oriented MicroMagnetic Framework (OOMMF) 2.0 alpha 3 examples
+        http://math.nist.gov/oommf/software-20.html
+*/
+
+// geometry
+        setcellsize(5e-9, 5e-9, 3e-9)
+        setgridsize(80, 40, 3)
+        defregion(1, zrange(0, 3e-9))
+        defregion(2, zrange(3e-9, 6e-9))
+        defregion(3, zrange(6e-9, 9e-9))
+
+// material
+        Aex = 30e-12
+        Aex.setRegion(2, 0.0)
+        ext_ScaleExchange(1, 2, 0.0)
+        ext_ScaleExchange(3, 2, 0.0)
+        Msat.setRegion(1, 1400.0e3)
+        Msat.setRegion(2, 0.0)
+        Msat.setRegion(3, 1400.0e3)
+        
+        alpha = 0.5
+        m.setRegion(1, uniform(10, 1, 0))
+        m.setRegion(2, uniform(10, 1, 0))
+        m.setRegion(3, uniform(10, 1, 0))
+
+// Demagnetizing field formulation
+        EnableDemag = false
+        EnableNewellDemag = true
+
+// Bias field template
+        biasField := newVectorMask(80, 40, 3)
+        for i0:=0; i0<80; i0++ {
+                for j0:=0; j0<40; j0++ {
+                        for k0:=1; k0<3; k0++ {
+                                biasField.setVector(i0, j0, k0, vector(0.0, 0.0, 0.0))
+                        }
+                        biasField.setVector(i0, j0, 0, vector(0.05, 0.0, 0.0))
+                }
+        }
+
+// Region-wise exchange to emulate two surface exchange
+        ext_NewRegionExchange(1, 1, 3, 0, 0, 2, -1e-4, 0.0)
+
+// Solver parameters
+        SetSolver(5)
+        MaxErr = 1e-7
+        RelErr = 1e-8
+
+// Output format
+        OutputFormat = OVF2_TEXT
+
+// B-field sweep and run
+        for idx:=0.0; idx<25.0;idx+=1.0{
+                B_ext = vector(0.2*idx, 0.002*idx, 0.0)
+                B_ext.add(biasField, 1.0)
+                relax()
+                save(m)
+        }
+        for idx:=25.0; idx>-25.0;idx-=2.0{
+                B_ext = vector(0.2*idx, 0.002*idx, 0.0)
+                B_ext.add(biasField, 1.0)
+                relax()
+                save(m)
+        }
+        for idx:=-25.0; idx<=25.0;idx+=2.0{
+                B_ext = vector(0.2*idx, 0.002*idx, 0.0)
+                B_ext.add(biasField, 1.0)
+                relax()
+                save(m)
+        }
