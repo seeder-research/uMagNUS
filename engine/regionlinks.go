@@ -31,6 +31,6 @@ func (r *RegionLink) GetDisplacement() (int, int, int) {
 	return r.delX, r.delY, r.delZ
 }
 
-func (r *RegionLink) SetDisplacement(x int, y int, z int) {
+func (r *RegionLink) SetDisplacement(x, y, z int) {
 	r.delX, r.delY, r.delZ = x, y, z
 }

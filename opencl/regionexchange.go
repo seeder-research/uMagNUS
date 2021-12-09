@@ -1,6 +1,6 @@
 package opencl
 
-// Region paried exchange interaction
+// Region paired exchange interaction
 
 import (
 	"fmt"
