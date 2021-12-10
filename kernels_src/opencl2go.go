@@ -14,7 +14,7 @@ import (
 	"regexp"
 	"text/scanner"
 
-	"github.com/seeder-research/uMagNUS/opencl/kernels_src"
+	"github.com/seeder-research/uMagNUS/kernels_src"
 	"github.com/seeder-research/uMagNUS/util"
 )
 
@@ -99,7 +99,7 @@ func main() {
 			tmpBuffer.WriteString("\t\"" + keynames + "\",\n")
 		}
 	}
-	wrapfname = "../opencl_kernels_wrapper.go"
+	wrapfname = "./opencl_kernels_wrapper.go"
 	wrapout, err = os.OpenFile(wrapfname, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 	util.PanicErr(err)
 	wrapout.WriteString(tmpBuffer.String())

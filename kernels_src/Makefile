@@ -7,6 +7,7 @@ SHELL = /bin/bash
 
 all: opencl2go
 	./opencl2go
+	cp opencl_kernels_wrapper.go ../opencl
 
 
 opencl2go: opencl2go.go
@@ -14,8 +15,8 @@ opencl2go: opencl2go.go
 
 
 clean:
-	rm -vf opencl2go
+	rm -vf opencl2go opencl_kernels_wrapper.go
 
 
 realclean:
-	rm -vf opencl2go
+	rm -vf opencl2go opencl_kernels_wrapper.go

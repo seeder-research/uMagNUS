@@ -17,7 +17,7 @@ go.mod:
 	go mod init
 
 clkernels:
-	cd ./opencl && $(MAKE)
+	$(MAKE) -C ./opencl all
 
 hooks: .git/hooks/post-commit .git/hooks/pre-commit
 
@@ -30,7 +30,7 @@ hooks: .git/hooks/post-commit .git/hooks/pre-commit
 clean:
 	rm -frv $(GOPATH)/pkg/*/github.com/seeder-research/uMagNUS/*
 	rm -frv $(GOPATH)/bin/mumax3* $(GOPATH)/bin/uMagNUS* go.mod
-	cd ./opencl && $(MAKE) clean
+	$(MAKE) -C ./opencl clean
 
 realclean: clean
-	cd ./opencl && ${MAKE} realclean
+	${MAKE} -C ./opencl realclean
