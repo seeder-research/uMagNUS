@@ -2,15 +2,15 @@
 
 SHELL = /bin/bash
 
-OPENCLFILES := $(wildcard kernels_src/cl/*.cl)
+OPENCLFILES := $(wildcard ../kernels_src/cl/*.cl)
 WRAPPERFILES := $(notdir $(OPENCLFILES))
 WRAPPERS := $(WRAPPERFILES:.cl=_wrapper.go)
 
 
-.PHONY: all kernels ocl2go wrappers clean realclean
+.PHONY: all ocl2go wrappers clean realclean
 
 
-all: kernels ocl2go wrappers opencl2go
+all: ocl2go wrappers opencl2go
 	mv RNGmrg32k3a*_wrapper.go oclRAND/.
 	mv RNGmtgp*_wrapper.go oclRAND/.
 	mv RNGthreefry*_wrapper.go oclRAND/.
@@ -22,9 +22,6 @@ all: kernels ocl2go wrappers opencl2go
 	go install -v
 
 
-kernels:
-	ln -snf ../kernels_src kernels_src
-
 wrappers: $(WRAPPERS)
 
 
@@ -32,22 +29,23 @@ ocl2go: ocl2go.go
 	go build $<
 
 
-opencl2go: kernels ocl2go
+opencl2go: ocl2go
 	$(MAKE) -C ../kernels_src
+	mv ../kernels_src/opencl_kernels_wrapper.go ./
 
 
-%_wrapper.go: ./kernels_src/cl/%.cl ocl2go
+%_wrapper.go: ../kernels_src/cl/%.cl ocl2go
 	./ocl2go $< > /dev/null
-	gofmt -w -s -l ./kernels_src/cl/$@ > /dev/null
+	gofmt -w -s -l ../kernels_src/cl/$@ > /dev/null
 	mv ../kernels_src/cl/$@ ./$@
 
 
 clean:
-	$(MAKE) -C ./kernels_src clean
+	$(MAKE) -C ../kernels_src clean
 	$(MAKE) -C ./oclRAND clean
 	rm -vf *_wrapper.go ocl2go ../kernels/program_wrapper.go
 
 
 realclean:
-	$(MAKE) -C ./kernels_src realclean
+	$(MAKE) -C ../kernels_src realclean
 	rm -vf *_wrapper.go ocl2go ../kernels/program_wrapper.go
