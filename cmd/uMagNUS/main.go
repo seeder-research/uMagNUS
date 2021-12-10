@@ -23,7 +23,19 @@ func main() {
 	log.SetPrefix("")
 	log.SetFlags(0)
 
-	opencl.Init(*engine.Flag_gpu)
+        if *engine.Flag_host {
+                if *engine.Flag_gpu < 0 {
+                        opencl.Init(*engine.Flag_gpu)
+                } else {
+                        log.Fatalln("Cannot disable GPU acceleration while requesting GPU \n")
+                }
+        } else {
+                if *engine.Flag_gpu < 0 {
+                        opencl.Init(0)
+                } else {
+                        opencl.Init(*engine.Flag_gpu)
+                }
+        }
 
 	opencl.Synchronous = *engine.Flag_sync
 	if *engine.Flag_version {

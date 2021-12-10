@@ -61,7 +61,11 @@ func Init(gpu int) {
 	}
 	for _, plat := range platforms {
 		var pDevices []*cl.Device
-		pDevices, err = plat.GetDevices(cl.DeviceTypeGPU)
+		if gpu < 0 {
+			pDevices, err = plat.GetDevices(cl.DeviceTypeCPU)
+		} else {
+			pDevices, err = plat.GetDevices(cl.DeviceTypeGPU)
+		}
 		if err != nil {
 			fmt.Printf("Failed to get devices: %+v \n", err)
 		}
@@ -78,9 +82,11 @@ func Init(gpu int) {
 		return
 	} else {
 		if gpu > len(tmpGpuList)-1 {
-			fmt.Printf("Unselectable GPU! Falling back to default selection\n")
+			fmt.Printf("Requested GPU: %+v ...\n    Unselectable GPU! Falling back to default selection\n", gpu)
 		} else {
-			selection = gpu
+			if gpu >= 0 {
+				selection = gpu
+			}
 		}
 	}
 
