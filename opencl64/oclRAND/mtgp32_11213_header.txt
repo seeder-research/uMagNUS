@@ -1,0 +1,20 @@
+package RNGmtgp
+
+import (
+	"github.com/mumax/3cl/cl"
+	"log"
+	"unsafe"
+)
+
+const MTGPDC_MEXP = 11213
+const MTGPDC_N = 351
+const MTGPDC_FLOOR_2P = 256
+const MTGPDC_CEIL_2P = 512
+const MTGPDC_TN = MTGPDC_FLOOR_2P
+const MTGPDC_LS = (MTGPDC_TN * 3)
+const MTGPDC_TS = 16
+
+const MTGPDC_PARAMS_NUM = mtgpdc_params_11213_num
+
+var mtgpdc_params_num = mtgpdc_params_11213_num
+var MTGP32_params_fast_ = MTGP32_params_fast_11213

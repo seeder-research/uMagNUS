@@ -3,8 +3,8 @@ package mag64
 import (
 	"bufio"
 	"fmt"
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/oommf"
+	data "github.com/seeder-research/uMagNUS/data64"
+	"github.com/seeder-research/uMagNUS/oommf64"
 	"github.com/seeder-research/uMagNUS/util"
 	"math"
 	"os"
