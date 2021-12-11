@@ -4,16 +4,18 @@ package engine64
 
 import (
 	"flag"
-	"github.com/seeder-research/uMagNUS/opencl"
+	"github.com/seeder-research/uMagNUS/opencl64"
 	"github.com/seeder-research/uMagNUS/util"
 	"os"
 	"path"
+	"log"
 )
 
 var (
 	// These flags are shared between cmd/uMagNUS and Go input files.
 	Flag_cachedir    = flag.String("cache", os.TempDir(), "Kernel cache directory (empty disables caching)")
-	Flag_gpu         = flag.Int("gpu", 0, "Specify GPU")
+	Flag_gpu         = flag.Int("gpu", -5, "Specify GPU")
+	Flag_host        = flag.Bool("host", false, "Disable GPU acceleration")
 	Flag_interactive = flag.Bool("i", false, "Open interactive browser session")
 	Flag_od          = flag.String("o", "", "Override output directory")
 	Flag_port        = flag.String("http", ":35367", "Port to serve web gui")
@@ -40,7 +42,19 @@ func InitAndClose() func() {
 
 	flag.Parse()
 
-	opencl.Init(*Flag_gpu)
+	if *Flag_host {
+		if *Flag_gpu < 0 {
+			opencl.Init(*Flag_gpu)
+		} else {
+			log.Fatalln("Cannot disable GPU acceleration while requesting GPU \n")
+		}
+	} else {
+		if *Flag_gpu < 0 {
+			opencl.Init(0)
+		} else {
+			opencl.Init(*Flag_gpu)
+		}
+	}
 	opencl.Synchronous = *Flag_sync
 
 	od := *Flag_od
