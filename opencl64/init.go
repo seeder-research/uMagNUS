@@ -124,7 +124,7 @@ func Init(gpu int) {
 	if err != nil {
 		fmt.Printf("CreateProgramWithSource failed: %+v \n", err)
 	}
-	if err := program.BuildProgram([]*cl.Device{ClDevice}, "-cl-std=CL1.2 -cl-fp32-correctly-rounded-divide-sqrt -cl-kernel-arg-info"); err != nil {
+	if err := program.BuildProgram([]*cl.Device{ClDevice}, "-cl-std=CL1.2 -cl-fp32-correctly-rounded-divide-sqrt -cl-kernel-arg-info -D__REAL_IS_DOUBLE__"); err != nil {
 		fmt.Printf("BuildProgram failed: %+v \n", err)
 	}
 
