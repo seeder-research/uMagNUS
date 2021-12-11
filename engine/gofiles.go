@@ -14,7 +14,7 @@ import (
 var (
 	// These flags are shared between cmd/uMagNUS and Go input files.
 	Flag_cachedir    = flag.String("cache", os.TempDir(), "Kernel cache directory (empty disables caching)")
-	Flag_gpu         = flag.Int("gpu", -1, "Specify GPU")
+	Flag_gpu         = flag.Int("gpu", -5, "Specify GPU")
 	Flag_host        = flag.Bool("host", false, "Disable GPU acceleration")
 	Flag_interactive = flag.Bool("i", false, "Open interactive browser session")
 	Flag_od          = flag.String("o", "", "Override output directory")

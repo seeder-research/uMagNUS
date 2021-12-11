@@ -83,8 +83,15 @@ func (s *stateTab) Run() {
 	nGPU := len(opencl.ClDevices)
 	idle := initGPUs(nGPU)
 	for {
-		gpu := <-idle
-		addr := fmt.Sprint(":", 35368+gpu)
+		var gpu int
+		var addr string
+		if *engine.Flag_host {
+			gpu = -5
+			addr = fmt.Sprint(":", 35368)
+		} else {
+			gpu = <-idle
+			addr = fmt.Sprint(":", 35368+gpu)
+		}
 		j, ok := s.StartNext(addr)
 		if !ok {
 			break
@@ -92,12 +99,16 @@ func (s *stateTab) Run() {
 		go func() {
 			run(j.inFile, gpu, j.webAddr)
 			s.Finish(j)
-			idle <- gpu
+			if !(*engine.Flag_host) {
+				idle <- gpu
+			}
 		}()
 	}
 	// drain remaining tasks (one already done)
-	for i := 1; i < nGPU; i++ {
-		<-idle
+	if !(*engine.Flag_host) {
+		for i := 1; i < nGPU; i++ {
+			<-idle
+		}
 	}
 }
 

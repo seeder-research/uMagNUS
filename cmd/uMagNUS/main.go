@@ -49,6 +49,11 @@ func main() {
 		os.Exit(0)
 	}
 
+	if len(opencl.ClDevices) <= 0 {
+		fmt.Print("No OpenCL devices found \n")
+		os.Exit(0)
+	}
+
 	defer engine.Close() // flushes pending output, if any
 
 	if *engine.Flag_vet {
