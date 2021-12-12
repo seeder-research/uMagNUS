@@ -5,6 +5,6 @@ regionselect(__global real_t* __restrict dst, __global real_t* __restrict src, _
     int gsize = get_global_size(0);
 
     for (int i = gid; i < N; i += gsize) {
-        dst[i] = ((regions[i] == region) ? src[i]: 0.0f);
+        dst[i] = ((regions[i] == region) ? src[i]: (real_t)0.0);
     }
 }

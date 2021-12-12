@@ -503,13 +503,22 @@ func (ctx *Context) CreateEmptyBufferFloat32(flags MemFlag, size int) (*MemObjec
 	return ctx.CreateBufferUnsafe(flags, 4*size, nil)
 }
 
+func (ctx *Context) CreateEmptyBufferFloat64(flags MemFlag, size int) (*MemObject, error) {
+	return ctx.CreateBufferUnsafe(flags, 8*size, nil)
+}
+
 func (ctx *Context) CreateBuffer(flags MemFlag, data []byte) (*MemObject, error) {
 	return ctx.CreateBufferUnsafe(flags, len(data), unsafe.Pointer(&data[0]))
 }
 
-//float64
+//float32
 func (ctx *Context) CreateBufferFloat32(flags MemFlag, data []float32) (*MemObject, error) {
 	return ctx.CreateBufferUnsafe(flags, 4*len(data), unsafe.Pointer(&data[0]))
+}
+
+//float64
+func (ctx *Context) CreateBufferFloat64(flags MemFlag, data []float64) (*MemObject, error) {
+	return ctx.CreateBufferUnsafe(flags, 8*len(data), unsafe.Pointer(&data[0]))
 }
 
 func (mobj *MemObject) CreateSubBuffer(flags MemFlag, origin, bSize int) (*MemObject, error) {

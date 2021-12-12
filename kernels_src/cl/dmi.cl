@@ -23,7 +23,7 @@ adddmi(__global real_t* __restrict     Hx, __global real_t* __restrict     Hy, _
     }
 
     int      I = idx(ix, iy, iz);                  // central cell index
-    real_t3  h = make_float3(0.0, 0.0, 0.0);       // add to H
+    real_t3  h = make_float3((real_t)0.0, (real_t)0.0, (real_t)0.0);       // add to H
     real_t3 m0 = make_float3(mx[I], my[I], mz[I]); // central m
     uint8_t r0 = regions[I];
     int i_;                                        // neighbor index
@@ -34,7 +34,7 @@ adddmi(__global real_t* __restrict     Hx, __global real_t* __restrict     Hy, _
 
     // x derivatives (along length)
     {
-        real_t3 m1 = make_float3(0.0f, 0.0f, 0.0f);     // left neighbor
+        real_t3 m1 = make_float3((real_t)0.0, (real_t)0.0, (real_t)0.0);     // left neighbor
         i_ = idx(lclampx(ix-1), iy, iz);               // load neighbor m if inside grid, keep 0 otherwise
         if ((ix-1 >= 0) || PBCx) {
             m1 = make_float3(mx[i_], my[i_], mz[i_]);
@@ -55,7 +55,7 @@ adddmi(__global real_t* __restrict     Hx, __global real_t* __restrict     Hy, _
     }
 
     {
-        real_t3 m2 = make_float3(0.0f, 0.0f, 0.0f);         // right neighbor
+        real_t3 m2 = make_float3((real_t)0.0, (real_t)0.0, (real_t)0.0);         // right neighbor
         i_ = idx(hclampx(ix+1), iy, iz);
         if ((ix+1 < Nx) || PBCx) {
             m2 = make_float3(mx[i_], my[i_], mz[i_]);
@@ -77,7 +77,7 @@ adddmi(__global real_t* __restrict     Hx, __global real_t* __restrict     Hy, _
 
     // y derivatives (along height)
     {
-        real_t3 m1 = make_float3(0.0f, 0.0f, 0.0f);
+        real_t3 m1 = make_float3((real_t)0.0, (real_t)0.0, (real_t)0.0);
         i_ = idx(ix, lclampy(iy-1), iz);
         if ((iy-1 >= 0) || PBCy) {
             m1 = make_float3(mx[i_], my[i_], mz[i_]);
@@ -98,7 +98,7 @@ adddmi(__global real_t* __restrict     Hx, __global real_t* __restrict     Hy, _
     }
 
     {
-        real_t3 m2 = make_float3(0.0f, 0.0f, 0.0f);
+        real_t3 m2 = make_float3((real_t)0.0, (real_t)0.0, (real_t)0.0);
         i_ = idx(ix, hclampy(iy+1), iz);
         if  (iy+1 < Ny || PBCy) {
             m2 = make_float3(mx[i_], my[i_], mz[i_]);

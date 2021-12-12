@@ -6,7 +6,7 @@ import (
 	"fmt"
 	engine "github.com/seeder-research/uMagNUS/engine64"
 	opencl "github.com/seeder-research/uMagNUS/opencl64"
-	"github.com/seeder-research/uMagNUS/script"
+	script "github.com/seeder-research/uMagNUS/script64"
 	"github.com/seeder-research/uMagNUS/util"
 	"log"
 	"os"

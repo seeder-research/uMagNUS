@@ -53,9 +53,9 @@ kernmulRSymm3D(__global real_t* __restrict  fftMx, __global real_t* __restrict  
 
     // minus signs are added to some elements if
     // reconstructed from symmetry.
-    real_t signYZ = 1.0f;
-    real_t signXZ = 1.0f;
-    real_t signXY = 1.0f;
+    real_t signYZ = (real_t)1.0;
+    real_t signXZ = (real_t)1.0;
+    real_t signXY = (real_t)1.0;
 
     // use symmetry to fetch from redundant parts:
     // mirror index into first quadrant and set signs.

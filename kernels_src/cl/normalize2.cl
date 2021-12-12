@@ -7,11 +7,11 @@ normalize2(__global real_t* __restrict vx, __global real_t* __restrict vy, __glo
 
     for (int i = gid; i < N; i += gsize) {
 
-        real_t  v = (vol == NULL) ? 1.0f : vol[i];
+        real_t  v = (vol == NULL) ? (real_t)1.0 : vol[i];
         real_t3 V = {v*vx[i], v*vy[i], v*vz[i]};
 
         V = normalize(V);
-        if (v == 0.0f) {
+        if (v == (real_t)0.0) {
             vx[i] = 0.0;
             vy[i] = 0.0;
             vz[i] = 0.0;

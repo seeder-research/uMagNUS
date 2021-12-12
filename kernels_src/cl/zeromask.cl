@@ -7,7 +7,7 @@ zeromask(__global real_t* __restrict dst, __global real_t* maskLUT, __global uin
 
     for (int i = gid; i < N; i += gsize) {
         if (maskLUT[regions[i]] != 0){
-            dst[i] = 0.0f;
+            dst[i] = (real_t)0.0;
         }
     }
 }

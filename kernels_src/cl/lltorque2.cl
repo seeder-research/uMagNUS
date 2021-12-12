@@ -15,7 +15,7 @@ lltorque2(__global real_t* __restrict     tx, __global real_t* __restrict       
         real_t alpha = amul(alpha_, alpha_mul, i);
 
         real_t3    mxH = cross(m, H);
-        real_t    gilb = -1.0f / (1.0f + alpha * alpha);
+        real_t    gilb = (real_t)-1.0 / ((real_t)1.0 + alpha * alpha);
         real_t3 torque = gilb * (mxH + alpha * cross(m, mxH));
 
         tx[i] = torque.x;

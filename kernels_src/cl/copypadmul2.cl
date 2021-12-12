@@ -14,7 +14,7 @@ copypadmul2(__global real_t* __restrict dst,    int     Dx, int Dy, int Dz,
         int        sI = index(ix, iy, iz, Sx, Sy, Sz);  // source index
         real_t tmpFac = amul(Ms_, Ms_mul, sI);
         real_t   Bsat = MU0 * tmpFac;
-        real_t      v = amul(vol, 1.0f, sI);
+        real_t      v = amul(vol, (real_t)1.0, sI);
 
         dst[index(ix, iy, iz, Dx, Dy, Dz)] = Bsat * v * src[sI];
     }

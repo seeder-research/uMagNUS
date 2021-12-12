@@ -108,6 +108,8 @@ func (k *Kernel) SetArg(index int, arg interface{}) error {
 		return k.SetArgInt32(index, val)
 	case float32:
 		return k.SetArgFloat32(index, val)
+	case float64:
+		return k.SetArgFloat64(index, val)
 	case *MemObject:
 		return k.SetArgBuffer(index, val)
 	case LocalBuffer:
@@ -188,6 +190,10 @@ func (k *Kernel) SetArgBuffer(index int, buffer *MemObject) error {
 }
 
 func (k *Kernel) SetArgFloat32(index int, val float32) error {
+	return k.SetArgUnsafe(index, int(unsafe.Sizeof(val)), unsafe.Pointer(&val))
+}
+
+func (k *Kernel) SetArgFloat64(index int, val float64) error {
 	return k.SetArgUnsafe(index, int(unsafe.Sizeof(val)), unsafe.Pointer(&val))
 }
 

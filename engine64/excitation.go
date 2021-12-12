@@ -3,7 +3,7 @@ package engine64
 import (
 	data "github.com/seeder-research/uMagNUS/data64"
 	opencl "github.com/seeder-research/uMagNUS/opencl64"
-	"github.com/seeder-research/uMagNUS/script"
+	script "github.com/seeder-research/uMagNUS/script64"
 	"github.com/seeder-research/uMagNUS/util"
 	"math"
 	"reflect"

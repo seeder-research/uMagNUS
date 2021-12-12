@@ -117,7 +117,7 @@ func reduceBuf(initVal float64) (unsafe.Pointer, unsafe.Pointer) {
 	}
 	buf := <-reduceBuffers
 	interBuf := <-reduceIntBuffers
-	waitEvent, err := ClCmdQueue.EnqueueFillBuffer(buf, unsafe.Pointer(&initVal), SIZEOF_FLOAT32, 0, SIZEOF_FLOAT32, nil)
+	waitEvent, err := ClCmdQueue.EnqueueFillBuffer(buf, unsafe.Pointer(&initVal), SIZEOF_FLOAT64, 0, SIZEOF_FLOAT64, nil)
 	if err != nil {
 		fmt.Printf("reduceBuf failed: %+v \n", err)
 		return nil, nil
@@ -127,7 +127,7 @@ func reduceBuf(initVal float64) (unsafe.Pointer, unsafe.Pointer) {
 		fmt.Printf("First WaitForEvents in reduceBuf failed: %+v \n", err)
 		return nil, nil
 	}
-	waitEvent, err = ClCmdQueue.EnqueueFillBuffer(interBuf, unsafe.Pointer(&initVal), SIZEOF_FLOAT32, 0, ClCUnits*SIZEOF_FLOAT32, nil)
+	waitEvent, err = ClCmdQueue.EnqueueFillBuffer(interBuf, unsafe.Pointer(&initVal), SIZEOF_FLOAT64, 0, ClCUnits*SIZEOF_FLOAT64, nil)
 	if err != nil {
 		fmt.Printf("reduceBuf failed: %+v \n", err)
 		return nil, nil
@@ -143,7 +143,7 @@ func reduceBuf(initVal float64) (unsafe.Pointer, unsafe.Pointer) {
 // copy back single float result from GPU and recycle buffer
 func copyback(buf unsafe.Pointer) float64 {
 	var result float64
-	MemCpyDtoH(unsafe.Pointer(&result), buf, SIZEOF_FLOAT32)
+	MemCpyDtoH(unsafe.Pointer(&result), buf, SIZEOF_FLOAT64)
 	reduceBuffers <- (*cl.MemObject)(buf)
 	return result
 }
@@ -154,8 +154,8 @@ func initReduceBuf() {
 	reduceBuffers = make(chan *cl.MemObject, N)
 	reduceIntBuffers = make(chan *cl.MemObject, N)
 	for i := 0; i < N; i++ {
-		reduceBuffers <- MemAlloc(SIZEOF_FLOAT32)
-		reduceIntBuffers <- MemAlloc(ClCUnits * SIZEOF_FLOAT32)
+		reduceBuffers <- MemAlloc(SIZEOF_FLOAT64)
+		reduceIntBuffers <- MemAlloc(ClCUnits * SIZEOF_FLOAT64)
 	}
 }
 

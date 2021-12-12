@@ -18,7 +18,7 @@ exchangedecode(__global real_t* __restrict dst, __global real_t* __restrict aLUT
     uint8_t r0 = regions[I];
 
     int i_;    // neighbor index
-    real_t avg = 0.0f;
+    real_t avg = (real_t)0.0;
 
     // left neighbor
     i_   = idx(lclampx(ix-1), iy, iz);           // clamps or wraps index according to PBC

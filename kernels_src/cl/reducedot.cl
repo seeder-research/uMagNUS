@@ -30,7 +30,7 @@ reducedot(         __global real_t* __restrict       x1, __global real_t* __rest
     while (global_idx < n) {
         tmpR0 = x1[global_idx];
         tmpR1 = x2[global_idx];
-        tmpR2 = fma(tmpR0, tmpR1, 0.0f);
+        tmpR2 = fma(tmpR0, tmpR1, (real_t)0.0);
         tmpR3 = currVal + tmpR2;
         tmpR0 = tmpR3 - currVal;
         tmpR1 = tmpR3 - tmpR2;

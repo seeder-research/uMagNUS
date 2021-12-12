@@ -37,21 +37,21 @@ addoommfslonczewskitorque(__global real_t* __restrict            tx, __global re
         real_t  lambdafree   = amul(lambdafree_, lambdafix_mul, I);
         real_t  epsilonPrime = amul(epsilonPrime_, epsilonPrime_mul, I);
 
-        if ((J == 0.0f) || (Ms == 0.0f)) {
+        if ((J == (real_t)0.0) || (Ms == (real_t)0.0)) {
             return;
         }
 
-        real_t            beta = (HBAR / QE) * (J / (2.0f *flt*Ms) );
+        real_t            beta = (HBAR / QE) * (J / ((real_t)2.0 *flt*Ms) );
         real_t      lambdafix2 = lambdafix * lambdafix;
         real_t     lambdafree2 = lambdafree * lambdafree;
-        real_t  lambdafreePlus = sqrt(lambdafree2 + 1.0f);
-        real_t   lambdafixPlus = sqrt( lambdafix2 + 1.0f);
-        real_t lambdafreeMinus = sqrt(lambdafree2 - 1.0f);
-        real_t  lambdafixMinus = sqrt( lambdafix2 - 1.0f);
+        real_t  lambdafreePlus = sqrt(lambdafree2 + (real_t)1.0);
+        real_t   lambdafixPlus = sqrt( lambdafix2 + (real_t)1.0);
+        real_t lambdafreeMinus = sqrt(lambdafree2 - (real_t)1.0);
+        real_t  lambdafixMinus = sqrt( lambdafix2 - (real_t)1.0);
         real_t      plus_ratio = lambdafreePlus / lambdafixPlus;
-        real_t     minus_ratio = 1.0f;
+        real_t     minus_ratio = (real_t)1.0;
 
-        if (lambdafreeMinus > 0) {
+        if (lambdafreeMinus > (real_t)0.0) {
             minus_ratio = lambdafixMinus / lambdafreeMinus;
         }
 
@@ -70,7 +70,7 @@ addoommfslonczewskitorque(__global real_t* __restrict            tx, __global re
         real_t A = beta * epsilon;
         real_t B = beta * epsilonPrime;
 
-        real_t gilb     = 1.0f / (1.0f + alpha * alpha);
+        real_t gilb     = (real_t)1.0 / ((real_t)1.0 + alpha * alpha);
         real_t mxpxmFac = gilb * (A + alpha * B);
         real_t pxmFac   = gilb * (B - alpha * A);
 

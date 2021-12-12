@@ -28,7 +28,7 @@ addexchange(__global real_t* __restrict     Bx, __global  real_t* __restrict    
     }
 
     uint8_t r0 = regions[I];
-    real_t3  B = make_float3(0.0, 0.0, 0.0);
+    real_t3  B = make_float3((real_t)0.0, (real_t)0.0, (real_t)0.0);
 
     int     i_; // neighbor index
     real_t3 m_; // neighbor mag

@@ -22,7 +22,7 @@ func NewSlice(nComp int, size [3]int) *data.Slice {
 
 func newSlice(nComp int, size [3]int, memType int8) *data.Slice {
 	length := prod(size)
-	bytes := length * SIZEOF_FLOAT32
+	bytes := length * SIZEOF_FLOAT64
 	ptrs := make([]unsafe.Pointer, nComp)
 	initVal := float64(0.0)
 	fillWait := make([]*cl.Event, nComp)
@@ -32,7 +32,7 @@ func newSlice(nComp int, size [3]int, memType int8) *data.Slice {
 			fmt.Printf("CreateEmptyBuffer failed: %+v \n", err)
 		}
 		ptrs[c] = unsafe.Pointer(tmp_buf)
-		fillWait[c], err = ClCmdQueue.EnqueueFillBuffer(tmp_buf, unsafe.Pointer(&initVal), SIZEOF_FLOAT32, 0, bytes, nil)
+		fillWait[c], err = ClCmdQueue.EnqueueFillBuffer(tmp_buf, unsafe.Pointer(&initVal), SIZEOF_FLOAT64, 0, bytes, nil)
 		if err != nil {
 			fmt.Printf("CreateEmptyBuffer failed: %+v \n", err)
 		}
@@ -180,7 +180,7 @@ func Memset(s *data.Slice, val ...float64) {
 	util.Argument(len(val) == s.NComp())
 	eventListFill := make([](*cl.Event), len(val))
 	for c, v := range val {
-		eventListFill[c], err = ClCmdQueue.EnqueueFillBuffer((*cl.MemObject)(s.DevPtr(c)), unsafe.Pointer(&v), SIZEOF_FLOAT32, 0, s.Len()*SIZEOF_FLOAT32, [](*cl.Event){s.GetEvent(c)})
+		eventListFill[c], err = ClCmdQueue.EnqueueFillBuffer((*cl.MemObject)(s.DevPtr(c)), unsafe.Pointer(&v), SIZEOF_FLOAT64, 0, s.Len()*SIZEOF_FLOAT64, [](*cl.Event){s.GetEvent(c)})
 		s.SetEvent(c, eventListFill[c])
 		if err != nil {
 			fmt.Printf("EnqueueFillBuffer failed: %+v \n", err)
@@ -207,7 +207,7 @@ func SetCell(s *data.Slice, comp int, ix, iy, iz int, value float64) {
 
 func SetElem(s *data.Slice, comp int, index int, value float64) {
 	f := value
-	event, err := ClCmdQueue.EnqueueWriteBuffer((*cl.MemObject)(s.DevPtr(comp)), false, index*SIZEOF_FLOAT32, SIZEOF_FLOAT32, unsafe.Pointer(&f), [](*cl.Event){s.GetEvent(comp)})
+	event, err := ClCmdQueue.EnqueueWriteBuffer((*cl.MemObject)(s.DevPtr(comp)), false, index*SIZEOF_FLOAT64, SIZEOF_FLOAT64, unsafe.Pointer(&f), [](*cl.Event){s.GetEvent(comp)})
 	if err != nil {
 		fmt.Printf("EnqueueWriteBuffer failed: %+v \n", err)
 		return
@@ -217,7 +217,7 @@ func SetElem(s *data.Slice, comp int, index int, value float64) {
 
 func GetElem(s *data.Slice, comp int, index int) float64 {
 	var f float64
-	event, err := ClCmdQueue.EnqueueReadBuffer((*cl.MemObject)(s.DevPtr(comp)), false, index*SIZEOF_FLOAT32, SIZEOF_FLOAT32, unsafe.Pointer(&f), [](*cl.Event){s.GetEvent(comp)})
+	event, err := ClCmdQueue.EnqueueReadBuffer((*cl.MemObject)(s.DevPtr(comp)), false, index*SIZEOF_FLOAT64, SIZEOF_FLOAT64, unsafe.Pointer(&f), [](*cl.Event){s.GetEvent(comp)})
 	if err != nil {
 		fmt.Printf("EnqueueReadBuffer failed: %+v \n", err)
 	}

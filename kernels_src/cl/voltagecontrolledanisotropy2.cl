@@ -22,7 +22,7 @@ addvoltagecontrolledanisotropy2(__global real_t* __restrict         Bx, __global
         real_t    voltage = amul(voltage_, voltage_mul, i) * invMs;
         real_t3         m = {mx[i], my[i], mz[i]};
         real_t         mu = dot(m, u);
-        real_t3        Ba = 2.0f*vcmaCoeff*voltage*    (mu)*u;
+        real_t3        Ba = (real_t)2.0*vcmaCoeff*voltage*    (mu)*u;
 
         Bx[i] += Ba.x;
         By[i] += Ba.y;

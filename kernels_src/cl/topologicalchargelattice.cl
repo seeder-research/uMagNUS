@@ -61,7 +61,7 @@ settopologicalchargelattice(__global real_t* __restrict     s,
     if (((ix+1<Nx) || PBCx) && ((iy+1<Ny) || PBCy)) { 
         int         i_ = idx(hclampx(ix+1), hclampy(iy+1), iz); // diagonal opposite neighbor in upper right quadrant
         real_t3     m_ = make_float3(mx[i_], my[i_], mz[i_]);
-        real_t  weight = is0(m_) ? 1.0f : 0.5f;
+        real_t  weight = is0(m_) ? (real_t)1.0 : (real_t)0.5;
         topcharge     += weight * triangleCharge(m0, m1, m2);
     }
 
@@ -69,7 +69,7 @@ settopologicalchargelattice(__global real_t* __restrict     s,
     if (((ix-1>=0) || PBCx) && ((iy+1<Ny) || PBCy)) { 
         int         i_ = idx(lclampx(ix-1), hclampy(iy+1), iz); 
         real_t3     m_ = make_float3(mx[i_], my[i_], mz[i_]);
-        real_t  weight = is0(m_) ? 1.0f : 0.5f;
+        real_t  weight = is0(m_) ? (real_t)1.0 : (real_t)0.5;
         topcharge     += weight * triangleCharge(m0, m2, m3);
     }
 
@@ -77,7 +77,7 @@ settopologicalchargelattice(__global real_t* __restrict     s,
     if (((ix-1>=0) || PBCx) && ((iy-1>=0) || PBCy)) { 
         int         i_ = idx(lclampx(ix-1), lclampy(iy-1), iz); 
         real_t3     m_ = make_float3(mx[i_], my[i_], mz[i_]);
-        real_t  weight = is0(m_) ? 1.0f : 0.5f;
+        real_t  weight = is0(m_) ? (real_t)1.0 : (real_t)0.5;
         topcharge     += weight * triangleCharge(m0, m3, m4);
     }
 
@@ -85,7 +85,7 @@ settopologicalchargelattice(__global real_t* __restrict     s,
     if (((ix+1<Nx) || PBCx) && ((iy-1>=0) || PBCy)) { 
         int         i_ = idx(hclampx(ix+1), lclampy(iy-1), iz); 
         real_t3     m_ = make_float3(mx[i_], my[i_], mz[i_]);
-        real_t  weight = is0(m_) ? 1.0f : 0.5f;
+        real_t  weight = is0(m_) ? (real_t)1.0 : (real_t)0.5;
         topcharge     += weight * triangleCharge(m0, m4, m1);
     }
 

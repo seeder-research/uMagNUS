@@ -23,7 +23,7 @@ kernmulRSymm2Dxy(__global real_t* __restrict  fftMx, __global real_t* __restrict
     real_t imMy = fftMy[e+1];
 
     // symmetry factor
-    real_t fxy = 1.0f;
+    real_t fxy = (real_t)1.0;
     if (iy > Ny/2) {
          iy = Ny-iy;
         fxy = -fxy;

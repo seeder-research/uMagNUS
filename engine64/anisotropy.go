@@ -180,29 +180,29 @@ func AddAnisotropyEnergyDensity(dst *data.Slice) {
 		// 1st
 		opencl.Zero(buf)
 		addUniaxialAnisotropyFrom(buf, M, Msat, Ku1, sZero, AnisU)
-		opencl.AddDotProduct(dst, -1./2., buf, Mf)
+		opencl.AddDotProduct(dst, float64(-1./2.), buf, Mf)
 
 		// 2nd
 		opencl.Zero(buf)
 		addUniaxialAnisotropyFrom(buf, M, Msat, sZero, Ku2, AnisU)
-		opencl.AddDotProduct(dst, -1./4., buf, Mf)
+		opencl.AddDotProduct(dst, float64(-1./4.), buf, Mf)
 	}
 
 	if haveCubic {
 		// 1st
 		opencl.Zero(buf)
 		addCubicAnisotropyFrom(buf, M, Msat, Kc1, sZero, sZero, AnisC1, AnisC2)
-		opencl.AddDotProduct(dst, -1./4., buf, Mf)
+		opencl.AddDotProduct(dst, float64(-1./4.), buf, Mf)
 
 		// 2nd
 		opencl.Zero(buf)
 		addCubicAnisotropyFrom(buf, M, Msat, sZero, Kc2, sZero, AnisC1, AnisC2)
-		opencl.AddDotProduct(dst, -1./6., buf, Mf)
+		opencl.AddDotProduct(dst, float64(-1./6.), buf, Mf)
 
 		// 3nd
 		opencl.Zero(buf)
 		addCubicAnisotropyFrom(buf, M, Msat, sZero, sZero, Kc3, AnisC1, AnisC2)
-		opencl.AddDotProduct(dst, -1./8., buf, Mf)
+		opencl.AddDotProduct(dst, float64(-1./8.), buf, Mf)
 	}
 }
 

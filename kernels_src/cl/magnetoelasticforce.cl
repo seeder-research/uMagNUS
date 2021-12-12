@@ -22,35 +22,35 @@ getmagnetoelasticforce(__global real_t* __restrict   fx, __global real_t* __rest
 
     int        I = idx(ix, iy, iz);                  // central cell index
     real_t3   m0 = make_float3(mx[I], my[I], mz[I]); // +0
-    real_t3 dmdx = make_float3(0.0f, 0.0f, 0.0f);    // ∂m/∂x
-    real_t3 dmdy = make_float3(0.0f, 0.0f, 0.0f);    // ∂m/∂y
-    real_t3 dmdz = make_float3(0.0f, 0.0f, 0.0f);    // ∂m/∂z
+    real_t3 dmdx = make_float3((real_t)0.0, (real_t)0.0, (real_t)0.0);    // ∂m/∂x
+    real_t3 dmdy = make_float3((real_t)0.0, (real_t)0.0, (real_t)0.0);    // ∂m/∂y
+    real_t3 dmdz = make_float3((real_t)0.0, (real_t)0.0, (real_t)0.0);    // ∂m/∂z
     int i_;                                          // neighbor index
 
     // ∂m/∂x
     {    
-        real_t3 m_m2 = make_float3(0.0f, 0.0f, 0.0f);    // -2
+        real_t3 m_m2 = make_float3((real_t)0.0, (real_t)0.0, (real_t)0.0);    // -2
         i_ = idx(lclampx(ix-2), iy, iz);                 // load neighbor m if inside grid, keep 0 otherwise
         if ((ix-2 >= 0) || PBCx)
         {
             m_m2 = make_float3(mx[i_], my[i_], mz[i_]);
         }
 
-        real_t3 m_m1 = make_float3(0.0f, 0.0f, 0.0f);    // -1
+        real_t3 m_m1 = make_float3((real_t)0.0, (real_t)0.0, (real_t)0.0);    // -1
         i_ = idx(lclampx(ix-1), iy, iz);                 // load neighbor m if inside grid, keep 0 otherwise
         if ((ix-1 >= 0) || PBCx)
         {
             m_m1 = make_float3(mx[i_], my[i_], mz[i_]);
         }
 
-        real_t3 m_p1 = make_float3(0.0f, 0.0f, 0.0f);     // +1
+        real_t3 m_p1 = make_float3((real_t)0.0, (real_t)0.0, (real_t)0.0);     // +1
         i_ = idx(hclampx(ix+1), iy, iz);
         if ((ix+1 < Nx) || PBCx)
         {
             m_p1 = make_float3(mx[i_], my[i_], mz[i_]);
         }
 
-        real_t3 m_p2 = make_float3(0.0f, 0.0f, 0.0f);     // +2
+        real_t3 m_p2 = make_float3((real_t)0.0, (real_t)0.0, (real_t)0.0);     // +2
         i_ = idx(hclampx(ix+2), iy, iz);
         if ((ix+2 < Nx) || PBCx)
         {
@@ -59,7 +59,7 @@ getmagnetoelasticforce(__global real_t* __restrict   fx, __global real_t* __rest
 
         if (is0(m_p1) && is0(m_m1))                                        //  +0
         {
-            dmdx = make_float3(0.0f, 0.0f, 0.0f);                          // --1-- zero
+            dmdx = make_float3((real_t)0.0, (real_t)0.0, (real_t)0.0);                          // --1-- zero
         }
         else if ((is0(m_m2) | is0(m_p2)) && !is0(m_p1) && !is0(m_m1))
         {
@@ -89,28 +89,28 @@ getmagnetoelasticforce(__global real_t* __restrict   fx, __global real_t* __rest
 
     // ∂m/∂y
     {
-        real_t3 m_m2 = make_float3(0.0f, 0.0f, 0.0f);
+        real_t3 m_m2 = make_float3((real_t)0.0, (real_t)0.0, (real_t)0.0);
         i_ = idx(ix, lclampy(iy-2), iz);
         if ((iy-2 >= 0) || PBCy)
         {
             m_m2 = make_float3(mx[i_], my[i_], mz[i_]);
         }
 
-        real_t3 m_m1 = make_float3(0.0f, 0.0f, 0.0f);
+        real_t3 m_m1 = make_float3((real_t)0.0, (real_t)0.0, (real_t)0.0);
         i_ = idx(ix, lclampy(iy-1), iz);
         if ((iy-1 >= 0) || PBCy)
         {
             m_m1 = make_float3(mx[i_], my[i_], mz[i_]);
         }
 
-        real_t3 m_p1 = make_float3(0.0f, 0.0f, 0.0f);
+        real_t3 m_p1 = make_float3((real_t)0.0, (real_t)0.0, (real_t)0.0);
         i_ = idx(ix, hclampy(iy+1), iz);
         if  ((iy+1 < Ny) || PBCy)
         {
             m_p1 = make_float3(mx[i_], my[i_], mz[i_]);
         }
 
-        real_t3 m_p2 = make_float3(0.0f, 0.0f, 0.0f);
+        real_t3 m_p2 = make_float3((real_t)0.0, (real_t)0.0, (real_t)0.0);
         i_ = idx(ix, hclampy(iy+2), iz);
         if  (iy+2 < Ny || PBCy)
         {
@@ -119,7 +119,7 @@ getmagnetoelasticforce(__global real_t* __restrict   fx, __global real_t* __rest
 
         if (is0(m_p1) && is0(m_m1))                                        //  +0
         {
-            dmdy = make_float3(0.0f, 0.0f, 0.0f);                          // --1-- zero
+            dmdy = make_float3((real_t)0.0, (real_t)0.0, (real_t)0.0);                          // --1-- zero
         }
         else if ((is0(m_m2) | is0(m_p2)) && !is0(m_p1) && !is0(m_m1))
         {
@@ -150,28 +150,28 @@ getmagnetoelasticforce(__global real_t* __restrict   fx, __global real_t* __rest
 
     // ∂u/∂z
     {
-        real_t3 m_m2 = make_float3(0.0f, 0.0f, 0.0f);
+        real_t3 m_m2 = make_float3((real_t)0.0, (real_t)0.0, (real_t)0.0);
         i_ = idx(ix, iy, lclampz(iz-2));
         if ((iz-2 >= 0) || PBCz)
         {
             m_m2 = make_float3(mx[i_], my[i_], mz[i_]);
         }
 
-        real_t3 m_m1 = make_float3(0.0f, 0.0f, 0.0f);
+        real_t3 m_m1 = make_float3((real_t)0.0, (real_t)0.0, (real_t)0.0);
         i_ = idx(ix, iy, lclampz(iz-1));
         if ((iz-1 >= 0) || PBCz)
         {
             m_m1 = make_float3(mx[i_], my[i_], mz[i_]);
         }
 
-        real_t3 m_p1 = make_float3(0.0f, 0.0f, 0.0f);
+        real_t3 m_p1 = make_float3((real_t)0.0, (real_t)0.0, (real_t)0.0);
         i_ = idx(ix, iy, hclampz(iz+1));
         if  ((iz+1 < Nz) || PBCz)
         {
             m_p1 = make_float3(mx[i_], my[i_], mz[i_]);
         }
 
-        real_t3 m_p2 = make_float3(0.0f, 0.0f, 0.0f);
+        real_t3 m_p2 = make_float3((real_t)0.0, (real_t)0.0, (real_t)0.0);
         i_ = idx(ix, iy, hclampz(iz+2));
         if  ((iz+2 < Nz) || PBCz)
         {
@@ -180,7 +180,7 @@ getmagnetoelasticforce(__global real_t* __restrict   fx, __global real_t* __rest
 
         if (is0(m_p1) && is0(m_m1))                                        //  +0
         {
-            dmdz = make_float3(0.0f, 0.0f, 0.0f);                          // --1-- zero
+            dmdz = make_float3((real_t)0.0, (real_t)0.0, (real_t)0.0);                          // --1-- zero
         }
         else if ((is0(m_m2) | is0(m_p2)) && !is0(m_p1) && !is0(m_m1))
         {

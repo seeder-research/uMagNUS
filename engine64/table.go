@@ -5,7 +5,7 @@ import (
 	data "github.com/seeder-research/uMagNUS/data64"
 	"github.com/seeder-research/uMagNUS/httpfs"
 	opencl "github.com/seeder-research/uMagNUS/opencl64"
-	"github.com/seeder-research/uMagNUS/script"
+	script "github.com/seeder-research/uMagNUS/script64"
 	"github.com/seeder-research/uMagNUS/timer"
 	"github.com/seeder-research/uMagNUS/util"
 	"io"

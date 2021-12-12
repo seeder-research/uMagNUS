@@ -39,7 +39,7 @@ func (p *lut) gpuLUT() opencl.LUTPtrs {
 		p.assureAlloc()
 		opencl.ClCmdQueue.Finish() // sync previous kernels, may still be using gpu lut
 		for c := range p.gpu_buf {
-			opencl.MemCpyHtoD(p.gpu_buf[c], unsafe.Pointer(&p.cpu_buf[c][0]), opencl.SIZEOF_FLOAT32*NREGION)
+			opencl.MemCpyHtoD(p.gpu_buf[c], unsafe.Pointer(&p.cpu_buf[c][0]), opencl.SIZEOF_FLOAT64*NREGION)
 		}
 		p.gpu_ok = true
 		opencl.ClCmdQueue.Finish() //sync upload
@@ -71,7 +71,7 @@ func (p *lut) nonZero() bool { return !p.isZero() }
 func (p *lut) assureAlloc() {
 	if p.gpu_buf[0] == nil {
 		for i := range p.gpu_buf {
-			p.gpu_buf[i] = unsafe.Pointer(opencl.MemAlloc(NREGION * opencl.SIZEOF_FLOAT32))
+			p.gpu_buf[i] = unsafe.Pointer(opencl.MemAlloc(NREGION * opencl.SIZEOF_FLOAT64))
 		}
 	}
 }

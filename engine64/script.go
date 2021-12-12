@@ -4,7 +4,7 @@ package engine64
 
 import (
 	"github.com/seeder-research/uMagNUS/httpfs"
-	"github.com/seeder-research/uMagNUS/script"
+	script "github.com/seeder-research/uMagNUS/script64"
 	"reflect"
 )
 

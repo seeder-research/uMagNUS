@@ -40,8 +40,8 @@ addmagnetoelasticfield(__global real_t* __restrict   Bx, __global real_t* __rest
 
         real_t3 m = {mx[I], my[I], mz[I]};
 
-        Bx[I] += -(2.0f*B1*m.x*Exx + B2*(m.y*Exy + m.z*Exz));
-        By[I] += -(2.0f*B1*m.y*Eyy + B2*(m.x*Eyx + m.z*Eyz));
-        Bz[I] += -(2.0f*B1*m.z*Ezz + B2*(m.x*Ezx + m.y*Ezy));
+        Bx[I] += -((real_t)2.0*B1*m.x*Exx + B2*(m.y*Exy + m.z*Exz));
+        By[I] += -((real_t)2.0*B1*m.y*Eyy + B2*(m.x*Eyx + m.z*Eyz));
+        Bz[I] += -((real_t)2.0*B1*m.z*Ezz + B2*(m.x*Ezx + m.y*Ezy));
     }
 }

@@ -38,20 +38,20 @@ addzhanglitorque2(__global real_t* __restrict     tx, __global real_t* __restric
     real_t3     J = pol*Jvec;
     real_t3 hspin = make_float3(0.0f, 0.0f, 0.0f); // (u·∇)m
 
-    if (J.x != 0.0f) {
+    if (J.x != (real_t)0.0) {
         hspin += (b/cx)*J.x * make_float3(deltax(mx), deltax(my), deltax(mz));
     }
-    if (J.y != 0.0f) {
+    if (J.y != (real_t)0.0) {
         hspin += (b/cy)*J.y * make_float3(deltay(mx), deltay(my), deltay(mz));
     }
-    if (J.z != 0.0f) {
+    if (J.z != (real_t)0.0) {
         hspin += (b/cz)*J.z * make_float3(deltaz(mx), deltaz(my), deltaz(mz));
     }
 
     real_t3      m = make_float3(mx[i], my[i], mz[i]);
-    real_t3 torque = (-1.0f/(1.0f + alpha*alpha)) * (
-                         (1.0f+xi*alpha) * cross(m, cross(m, hspin))
-                         +(  xi-alpha) * cross(m, hspin)           );
+    real_t3 torque = ((real_t)-1.0/((real_t)1.0 + alpha*alpha)) * (
+                         ((real_t)1.0+xi*alpha) * cross(m, cross(m, hspin))
+                                  +(  xi-alpha) * cross(m, hspin)           );
 
     // write back, adding to torque
     tx[i] += torque.x;

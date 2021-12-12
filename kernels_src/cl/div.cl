@@ -6,6 +6,6 @@ pointwise_div(__global real_t* __restrict dst, __global real_t* __restrict a, __
     int gsize = get_global_size(0);
 
     for (int i = gid; i < N; i += gsize) {
-        dst[i] = (b[i] == 0.0f) ? 0.0f : (a[i] / b[i]);
+        dst[i] = (b[i] == (real_t)0.0) ? (real_t)0.0 : (a[i] / b[i]);
     }
 }

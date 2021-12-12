@@ -46,15 +46,15 @@ addcubicanisotropy2(__global real_t* __restrict   Bx, __global real_t* __restric
         real_t u2m = dot(u2, m);
         real_t u3m = dot(u3, m);
 
-        real_t3 B = -2.0f*k1*((pow2(u2m) + pow2(u3m)) * (    (u1m) * u1) +
-                              (pow2(u1m) + pow2(u3m)) * (    (u2m) * u2) +
-                              (pow2(u1m) + pow2(u2m)) * (    (u3m) * u3))-
-                     2.0f*k2*((pow2(u2m) * pow2(u3m)) * (    (u1m) * u1) +
-                              (pow2(u1m) * pow2(u3m)) * (    (u2m) * u2) +
-                              (pow2(u1m) * pow2(u2m)) * (    (u3m) * u3))-
-                     4.0f*k3*((pow4(u2m) + pow4(u3m)) * (pow3(u1m) * u1) +
-                              (pow4(u1m) + pow4(u3m)) * (pow3(u2m) * u2) +
-                              (pow4(u1m) + pow4(u2m)) * (pow3(u3m) * u3));
+        real_t3 B = (real_t)-2.0*k1*((pow2(u2m) + pow2(u3m)) * (    (u1m) * u1) +
+                                     (pow2(u1m) + pow2(u3m)) * (    (u2m) * u2) +
+                                     (pow2(u1m) + pow2(u2m)) * (    (u3m) * u3))-
+                    (real_t)2.0f*k2*((pow2(u2m) * pow2(u3m)) * (    (u1m) * u1) +
+                                     (pow2(u1m) * pow2(u3m)) * (    (u2m) * u2) +
+                                     (pow2(u1m) * pow2(u2m)) * (    (u3m) * u3))-
+                    (real_t)4.0f*k3*((pow4(u2m) + pow4(u3m)) * (pow3(u1m) * u1) +
+                                     (pow4(u1m) + pow4(u3m)) * (pow3(u2m) * u2) +
+                                     (pow4(u1m) + pow4(u2m)) * (pow3(u3m) * u3));
 
         Bx[i] += B.x;
         By[i] += B.y;

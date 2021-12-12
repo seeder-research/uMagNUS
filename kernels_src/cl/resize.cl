@@ -9,8 +9,8 @@ resize(__global real_t* __restrict   dst, int     Dx, int     Dy, int Dz,
 
     if (ix<Dx && iy<Dy) {
 
-        real_t sum = 0.0f;
-        real_t   n = 0.0f;
+        real_t sum = (real_t)0.0;
+        real_t   n = (real_t)0.0;
 
         for (int J=0; J<scaley; J++) {
             int j2 = iy*scaley+J;
@@ -20,7 +20,7 @@ resize(__global real_t* __restrict   dst, int     Dx, int     Dy, int Dz,
 
                 if ((j2 < Sy) && (k2 < Sx)) {
                     sum += src[(layer*Sy + j2)*Sx + k2];
-                    n += 1.0f;
+                    n += (real_t)1.0;
                 }
             }
         }

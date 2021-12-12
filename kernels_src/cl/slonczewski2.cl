@@ -33,23 +33,23 @@ addslonczewskitorque2(__global real_t* __restrict                tx, __global re
         real_t  epsilonPrime = amul(epsPrime_, epsPrime_mul, i);
         real_t     thickness = amul(thickness_, thickness_mul, i);
 
-        if (thickness == 0.0) { // if thickness is not set, use the thickness of the mesh instead
+        if (thickness == (real_t)0.0) { // if thickness is not set, use the thickness of the mesh instead
             thickness = meshThickness;
         }
         thickness *= freeLayerPosition; // switch sign if fixedlayer is at the bottom
 
-        if (J == 0.0f || Ms == 0.0f) {
+        if (J == (real_t)0.0 || Ms == (real_t)0.0) {
             return;
         }
 
         real_t    beta = (HBAR / QE) * (J / (thickness*Ms) );
         real_t lambda2 = lambda * lambda;
-        real_t epsilon = pol * lambda2 / ((lambda2 + 1.0f) + (lambda2 - 1.0f) * dot(p, m));
+        real_t epsilon = pol * lambda2 / ((lambda2 + (real_t)1.0) + (lambda2 - (real_t)1.0) * dot(p, m));
 
         real_t A = beta * epsilon;
         real_t B = beta * epsilonPrime;
 
-        real_t     gilb = 1.0f / (1.0f + alpha * alpha);
+        real_t     gilb = (real_t)1.0 / ((real_t)1.0 + alpha * alpha);
         real_t mxpxmFac = gilb * (A + alpha * B);
         real_t   pxmFac = gilb * (B - alpha * A);
 

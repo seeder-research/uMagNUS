@@ -26,8 +26,8 @@ adduniaxialanisotropy2(__global real_t* __restrict  Bx, __global real_t* __restr
 
         real_t3 m  = {mx[i], my[i], mz[i]};
         real_t  mu = dot(m, u);
-        real_t3 Ba = 2.0f*K1*    (mu)*u+
-                     4.0f*K2*pow3(mu)*u;
+        real_t3 Ba = (real_t)2.0*K1*    (mu)*u+
+                     (real_t)4.0*K2*pow3(mu)*u;
 
         Bx[i] += Ba.x;
         By[i] += Ba.y;

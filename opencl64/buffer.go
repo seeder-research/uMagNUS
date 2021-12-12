@@ -31,7 +31,7 @@ func Buffer(nComp int, size [3]int) *data.Slice {
 
 	// re-use as many buffers as possible form our stack
 	N := prod(size)
-	bytes := N * SIZEOF_FLOAT32
+	bytes := N * SIZEOF_FLOAT64
 	initVal := float64(0.0)
 	pool := buf_pool[N]
 	nFromPool := iMin(nComp, len(pool))
@@ -46,12 +46,12 @@ func Buffer(nComp int, size [3]int) *data.Slice {
 		if len(buf_check) >= buf_max {
 			log.Panic("too many buffers in use, possible memory leak")
 		}
-		tmpPtr, err := ClCtx.CreateEmptyBufferFloat32(cl.MemReadWrite, N)
+		tmpPtr, err := ClCtx.CreateEmptyBufferFloat64(cl.MemReadWrite, N)
 		if err != nil {
 			panic(err)
 		}
 		ptrs[i] = unsafe.Pointer(tmpPtr)
-		fillWait[i], err = ClCmdQueue.EnqueueFillBuffer(tmpPtr, unsafe.Pointer(&initVal), SIZEOF_FLOAT32, 0, bytes, nil)
+		fillWait[i], err = ClCmdQueue.EnqueueFillBuffer(tmpPtr, unsafe.Pointer(&initVal), SIZEOF_FLOAT64, 0, bytes, nil)
 		if err != nil {
 			log.Printf("CreateEmptyBuffer failed: %+v \n", err)
 		}

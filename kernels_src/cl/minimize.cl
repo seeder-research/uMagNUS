@@ -14,8 +14,8 @@ minimize(__global real_t* __restrict  mx, __global real_t* __restrict  my, __glo
         real_t3  t = {tx[i], ty[i], tz[i]};
 
         real_t       t2 = dt*dt*dot(t, t);
-        real_t3  result = (4.0f - t2) * m0 + 4.0f * dt * t;
-        real_t  divisor = 4.0f + t2;
+        real_t3  result = ((real_t)4.0 - t2) * m0 + (real_t)4.0 * dt * t;
+        real_t  divisor = (real_t)4.0 + t2;
 
         mx[i] = result.x / divisor;
         my[i] = result.y / divisor;

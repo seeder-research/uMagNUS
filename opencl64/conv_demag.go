@@ -126,7 +126,7 @@ func (c *DemagConvolution) is2D() bool {
 // zero 1-component slice
 func zero1_async(dst *data.Slice) {
 	val := float64(0.0)
-	event, err := ClCmdQueue.EnqueueFillBuffer((*cl.MemObject)(dst.DevPtr(0)), unsafe.Pointer(&val), SIZEOF_FLOAT32, 0, dst.Len()*SIZEOF_FLOAT32, [](*cl.Event){dst.GetEvent(0)})
+	event, err := ClCmdQueue.EnqueueFillBuffer((*cl.MemObject)(dst.DevPtr(0)), unsafe.Pointer(&val), SIZEOF_FLOAT64, 0, dst.Len()*SIZEOF_FLOAT64, [](*cl.Event){dst.GetEvent(0)})
 	dst.SetEvent(0, event)
 	if err != nil {
 		fmt.Printf("EnqueueFillBuffer failed: %+v \n", err)
