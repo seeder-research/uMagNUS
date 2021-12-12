@@ -3,8 +3,8 @@ package engine64
 // Mangeto-elastic coupling.
 
 import (
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/opencl"
+	data "github.com/seeder-research/uMagNUS/data64"
+	opencl "github.com/seeder-research/uMagNUS/opencl64"
 	"github.com/seeder-research/uMagNUS/util"
 )
 

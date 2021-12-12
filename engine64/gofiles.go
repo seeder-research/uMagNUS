@@ -4,7 +4,7 @@ package engine64
 
 import (
 	"flag"
-	"github.com/seeder-research/uMagNUS/opencl64"
+	opencl "github.com/seeder-research/uMagNUS/opencl64"
 	"github.com/seeder-research/uMagNUS/util"
 	"os"
 	"path"

@@ -2,8 +2,8 @@ package engine64
 
 import (
 	"fmt"
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/mag"
+	data "github.com/seeder-research/uMagNUS/data64"
+	mag "github.com/seeder-research/uMagNUS/mag64"
 	"github.com/seeder-research/uMagNUS/util"
 	"math"
 )

@@ -3,8 +3,8 @@ package engine64
 import (
 	"reflect"
 
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/opencl"
+	data "github.com/seeder-research/uMagNUS/data64"
+	opencl "github.com/seeder-research/uMagNUS/opencl64"
 	"github.com/seeder-research/uMagNUS/util"
 )
 
@@ -306,14 +306,14 @@ func JfromV(Vappl, A1, A2, m, refM, Jcurr *data.Slice, ToMulFactor bool) {
 	opencl.AddDotProduct(dp, float64(1.0), m, refM)
 
 	for ii := 0; ii < A1.NComp(); ii++ {
-		opencl.Madd2(a1int, A1.Comp(ii), A2.Comp(ii), float64(0.5), float32(0.5))
-		opencl.Madd2(a2int, A1.Comp(ii), A2.Comp(ii), float64(0.5), float32(-0.5))
+		opencl.Madd2(a1int, A1.Comp(ii), A2.Comp(ii), float64(0.5), float64(0.5))
+		opencl.Madd2(a2int, A1.Comp(ii), A2.Comp(ii), float64(0.5), float64(-0.5))
 		opencl.Mul(factor1, a2int, dp)
 		if ToMulFactor {
-			opencl.Madd2(factor, a1int, factor1, float64(float64(1.0)/xArea[ii]), float32(float64(1.0)/xArea[ii]))
+			opencl.Madd2(factor, a1int, factor1, float64(float64(1.0)/xArea[ii]), float64(float64(1.0)/xArea[ii]))
 			opencl.Mul(Jcurr.Comp(ii), Vappl.Comp(ii), factor)
 		} else {
-			opencl.Madd2(factor, a1int, factor1, float64(xArea[ii]), float32(xArea[ii]))
+			opencl.Madd2(factor, a1int, factor1, float64(xArea[ii]), float64(xArea[ii]))
 			opencl.Div(Jcurr.Comp(ii), Vappl.Comp(ii), factor)
 		}
 	}

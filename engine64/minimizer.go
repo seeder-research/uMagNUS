@@ -3,8 +3,8 @@ package engine64
 // Minimize follows the steepest descent method as per Exl et al., JAP 115, 17D118 (2014).
 
 import (
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/opencl"
+	data "github.com/seeder-research/uMagNUS/data64"
+	opencl "github.com/seeder-research/uMagNUS/opencl64"
 )
 
 var (

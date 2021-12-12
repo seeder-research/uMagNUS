@@ -7,8 +7,8 @@ import (
 	"math"
 	"unsafe"
 
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/opencl"
+	data "github.com/seeder-research/uMagNUS/data64"
+	opencl "github.com/seeder-research/uMagNUS/opencl64"
 	"github.com/seeder-research/uMagNUS/util"
 )
 
@@ -169,10 +169,10 @@ func (p *exchParam) update() {
 func (p *exchParam) upload() {
 	// alloc if  needed
 	if p.gpu == nil {
-		p.gpu = opencl.SymmLUT(opencl.MemAlloc(len(p.lut) * opencl.SIZEOF_FLOAT32))
+		p.gpu = opencl.SymmLUT(opencl.MemAlloc(len(p.lut) * opencl.SIZEOF_FLOAT64))
 	}
 	lut := p.lut // Copy, to work around Go 1.6 cgo pointer limitations.
-	opencl.MemCpyHtoD(unsafe.Pointer(p.gpu), unsafe.Pointer(&lut[0]), opencl.SIZEOF_FLOAT32*len(p.lut))
+	opencl.MemCpyHtoD(unsafe.Pointer(p.gpu), unsafe.Pointer(&lut[0]), opencl.SIZEOF_FLOAT64*len(p.lut))
 	p.gpu_ok = true
 }
 
@@ -190,7 +190,7 @@ func symmidx(i, j int) int {
 // If both arguments have the same sign, the average mean is returned. If the arguments differ in sign
 // (which is possible in the case of DMI), the geometric mean of the geometric and arithmetic mean is
 // used. This average is continuous everywhere, monotonic increasing, and bounded by the argument values.
-func exchAverage(exi, exj float64) float32 {
+func exchAverage(exi, exj float64) float64 {
 	if exi*exj >= 0.0 {
 		return 2 / (1/exi + 1/exj)
 	} else {

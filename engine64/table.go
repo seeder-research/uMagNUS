@@ -2,9 +2,9 @@ package engine64
 
 import (
 	"fmt"
-	"github.com/seeder-research/uMagNUS/data"
+	data "github.com/seeder-research/uMagNUS/data64"
 	"github.com/seeder-research/uMagNUS/httpfs"
-	"github.com/seeder-research/uMagNUS/opencl"
+	opencl "github.com/seeder-research/uMagNUS/opencl64"
 	"github.com/seeder-research/uMagNUS/script"
 	"github.com/seeder-research/uMagNUS/timer"
 	"github.com/seeder-research/uMagNUS/util"

@@ -34,7 +34,7 @@ func bubblePos() []float64 {
 		for iy := range mz {
 			for ix := range mz[0] {
 				magsum += ((mz[iy][ix]*float64(BubbleMz) + 1.) / 2.)
-				weightedsum += ((mz[iy][ix]*float64(BubbleMz) + 1.) / 2.) * float32(iy)
+				weightedsum += ((mz[iy][ix]*float64(BubbleMz) + 1.) / 2.) * float64(iy)
 			}
 		}
 		posy = float64(weightedsum / magsum)
@@ -47,7 +47,7 @@ func bubblePos() []float64 {
 		for ix := range mz[0] {
 			for iy := range mz {
 				magsum += ((mz[iy][ix]*float64(BubbleMz) + 1.) / 2.)
-				weightedsum += ((mz[iy][ix]*float64(BubbleMz) + 1.) / 2.) * float32(ix)
+				weightedsum += ((mz[iy][ix]*float64(BubbleMz) + 1.) / 2.) * float64(ix)
 			}
 		}
 		posx = float64(weightedsum / magsum)

@@ -3,7 +3,7 @@ package engine64
 // Relax tries to find the minimum energy state.
 
 import (
-	"github.com/seeder-research/uMagNUS/opencl"
+	opencl "github.com/seeder-research/uMagNUS/opencl64"
 	"math"
 )
 

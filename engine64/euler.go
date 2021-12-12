@@ -1,7 +1,7 @@
 package engine64
 
 import (
-	"github.com/seeder-research/uMagNUS/opencl"
+	opencl "github.com/seeder-research/uMagNUS/opencl64"
 	"github.com/seeder-research/uMagNUS/util"
 )
 

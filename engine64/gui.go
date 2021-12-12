@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/seeder-research/uMagNUS/gui"
 	"github.com/seeder-research/uMagNUS/httpfs"
-	"github.com/seeder-research/uMagNUS/opencl"
+	opencl "github.com/seeder-research/uMagNUS/opencl64"
 	"github.com/seeder-research/uMagNUS/util"
 	"math/rand"
 	"net"
@@ -430,7 +430,7 @@ func (g *guistate) prepareOnUpdate() {
 					if p.NComp() == 1 {
 						g.Set(n, float64(v[0]))
 					} else {
-						g.Set(n, fmt.Sprintf("(%v, %v, %v)", float64(v[X]), float32(v[Y]), float32(v[Z])))
+						g.Set(n, fmt.Sprintf("(%v, %v, %v)", float64(v[X]), float64(v[Y]), float64(v[Z])))
 					}
 				}
 			}

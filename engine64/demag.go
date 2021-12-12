@@ -5,9 +5,9 @@ package engine64
 import (
 	"log"
 
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/mag"
-	"github.com/seeder-research/uMagNUS/opencl"
+	data "github.com/seeder-research/uMagNUS/data64"
+	mag "github.com/seeder-research/uMagNUS/mag64"
+	opencl "github.com/seeder-research/uMagNUS/opencl64"
 )
 
 // Demag variables

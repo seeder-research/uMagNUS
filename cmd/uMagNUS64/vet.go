@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/seeder-research/uMagNUS/engine64"
+	engine "github.com/seeder-research/uMagNUS/engine64"
 	"github.com/seeder-research/uMagNUS/util"
 )
 

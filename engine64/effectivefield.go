@@ -2,7 +2,9 @@ package engine64
 
 // Effective field
 
-import "github.com/seeder-research/uMagNUS/data"
+import (
+	data "github.com/seeder-research/uMagNUS/data64"
+)
 
 var B_eff = NewVectorField("B_eff", "T", "Effective field", SetEffectiveField)
 

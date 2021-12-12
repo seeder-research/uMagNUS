@@ -50,7 +50,7 @@ func interpolate_maxpos(f0, d1, f1, d2, f2 float64) float64 {
 	return float64(-b / (2 * a))
 }
 
-func abs(x float64) float32 {
+func abs(x float64) float64 {
 	if x > 0 {
 		return x
 	} else {

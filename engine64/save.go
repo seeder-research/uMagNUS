@@ -6,12 +6,12 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/draw"
-	"github.com/seeder-research/uMagNUS/dump"
+	data "github.com/seeder-research/uMagNUS/data64"
+	draw "github.com/seeder-research/uMagNUS/draw64"
+	dump "github.com/seeder-research/uMagNUS/dump64"
 	"github.com/seeder-research/uMagNUS/httpfs"
-	"github.com/seeder-research/uMagNUS/oommf"
-	"github.com/seeder-research/uMagNUS/opencl"
+	oommf "github.com/seeder-research/uMagNUS/oommf64"
+	opencl "github.com/seeder-research/uMagNUS/opencl64"
 	"github.com/seeder-research/uMagNUS/util"
 )
 

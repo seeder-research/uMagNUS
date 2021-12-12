@@ -1,7 +1,7 @@
 package engine64
 
 import (
-	"github.com/seeder-research/uMagNUS/data"
+	data "github.com/seeder-research/uMagNUS/data64"
 	"math"
 )
 

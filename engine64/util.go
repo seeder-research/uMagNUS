@@ -8,12 +8,12 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/dump"
+	data "github.com/seeder-research/uMagNUS/data64"
+	dump "github.com/seeder-research/uMagNUS/dump64"
 	"github.com/seeder-research/uMagNUS/httpfs"
-	"github.com/seeder-research/uMagNUS/mag"
-	"github.com/seeder-research/uMagNUS/oommf"
-	"github.com/seeder-research/uMagNUS/opencl"
+	mag "github.com/seeder-research/uMagNUS/mag64"
+	oommf "github.com/seeder-research/uMagNUS/oommf64"
+	opencl "github.com/seeder-research/uMagNUS/opencl64"
 	"github.com/seeder-research/uMagNUS/util"
 )
 
@@ -151,7 +151,7 @@ func sign(x float64) float64 {
 }
 
 // returns a/b, or 0 when b == 0
-func safediv(a, b float64) float32 {
+func safediv(a, b float64) float64 {
 	if b == 0 {
 		return 0
 	} else {

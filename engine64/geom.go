@@ -1,8 +1,8 @@
 package engine64
 
 import (
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/opencl"
+	data "github.com/seeder-research/uMagNUS/data64"
+	opencl "github.com/seeder-research/uMagNUS/opencl64"
 	"github.com/seeder-research/uMagNUS/util"
 	"math/rand"
 )
@@ -164,7 +164,7 @@ func (geometry *geom) setGeom(s Shape) {
 			if mx == 0 && my == 0 && mz == 0 {
 				needupload = true
 				rnd := randomDir(rng)
-				m[X][i], m[Y][i], m[Z][i] = float64(rnd[X]), float32(rnd[Y]), float32(rnd[Z])
+				m[X][i], m[Y][i], m[Z][i] = float64(rnd[X]), float64(rnd[Y]), float64(rnd[Z])
 			}
 		}
 	}

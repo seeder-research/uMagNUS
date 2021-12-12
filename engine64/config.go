@@ -3,7 +3,7 @@ package engine64
 // Utilities for setting magnetic configurations.
 
 import (
-	"github.com/seeder-research/uMagNUS/data"
+	data "github.com/seeder-research/uMagNUS/data64"
 	"math"
 	"math/rand"
 )

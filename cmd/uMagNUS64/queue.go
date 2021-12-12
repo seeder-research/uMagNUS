@@ -5,8 +5,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/seeder-research/uMagNUS/engine64"
-	"github.com/seeder-research/uMagNUS/opencl64"
+	engine "github.com/seeder-research/uMagNUS/engine64"
+	opencl "github.com/seeder-research/uMagNUS/opencl64"
 	"io"
 	"log"
 	"net/http"

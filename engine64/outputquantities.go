@@ -10,8 +10,8 @@ in objects that provide:
 
 import (
 	"fmt"
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/opencl"
+	data "github.com/seeder-research/uMagNUS/data64"
+	opencl "github.com/seeder-research/uMagNUS/opencl64"
 )
 
 // The Info interface defines the bare minimum methods a quantity must implement

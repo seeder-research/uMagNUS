@@ -1,8 +1,8 @@
 package engine64
 
 import (
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/opencl"
+	data "github.com/seeder-research/uMagNUS/data64"
+	opencl "github.com/seeder-research/uMagNUS/opencl64"
 )
 
 var (
@@ -47,7 +47,7 @@ func shiftMag(m *data.Slice, dx int) {
 	defer opencl.Recycle(m2)
 	for c := 0; c < m.NComp(); c++ {
 		comp := m.Comp(c)
-		opencl.ShiftX(m2, comp, dx, float64(ShiftMagL[c]), float32(ShiftMagR[c]))
+		opencl.ShiftX(m2, comp, dx, float64(ShiftMagL[c]), float64(ShiftMagR[c]))
 		data.Copy(comp, m2) // str0 ?
 	}
 }
@@ -72,7 +72,7 @@ func shiftMagY(m *data.Slice, dy int) {
 	defer opencl.Recycle(m2)
 	for c := 0; c < m.NComp(); c++ {
 		comp := m.Comp(c)
-		opencl.ShiftY(m2, comp, dy, float64(ShiftMagU[c]), float32(ShiftMagD[c]))
+		opencl.ShiftY(m2, comp, dy, float64(ShiftMagU[c]), float64(ShiftMagD[c]))
 		data.Copy(comp, m2) // str0 ?
 	}
 }

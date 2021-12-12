@@ -4,8 +4,8 @@ package engine64
 
 import (
 	"fmt"
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/opencl"
+	data "github.com/seeder-research/uMagNUS/data64"
+	opencl "github.com/seeder-research/uMagNUS/opencl64"
 	"github.com/seeder-research/uMagNUS/util"
 )
 
@@ -242,7 +242,7 @@ func (o *mAddition) EvalTo(dst *data.Slice) {
 	B := ValueOf(o.b)
 	defer opencl.Recycle(B)
 	opencl.Zero(dst)
-	opencl.Madd2(dst, A, B, float64(o.fac1), float32(o.fac2))
+	opencl.Madd2(dst, A, B, float64(o.fac1), float64(o.fac2))
 }
 
 // Mul returns a new quantity that evaluates to the pointwise product a and b.
