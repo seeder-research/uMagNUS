@@ -85,11 +85,11 @@ func setMaskedDemagField(dst *data.Slice, msat opencl.MSlice) {
 	// convolution with masked-out cells.
 	if EnableDemag {
 		// Normal demag, everywhere
-		demagConv().Exec(dst, M.Buffer(), geometry.Gpu(), msat)
+		demagConv().Exec(dst, M.Buffer(), buf, msat)
 	}
 	if EnableNewellDemag {
 		// Normal demag (Newell formulation), everywhere
-		newellDemagConv().Exec(dst, M.Buffer(), geometry.Gpu(), msat)
+		newellDemagConv().Exec(dst, M.Buffer(), buf, msat)
 	}
 
 	// After convolution, mask-out the field in the NoDemagSpins cells
