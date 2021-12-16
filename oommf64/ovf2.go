@@ -80,12 +80,16 @@ func writeOVF2Data(out io.Writer, q *data.Slice, dataformat string) {
 		canonicalFormat = "Text"
 		hdr(out, "Begin", "Data "+canonicalFormat)
 		writeOVFText(out, q)
-	case "binary", "binary 4":
+	case "binary 4":
 		canonicalFormat = "Binary 4"
 		hdr(out, "Begin", "Data "+canonicalFormat)
 		writeOVF2DataBinary4(out, q)
+	case "binary", "binary 8":
+		canonicalFormat = "Binary 8"
+		hdr(out, "Begin", "Data "+canonicalFormat)
+		writeOVF2DataBinary8(out, q)
 	default:
-		log.Fatalf("Illegal OMF data format: %v. Options are: Text, Binary 4", dataformat)
+		log.Fatalf("Illegal OMF data format: %v. Options are: Text, Binary 4, Binary 8", dataformat)
 	}
 	hdr(out, "End", "Data "+canonicalFormat)
 }
@@ -100,7 +104,7 @@ func writeOVF2DataBinary4(out io.Writer, array *data.Slice) {
 	var bytes []byte
 
 	// OOMMF requires this number to be first to check the format
-	var controlnumber float64 = OVF_CONTROL_NUMBER_4
+	var controlnumber float32 = OVF_CONTROL_NUMBER_4
 	bytes = (*[4]byte)(unsafe.Pointer(&controlnumber))[:]
 	out.Write(bytes)
 
@@ -110,6 +114,33 @@ func writeOVF2DataBinary4(out io.Writer, array *data.Slice) {
 			for ix := 0; ix < size[X]; ix++ {
 				for c := 0; c < ncomp; c++ {
 					bytes = (*[4]byte)(unsafe.Pointer(&data[c][iz][iy][ix]))[:]
+					out.Write(bytes)
+				}
+			}
+		}
+	}
+}
+
+func writeOVF2DataBinary8(out io.Writer, array *data.Slice) {
+
+	//w.count(w.out.Write((*(*[1<<31 - 1]byte)(unsafe.Pointer(&list[0])))[0 : 4*len(list)])) // (shortcut)
+
+	data := array.Tensors()
+	size := array.Size()
+
+	var bytes []byte
+
+	// OOMMF requires this number to be first to check the format
+	var controlnumber float64 = OVF_CONTROL_NUMBER_8
+	bytes = (*[8]byte)(unsafe.Pointer(&controlnumber))[:]
+	out.Write(bytes)
+
+	ncomp := array.NComp()
+	for iz := 0; iz < size[Z]; iz++ {
+		for iy := 0; iy < size[Y]; iy++ {
+			for ix := 0; ix < size[X]; ix++ {
+				for c := 0; c < ncomp; c++ {
+					bytes = (*[8]byte)(unsafe.Pointer(&data[c][iz][iy][ix]))[:]
 					out.Write(bytes)
 				}
 			}
@@ -132,7 +163,7 @@ func readOVF2DataBinary4(in io.Reader, array *data.Slice) {
 		for iy := 0; iy < size[Y]; iy++ {
 			for ix := 0; ix < size[X]; ix++ {
 				for c := 0; c < ncomp; c++ {
-					data[c][iz][iy][ix] = readFloat32(in)
+					data[c][iz][iy][ix] = float64(readFloat32(in))
 				}
 			}
 		}
@@ -148,12 +179,12 @@ func readFull(in io.Reader, buf []byte) {
 	return
 }
 
-// read float64 in machine endianess, panic on error
-func readFloat32(in io.Reader) float64 {
+// read float32 in machine endianess, panic on error
+func readFloat32(in io.Reader) float32 {
 	var bytes4 [4]byte
 	bytes := bytes4[:]
 	readFull(in, bytes)
-	return *((*float64)(unsafe.Pointer(&bytes4)))
+	return *((*float32)(unsafe.Pointer(&bytes4)))
 }
 
 // read float64 in machine endianess, panic on error

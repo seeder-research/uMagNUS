@@ -75,7 +75,7 @@ func SaveMFMKernel(fname string, kernel *d.Slice) error {
 	}
 	out := bufio.NewWriter(f)
 	defer out.Flush()
-	oommf.WriteOVF2(out, kernel, d.Meta{}, "binary 4")
+	oommf.WriteOVF2(out, kernel, d.Meta{}, "binary 8")
 	return nil
 }
 

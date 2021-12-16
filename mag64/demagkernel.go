@@ -105,7 +105,7 @@ func SaveKernel(fname string, kernel *data.Slice, info data.Meta) error {
 	}
 	out := bufio.NewWriter(f)
 	defer out.Flush()
-	oommf.WriteOVF2(out, kernel, info, "binary 4")
+	oommf.WriteOVF2(out, kernel, info, "binary 8")
 	return nil
 }
 
