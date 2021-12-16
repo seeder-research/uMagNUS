@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	data "github.com/seeder-research/uMagNUS/data64"
-	"github.com/seeder-research/uMagNUS/oommf64"
+	oommf "github.com/seeder-research/uMagNUS/oommf64"
 	"github.com/seeder-research/uMagNUS/util"
 	"math"
 	"os"

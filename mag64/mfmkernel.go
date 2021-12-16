@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	d "github.com/seeder-research/uMagNUS/data64"
-	"github.com/seeder-research/uMagNUS/oommf64"
+	oommf "github.com/seeder-research/uMagNUS/oommf64"
 	"github.com/seeder-research/uMagNUS/util"
 	"math"
 	"os"
@@ -27,7 +27,7 @@ func MFMKernel(mesh *d.Mesh, lift, tipsize float64, cacheDir string) (kernel [3]
 	}()
 
 	// Try to load kernel
-	basename := fmt.Sprint(cacheDir, "/", "uMagNUSMFMkernel_", mesh.Size(), "_", mesh.PBC(), "_", mesh.CellSize(), "_", lift, "_", tipsize, "_")
+	basename := fmt.Sprint(cacheDir, "/", "uMagNUS64MFMkernel_", mesh.Size(), "_", mesh.PBC(), "_", mesh.CellSize(), "_", lift, "_", tipsize, "_")
 	var errLoad error
 	for i := 0; i < 3; i++ {
 		kernel[i], errLoad = LoadKernel(fmt.Sprint(basename, i, ".ovf"))

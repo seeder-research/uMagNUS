@@ -140,7 +140,7 @@ func (g *Generator) Uniform(data unsafe.Pointer, d_size int, events []*cl.Event)
 			g.sup_offset = 0
 		}
 		if g.supply >= demand {
-			event, err = ClCmdQueue.EnqueueCopyBuffer((*cl.MemObject)(g.buf.DevPtr(0)), (*cl.MemObject)(data), SIZEOF_FLOAT32*g.sup_offset, SIZEOF_FLOAT32*demand_offset, SIZEOF_FLOAT32*demand, nil)
+			event, err = ClCmdQueue.EnqueueCopyBuffer((*cl.MemObject)(g.buf.DevPtr(0)), (*cl.MemObject)(data), SIZEOF_FLOAT64*g.sup_offset, SIZEOF_FLOAT64*demand_offset, SIZEOF_FLOAT64*demand, nil)
 			if err != nil {
 				fmt.Printf("EnqueueCopyBuffer in copying uniform random numbers failed: %+v \n", err)
 			}
@@ -152,7 +152,7 @@ func (g *Generator) Uniform(data unsafe.Pointer, d_size int, events []*cl.Event)
 			g.supply -= demand
 			demand = 0
 		} else {
-			event, err = ClCmdQueue.EnqueueCopyBuffer((*cl.MemObject)(g.buf.DevPtr(0)), (*cl.MemObject)(data), SIZEOF_FLOAT32*g.sup_offset, SIZEOF_FLOAT32*demand_offset, SIZEOF_FLOAT32*g.supply, nil)
+			event, err = ClCmdQueue.EnqueueCopyBuffer((*cl.MemObject)(g.buf.DevPtr(0)), (*cl.MemObject)(data), SIZEOF_FLOAT64*g.sup_offset, SIZEOF_FLOAT64*demand_offset, SIZEOF_FLOAT64*g.supply, nil)
 			if err != nil {
 				fmt.Printf("EnqueueCopyBuffer in copying uniform random numbers failed: %+v \n", err)
 			}
@@ -192,7 +192,7 @@ func (g *Generator) Normal(data unsafe.Pointer, d_size int, events []*cl.Event) 
 			g.sup_offset = 0
 		}
 		if g.supply >= demand {
-			event, err = ClCmdQueue.EnqueueCopyBuffer((*cl.MemObject)(g.buf.DevPtr(0)), (*cl.MemObject)(data), SIZEOF_FLOAT32*g.sup_offset, SIZEOF_FLOAT32*demand_offset, SIZEOF_FLOAT32*demand, nil)
+			event, err = ClCmdQueue.EnqueueCopyBuffer((*cl.MemObject)(g.buf.DevPtr(0)), (*cl.MemObject)(data), SIZEOF_FLOAT64*g.sup_offset, SIZEOF_FLOAT64*demand_offset, SIZEOF_FLOAT64*demand, nil)
 			if err != nil {
 				fmt.Printf("EnqueueCopyBuffer in copying normally distributed random numbers failed: %+v \n", err)
 			}
@@ -204,7 +204,7 @@ func (g *Generator) Normal(data unsafe.Pointer, d_size int, events []*cl.Event) 
 			g.supply -= demand
 			demand = 0
 		} else {
-			event, err = ClCmdQueue.EnqueueCopyBuffer((*cl.MemObject)(g.buf.DevPtr(0)), (*cl.MemObject)(data), SIZEOF_FLOAT32*g.sup_offset, SIZEOF_FLOAT32*demand_offset, SIZEOF_FLOAT32*g.supply, nil)
+			event, err = ClCmdQueue.EnqueueCopyBuffer((*cl.MemObject)(g.buf.DevPtr(0)), (*cl.MemObject)(data), SIZEOF_FLOAT64*g.sup_offset, SIZEOF_FLOAT64*demand_offset, SIZEOF_FLOAT64*g.supply, nil)
 			if err != nil {
 				fmt.Printf("EnqueueCopyBuffer in copying normally distributed random numbers failed: %+v \n", err)
 			}

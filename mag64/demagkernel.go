@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	data "github.com/seeder-research/uMagNUS/data64"
-	"github.com/seeder-research/uMagNUS/oommf64"
+	oommf "github.com/seeder-research/uMagNUS/oommf64"
 	"github.com/seeder-research/uMagNUS/timer"
 	"github.com/seeder-research/uMagNUS/util"
 	"math"
@@ -36,7 +36,7 @@ func DemagKernel(inputSize, pbc [3]int, cellsize [3]float64, accuracy float64, c
 	}()
 
 	// Try to load kernel
-	basename := fmt.Sprint(cacheDir, "/", "uMagNUSkernel_", inputSize, "_", pbc, "_", cellsize, "_", accuracy, "_")
+	basename := fmt.Sprint(cacheDir, "/", "uMagNUS64kernel_", inputSize, "_", pbc, "_", cellsize, "_", accuracy, "_")
 	var errLoad error
 	for i := 0; i < 3; i++ {
 		for j := i; j < 3; j++ {

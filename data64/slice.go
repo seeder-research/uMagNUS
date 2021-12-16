@@ -13,6 +13,7 @@ import (
 )
 
 const SIZEOF_FLOAT32 = 4
+const SIZEOF_FLOAT64 = 8
 
 // Slice is like a [][]float64, but may be stored in GPU or host memory.
 type Slice struct {
@@ -234,7 +235,7 @@ func Copy(dst, src *Slice) {
 		panic(fmt.Sprintf("slice copy: illegal sizes: dst: %vx%v, src: %vx%v", dst.NComp(), dst.Len(), src.NComp(), src.Len()))
 	}
 	d, s := dst.GPUAccess(), src.GPUAccess()
-	bytes := SIZEOF_FLOAT32 * dst.Len()
+	bytes := SIZEOF_FLOAT64 * dst.Len()
 	switch {
 	default:
 		panic("bug")
