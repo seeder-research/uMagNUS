@@ -113,7 +113,8 @@ func writeOVF2DataBinary4(out io.Writer, array *data.Slice) {
 		for iy := 0; iy < size[Y]; iy++ {
 			for ix := 0; ix < size[X]; ix++ {
 				for c := 0; c < ncomp; c++ {
-					bytes = (*[4]byte)(unsafe.Pointer(&data[c][iz][iy][ix]))[:]
+					tempNum := float32(data[c][iz][iy][ix])
+					bytes = (*[4]byte)(unsafe.Pointer(&tempNum))[:]
 					out.Write(bytes)
 				}
 			}

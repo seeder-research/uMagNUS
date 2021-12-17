@@ -26,12 +26,16 @@ func writeOVF1Data(out io.Writer, q *data.Slice, dataformat string) {
 		canonicalFormat = "Text"
 		hdr(out, "Begin", "Data "+canonicalFormat)
 		writeOVFText(out, q)
-	case "binary", "binary 4":
+	case "binary 4":
 		canonicalFormat = "Binary 4"
 		hdr(out, "Begin", "Data "+canonicalFormat)
 		writeOVF1Binary4(out, q)
+	case "binary", "binary 8":
+		canonicalFormat = "Binary 8"
+		hdr(out, "Begin", "Data "+canonicalFormat)
+		writeOVF1Binary4(out, q)
 	default:
-		log.Fatalf("Illegal OVF data format: %v. Options are: Text, Binary 4", dataformat)
+		log.Fatalf("Illegal OVF data format: %v. Options are: Text, Binary 4, Binary 8", dataformat)
 	}
 	hdr(out, "End", "Data "+canonicalFormat)
 }
@@ -95,7 +99,8 @@ func writeOVF1Binary4(out io.Writer, array *data.Slice) (err error) {
 			for ix := 0; ix < gridsize[X]; ix++ {
 				for c := 0; c < ncomp; c++ {
 					// dirty conversion from float64 to [4]byte
-					bytes = (*[4]byte)(unsafe.Pointer(&data[c][iz][iy][ix]))[:]
+					tempNum := float32(data[c][iz][iy][ix])
+					bytes = (*[4]byte)(unsafe.Pointer(&tempNum))[:]
 					bytes[0], bytes[1], bytes[2], bytes[3] = bytes[3], bytes[2], bytes[1], bytes[0]
 					out.Write(bytes)
 				}
@@ -103,6 +108,37 @@ func writeOVF1Binary4(out io.Writer, array *data.Slice) (err error) {
 		}
 	}
 	return
+}
+
+// Writes data in OMF Binary 4 format
+func writeOVF1Binary8(out io.Writer, array *data.Slice) (err error) {
+        data := array.Tensors()
+        gridsize := array.Size()
+
+        var bytes []byte
+
+        // OOMMF requires this number to be first to check the format
+        var controlnumber float64 = OVF_CONTROL_NUMBER_4
+        // Conversion form float64 [4]byte in big-endian
+        // Inlined for performance, terabytes of data will pass here...
+        bytes = (*[8]byte)(unsafe.Pointer(&controlnumber))[:]
+        bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7] = bytes[7], bytes[6], bytes[5], bytes[4], bytes[3], bytes[2], bytes[1], bytes[0] // swap endianess
+        _, err = out.Write(bytes)
+
+        ncomp := array.NComp()
+        for iz := 0; iz < gridsize[Z]; iz++ {
+                for iy := 0; iy < gridsize[Y]; iy++ {
+                        for ix := 0; ix < gridsize[X]; ix++ {
+                                for c := 0; c < ncomp; c++ {
+                                        // dirty conversion from float64 to [4]byte
+                                        bytes = (*[8]byte)(unsafe.Pointer(&data[c][iz][iy][ix]))[:]
+					bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7] = bytes[7], bytes[6], bytes[5], bytes[4], bytes[3], bytes[2], bytes[1], bytes[0] 
+                                        out.Write(bytes)
+                                }
+                        }
+                }
+        }
+        return
 }
 
 func readOVF1DataBinary4(in io.Reader, t *data.Slice) {
