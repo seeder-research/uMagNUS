@@ -30,8 +30,8 @@ ocl2go: ocl2go.go
 
 
 opencl2go: ocl2go
+	$(MAKE) -C ../kernels_src clean
 	$(MAKE) -C ../kernels_src
-	mv ../kernels_src/opencl_kernels_wrapper.go ./
 
 
 %_wrapper.go: ../kernels_src/cl/%.cl ocl2go

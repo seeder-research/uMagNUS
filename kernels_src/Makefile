@@ -2,11 +2,15 @@
 
 SHELL = /bin/bash
 
-.PHONY: all opencl2go clean realclean
+.PHONY: all double opencl2go clean realclean
 
 
 all: opencl2go
 	./opencl2go
+
+
+double: opencl2go
+	./opencl2go -double
 
 
 opencl2go: opencl2go.go
@@ -14,8 +18,8 @@ opencl2go: opencl2go.go
 
 
 clean:
-	rm -vf opencl2go opencl_kernels_wrapper.go
+	rm -vf opencl2go
 
 
 realclean:
-	rm -vf opencl2go opencl_kernels_wrapper.go
+	rm -vf opencl2go

@@ -95,9 +95,48 @@ static inline float uint2float(uint a, uint b) {
     return as_float(finalNum); // return value
 }
 
+#if defined(__REAL_IS_DOUBLE__)
+// auxiliary function to convert a pair of uint64 to a double-
+// precision float
+static inline double ulong2double(ulong a, ulong b) {
+    ulong num1 = a;
+    ulong num2 = b;
+    ulong finalNum = 0;
+    ulong expo = 64;
+    for (;expo > 0; expo--) {
+        ulong flag0 = num1 & 0x8000000000000000;
+        num1 <<= 1;
+        if (flag0 != 0) {
+            break;
+        }
+    }
+    if (expo < 52) {
+        ulong maskbits = 0xffffffffffffffff;
+        ulong shPos = 52 - expo;
+        maskbits >>= shPos;
+        maskbits <<= shPos;
+        maskbits = ~maskbits;
+        finalNum ^= (num2 & maskbits);
+    }
+    finalNum ^= (num1 >> 12);
+    ulong newExpo = 94 + expo;
+    finalNum ^= newExpo << 23;
+    return as_double(finalNum); // return value
+}
+#endif // __REAL_IS_DOUBLE__
+
 static inline void boxMuller(float* in, float* out, uint offset) {
     uint u1idx = 2*offset;
     uint u2idx = u1idx+1;
     out[u1idx] = sqrt( -2.0f * log(in[u1idx]) ) * cospi(2.0f * in[u2idx]);
     out[u2idx] = sqrt( -2.0f * log(in[u1idx]) ) * sinpi(2.0f * in[u2idx]);
 }
+
+#if defined(__REAL_IS_DOUBLE__)
+static inline void boxMuller64(double* in, double* out, uint offset) {
+    uint u1idx = 2*offset;
+    uint u2idx = u1idx+1;
+    out[u1idx] = sqrt( (real_t)(-2.0) * log(in[u1idx]) ) * cospi((real_t)(2.0) * in[u2idx]);
+    out[u2idx] = sqrt( (real_t)(-2.0) * log(in[u1idx]) ) * sinpi((real_t)(2.0) * in[u2idx]);
+}
+#endif // __REAL_IS_DOUBLE__

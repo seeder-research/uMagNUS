@@ -95,3 +95,8 @@ var OCLKernelsList = []string{
 	"threefry_uniform",
 	"threefry_normal",
 	"square"}
+
+var OCL64KernelsList = []string{
+	"threefry64_seed",
+	"threefry64_ulong",
+	"threefry64_uniform"}
