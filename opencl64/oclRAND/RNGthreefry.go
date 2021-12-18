@@ -14,11 +14,11 @@ func (p *THREEFRY_status_array_ptr) Init(seed uint64, events []*cl.Event) {
 	// Generate random seed array to seed the PRNG
 	rand.Seed((int64)(seed))
 	totalCount := p.GetStatusSize()
-	seed_arr := make([]uint32, totalCount)
+	seed_arr := make([]uint64, totalCount)
 	for idx := 0; idx < totalCount; idx++ {
-		tmpNum := rand.Uint32()
+		tmpNum := rand.Uint64()
 		for tmpNum == 0 {
-			tmpNum = rand.Uint32()
+			tmpNum = rand.Uint64()
 		}
 		seed_arr[idx] = tmpNum
 	}
@@ -43,7 +43,7 @@ func (p *THREEFRY_status_array_ptr) Init(seed uint64, events []*cl.Event) {
 	}
 
 	// Seed the RNG
-	event := k_threefry_seed_async(unsafe.Pointer(p.Status_key), unsafe.Pointer(p.Status_counter),
+	event := k_threefry64_seed_async(unsafe.Pointer(p.Status_key), unsafe.Pointer(p.Status_counter),
 		unsafe.Pointer(p.Status_result), unsafe.Pointer(p.Status_tracker), unsafe.Pointer(seed_buf),
 		&config{[]int{totalCount}, []int{p.GetGroupSize()}}, []*cl.Event{seed_event})
 
@@ -63,16 +63,16 @@ func (p *THREEFRY_status_array_ptr) GenerateUniform(d_data unsafe.Pointer, data_
 
 	if Synchronous { // debug
 		ClCmdQueue.Finish()
-		timer.Start("threefry_uniform")
+		timer.Start("threefry64_uniform")
 	}
 
-	event := k_threefry_uniform_async(unsafe.Pointer(p.Status_key), unsafe.Pointer(p.Status_counter),
+	event := k_threefry64_uniform_async(unsafe.Pointer(p.Status_key), unsafe.Pointer(p.Status_counter),
 		unsafe.Pointer(p.Status_result), unsafe.Pointer(p.Status_tracker), d_data, data_size,
 		&config{[]int{p.GetStatusSize()}, []int{p.GetGroupSize()}}, events)
 
 	if Synchronous { // debug
 		ClCmdQueue.Finish()
-		timer.Stop("threefry_uniform")
+		timer.Stop("threefry64_uniform")
 	}
 
 	return event
@@ -86,7 +86,7 @@ func (p *THREEFRY_status_array_ptr) GenerateNormal(d_data unsafe.Pointer, data_s
 
 	if Synchronous { // debug
 		ClCmdQueue.Finish()
-		timer.Start("threefry_normal")
+		timer.Start("threefry64_normal")
 	}
 
 	event := k_threefry_normal_async(unsafe.Pointer(p.Status_key), unsafe.Pointer(p.Status_counter),
@@ -95,7 +95,7 @@ func (p *THREEFRY_status_array_ptr) GenerateNormal(d_data unsafe.Pointer, data_s
 
 	if Synchronous { // debug
 		ClCmdQueue.Finish()
-		timer.Stop("threefry_normal")
+		timer.Stop("threefry64_normal")
 	}
 
 	return event

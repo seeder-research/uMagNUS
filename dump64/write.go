@@ -32,7 +32,7 @@ func Write(out io.Writer, s *data.Slice, info data.Meta) error {
 	w.writeString("s") // time unit
 	w.writeString(info.Name)
 	w.writeString(info.Unit)
-	w.writeUInt64(4) // precission
+	w.writeUInt64(4) // precision
 
 	// return header write error before writing data
 	if w.err != nil {
@@ -89,7 +89,7 @@ func (w *writer) writeData(array *data.Slice) {
 		for iz := 0; iz < size[2]; iz++ {
 			for iy := 0; iy < size[1]; iy++ {
 				for ix := 0; ix < size[0]; ix++ {
-					w.writeFloat64(data[c][iz][iy][ix])
+					w.writeFloat32(float32(data[c][iz][iy][ix]))
 				}
 			}
 		}

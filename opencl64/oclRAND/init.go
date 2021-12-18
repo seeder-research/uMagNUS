@@ -6,6 +6,9 @@ import (
 	"unsafe"
 )
 
+const SIZEOF_FLOAT32 int = 4
+const SIZEOF_FLOAT64 int = 8
+
 type config struct {
 	Grid, Block []int
 }
