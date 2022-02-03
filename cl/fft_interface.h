@@ -99,6 +99,8 @@ interfaceFFTPlan* vkfftCreateDefaultFFTPlan(cl_context ctx) {
 
     // Default to out-of-place transform
     plan->config->isInputFormatted = 1;
+    plan->config->inputBufferNum = 1;
+    plan->config->bufferNum = 1;
 
     // Default to use on-chip units for sin and cos
     plan->config->useLUT = 0;
