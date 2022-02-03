@@ -98,6 +98,8 @@ interfaceFFTPlan* vkfftCreateDefaultFFTPlan(cl_context ctx) {
 
     // Default to out-of-place transform
     plan->config->isInputFormatted = 1;
+    plan->config->inputBufferNum = 1;
+    plan->config->bufferNum = 1;
 
     // Default to float
     // half   = -1
@@ -144,9 +146,6 @@ void vkfftSetFFTPlanDataType(interfaceFFTPlan* plan, int dataType) {
 
 // Interface function to set up the FFT sizes
 void vkfftSetFFTPlanSize(interfaceFFTPlan* plan, size_t lengths[3]) {
-    plan->config->size[0] = lengths[0];
-    plan->config->size[1] = lengths[1];
-    plan->config->size[2] = lengths[2];
     // If the plan was previously baked, we need to clean up the plan
     if (plan->isBaked) {
         deleteVkFFT(plan->app);
