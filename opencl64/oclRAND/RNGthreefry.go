@@ -89,7 +89,7 @@ func (p *THREEFRY_status_array_ptr) GenerateNormal(d_data unsafe.Pointer, data_s
 		timer.Start("threefry64_normal")
 	}
 
-	event := k_threefry_normal_async(unsafe.Pointer(p.Status_key), unsafe.Pointer(p.Status_counter),
+	event := k_threefry64_normal_async(unsafe.Pointer(p.Status_key), unsafe.Pointer(p.Status_counter),
 		unsafe.Pointer(p.Status_result), unsafe.Pointer(p.Status_tracker), d_data, data_size,
 		&config{[]int{p.GetStatusSize()}, []int{p.GetGroupSize()}}, events)
 
