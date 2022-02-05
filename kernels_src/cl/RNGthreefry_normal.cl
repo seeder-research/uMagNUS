@@ -174,10 +174,10 @@ threefry_normal(__global uint* __restrict state_key,
             num1[lidx] = state->result[state->tracker++];
         }
         res1[1] = uint2floath(num1[0], num1[1]);
-        res1[2] = normcdfinv_(as_float(res1[0] & 0x7fffffff));
-        res1[3] = normcdfinv_(as_float(res1[1] & 0x7fffffff));
-        output[outIndex] = as_float(res1[2] | (0x80000000 & res1[0]));
-        output[outIndex + (data_size/2)] = as_float(res1[3] | (0x80000000 & res1[1]));
+        res1[2] = normcdfinv_(as_float(as_uint(res1[0]) & 0x7fffffff));
+        res1[3] = normcdfinv_(as_float(as_uint(res1[1]) & 0x7fffffff));
+        output[outIndex] = as_float(as_uint(res1[2]) | (0x80000000 & as_uint(res1[0])));
+        output[outIndex + (data_size/2)] = as_float(as_uint(res1[3]) | (0x80000000 & as_uint(res1[1])));
     }
     
     // For first out of four sets...
