@@ -68,12 +68,36 @@ static inline float normcdfinv_(float u) {
 }
 
 // auxiliary function to convert a pair of uint32 to a single-
-// precision float
+// precision unsigned float in (0, 1)
 static inline float uint2float(uint a, uint b) {
     uint num1 = a;
     uint num2 = b;
     uint finalNum = 0;
-    uint expo = 32;
+    uint expo;
+    uint maskbits = 0x007fffff;
+    finalNum ^= (num2 & maskbits);
+    for (expo = 32;expo > 0; expo--) {
+        uint flag0 = num1 & 0x80000000;
+        num1 <<= 1;
+        if (flag0 != 0) {
+            break;
+        }
+    }
+    uint newExpo = 94 + expo;
+    finalNum ^= newExpo << 23;
+    return as_float(finalNum); // return value
+}
+
+// auxiliary function to convert a pair of uint32 to a single-
+// precision unsigned float in (0, 1]
+static inline float uint2floati(uint a, uint b) {
+    uint num1 = a;
+    uint num2 = b;
+    uint finalNum = 0;
+    uint expo;
+    uint maskbits = 0x007fffff;
+    finalNum ^= (num2 & maskbits);
+    expo = (finalNum == 0) ? 33 : 32;
     for (;expo > 0; expo--) {
         uint flag0 = num1 & 0x80000000;
         num1 <<= 1;
@@ -81,15 +105,27 @@ static inline float uint2float(uint a, uint b) {
             break;
         }
     }
-    if (expo < 23) {
-        uint maskbits = 0xffffffff;
-        uint shPos = 23 - expo;
-        maskbits >>= shPos;
-        maskbits <<= shPos;
-        maskbits = ~maskbits;
-        finalNum ^= (num2 & maskbits);
+    uint newExpo = 94 + expo;
+    finalNum ^= newExpo << 23;
+    return as_float(finalNum); // return value
+}
+
+// auxiliary function to convert a pair of uint32 to a single-
+// precision unsigned float in [-0.5, 0.5] excluding 0
+static inline float uint2floath(uint a, uint b) {
+    uint num1 = a;
+    uint num2 = b;
+    uint finalNum = 0;
+    uint expo;
+    uint maskbits = 0x807fffff;
+    finalNum ^= (num2 & maskbits);
+    for (expo = 32;expo > 0; expo--) {
+        uint flag0 = num1 & 0x80000000;
+        num1 <<= 1;
+        if (flag0 != 0) {
+            break;
+        }
     }
-    finalNum ^= (num1 >> 9);
     uint newExpo = 94 + expo;
     finalNum ^= newExpo << 23;
     return as_float(finalNum); // return value
@@ -97,7 +133,7 @@ static inline float uint2float(uint a, uint b) {
 
 #if defined(__REAL_IS_DOUBLE__)
 // auxiliary function to convert a pair of uint64 to a double-
-// precision float
+// precision unsigned float in (0, 1)
 static inline double ulong2double(ulong a, ulong b) {
     ulong num1 = a;
     ulong num2 = b;
@@ -110,15 +146,8 @@ static inline double ulong2double(ulong a, ulong b) {
             break;
         }
     }
-    if (expo < 52) {
-        ulong maskbits = 0xffffffffffffffff;
-        ulong shPos = 52 - expo;
-        maskbits >>= shPos;
-        maskbits <<= shPos;
-        maskbits = ~maskbits;
-        finalNum ^= (num2 & maskbits);
-    }
-    finalNum ^= (num1 >> 12);
+    ulong maskbits = 0x000fffffffffffff;
+    finalNum ^= (num2 & maskbits);
     ulong newExpo = 94 + expo;
     finalNum ^= newExpo << 23;
     return as_double(finalNum); // return value

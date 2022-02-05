@@ -141,7 +141,7 @@ threefry_normal(__global uint* __restrict state_key,
         } else {
             num1[lidx] = state->result[state->tracker++];
         }
-        res1[0] = uint2float(num1[0], num1[1]);
+        res1[0] = uint2floath(num1[0], num1[1]);
         lidx = 0;
         if (state->tracker == 3) {
             uint tmp = state->result[3];
@@ -173,11 +173,11 @@ threefry_normal(__global uint* __restrict state_key,
         } else {
             num1[lidx] = state->result[state->tracker++];
         }
-        res1[1] = uint2float(num1[0], num1[1]);
-        res1[2] = sqrt( -2.0f * log(res1[0])) * cospi(2.0f * res1[1]);
-        res1[3] = sqrt( -2.0f * log(res1[0])) * sinpi(2.0f * res1[1]);
-        output[outIndex] = res1[2];
-        output[outIndex + (data_size/2)] = res1[3];
+        res1[1] = uint2floath(num1[0], num1[1]);
+        res1[2] = normcdfinv_(as_float(res1[0] & 0x7fffffff));
+        res1[3] = normcdfinv_(as_float(res1[1] & 0x7fffffff));
+        output[outIndex] = as_float(res1[2] | (0x80000000 & res1[0]));
+        output[outIndex + (data_size/2)] = as_float(res1[3] | (0x80000000 & res1[1]));
     }
     
     // For first out of four sets...
