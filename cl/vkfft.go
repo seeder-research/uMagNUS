@@ -215,15 +215,28 @@ func (vPlan *VkfftPlan) GetPlanPointer() *C.interfaceFFTPlan {
 	return &vPlan.vkfftPlanStruct
 }
 
-func NewVkFFTPlan(ctx *Context) *VkfftPlan {
+func NewVkFFTForwardPlan(ctx *Context) *VkfftPlan {
 	var outPlan *C.interfaceFFTPlan
 	outPlan = C.vkfftCreateR2CFFTPlan(ctx.clContext)
 	return &VkfftPlan{*outPlan}
 }
 
-func NewVkFFTPlanDouble(ctx *Context) *VkfftPlan {
+func NewVkFFTBackwardPlan(ctx *Context) *VkfftPlan {
+	var outPlan *C.interfaceFFTPlan
+	outPlan = C.vkfftCreateC2RFFTPlan(ctx.clContext)
+	return &VkfftPlan{*outPlan}
+}
+
+func NewVkFFTForwardPlanDouble(ctx *Context) *VkfftPlan {
         var outPlan *C.interfaceFFTPlan
         outPlan = C.vkfftCreateR2CFFTPlan(ctx.clContext)
+	C.vkfftSetFFTPlanDataType(outPlan, 1)
+        return &VkfftPlan{*outPlan}
+}
+
+func NewVkFFTBackwardPlanDouble(ctx *Context) *VkfftPlan {
+        var outPlan *C.interfaceFFTPlan
+        outPlan = C.vkfftCreateC2RFFTPlan(ctx.clContext)
 	C.vkfftSetFFTPlanDataType(outPlan, 1)
         return &VkfftPlan{*outPlan}
 }
@@ -246,16 +259,16 @@ func (p *VkfftPlan) VkFFTSetFFTPlanSize(lengths []int) {
 	C.vkfftSetFFTPlanSize(p.GetPlanPointer(), &cLengths[0])
 }
 
-func (p *VkfftPlan) VkFFTEnqueueTransformUnsafe(dir VkfftDirection, input []*MemObject, output []*MemObject) error {
-	return toError(C.vkfftEnqueueTransform(p.GetPlanPointer(), (C.vkfft_transform_dir)(dir), &(input[0].clMem), &(output[0].clMem)))
+func (p *VkfftPlan) VkFFTEnqueueTransformUnsafe(input []*MemObject, output []*MemObject) error {
+	return toError(C.vkfftEnqueueTransform(p.GetPlanPointer(), &(input[0].clMem), &(output[0].clMem)))
 }
 
 func (p *VkfftPlan) EnqueueForwardTransform(input []*MemObject, output []*MemObject) error {
-	return p.VkFFTEnqueueTransformUnsafe(VkfftForwardDirection, input, output)
+	return p.VkFFTEnqueueTransformUnsafe(input, output)
 }
 
 func (p *VkfftPlan) EnqueueBackwardTransform(input []*MemObject, output []*MemObject) error {
-	return p.VkFFTEnqueueTransformUnsafe(VkfftBackwardDirection, input, output)
+	return p.VkFFTEnqueueTransformUnsafe(input, output)
 }
 
 func (plan *VkfftPlan) Destroy() {

@@ -17,7 +17,7 @@ type fft3DR2CPlan struct {
 
 // 3D single-precision real-to-complex FFT plan.
 func newFFT3DR2C(Nx, Ny, Nz int) fft3DR2CPlan {
-	handle := cl.NewVkFFTPlan(ClCtx)
+	handle := cl.NewVkFFTForwardPlan(ClCtx)
 	handle.VkFFTSetFFTPlanSize([]int{Nx, Ny, Nz})
 
 	return fft3DR2CPlan{fftplan{handle}, [3]int{Nx, Ny, Nz}}

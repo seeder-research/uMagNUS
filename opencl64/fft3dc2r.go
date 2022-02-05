@@ -17,7 +17,7 @@ type fft3DC2RPlan struct {
 
 // 3D single-precision real-to-complex FFT plan.
 func newFFT3DC2R(Nx, Ny, Nz int) fft3DC2RPlan {
-	handle := cl.NewVkFFTPlanDouble(ClCtx) // new xyz swap
+	handle := cl.NewVkFFTBackwardPlanDouble(ClCtx) // new xyz swap
 	handle.VkFFTSetFFTPlanSize([]int{Nx, Ny, Nz})
 
 	return fft3DC2RPlan{fftplan{handle}, [3]int{Nx, Ny, Nz}}
