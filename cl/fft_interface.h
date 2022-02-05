@@ -135,6 +135,7 @@ void vkfftSetFFTPlanDataType(interfaceFFTPlan* plan, int dataType) {
     } else if (dataType > 0) {
         plan->config->halfPrecision   = false;
         plan->config->doublePrecision = true;
+        plan->config->useLUT = 1;
     } else {
         plan->config->halfPrecision   = false;
         plan->config->doublePrecision = false;
