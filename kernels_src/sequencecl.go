@@ -97,6 +97,10 @@ var OCLKernelsList = []string{
 	"square"}
 
 var OCL64KernelsList = []string{
+	"xorwow64_seed",
+	"xorwow64_ulong",
+	"xorwow64_normal",
+	"xorwow64_uniform",
 	"threefry64_seed",
 	"threefry64_ulong",
 	"threefry64_normal",

@@ -15,8 +15,8 @@ Generates a random float using xorwow RNG.
 */
 #if defined(__REAL_IS_DOUBLE__)
 __kernel void
-xorwow64_normal(__global uint* state_buf,
-                __global float* d_data,
+xorwow64_normal(__global   uint* state_buf,
+                __global double*    d_data,
                 int count){
     // Calculate indices
     int local_idx = get_local_id(0); // Work-item index within workgroup
@@ -45,8 +45,8 @@ xorwow64_normal(__global uint* state_buf,
         idx += grp_offset;
         d = state_buf[idx];
         bool generate = true;
-        float z0 = 0.0f;
-        float z1 = 0.0f;
+        double z0 = 0.0;
+        double z1 = 0.0;
 
         // For each thread that is launched, iterate until the index is out of bounds
         for (uint pos = global_idx; pos < count; pos += grp_offset) {
@@ -76,38 +76,11 @@ xorwow64_normal(__global uint* state_buf,
 
                 uint num2 = d+x[4];
 
-                float tmpRes1 = uint2float(num1, num2); // output value
+                double tmpRes1 = XORWOW_NORM_double * (double)(num1);
+                double tmpRes2 = XORWOW_NORM_double * (double)(num2);
 
-                // Repeat for second float...
-                // generate a pair of uint32 (one uint64)
-                // first number...
-                t = x[0] ^ (x[0] >> 2);
-                x[0] = x[1];
-                x[1] = x[2];
-                x[2] = x[3];
-                x[3] = x[4];
-                x[4] = (x[4] ^ (x[4] << 4)) ^ (t ^ (t << 1));
-
-                d += 362437;
-
-                num1 = d+x[4];
-
-                // second number...
-                t = x[0] ^ (x[0] >> 2);
-                x[0] = x[1];
-                x[1] = x[2];
-                x[2] = x[3];
-                x[3] = x[4];
-                x[4] = (x[4] ^ (x[4] << 4)) ^ (t ^ (t << 1));
-
-                d += 362437;
-
-                num2 = d+x[4];
-
-                float tmpRes2 = uint2float(num1, num2); // output value
-
-                z0 = sqrt( -2.0f * log(tmpRes1)) * cospi(2.0f * tmpRes2);
-                z1 = sqrt( -2.0f * log(tmpRes1)) * sinpi(2.0f * tmpRes2);
+                z0 = sqrt( -2.0 * log(tmpRes1)) * cospi(2.0 * tmpRes2);
+                z1 = sqrt( -2.0 * log(tmpRes1)) * sinpi(2.0 * tmpRes2);
                 d_data[pos] = z0; // output normal random value
                 generate = !generate;
             } else {

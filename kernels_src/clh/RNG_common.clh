@@ -1,6 +1,5 @@
 // Taken from PhD thesis of Thomas Luu (Department of Mathematics
 // at University College of London)
-
 static inline float normcdfinv_(float u) {
 	float	v;
 	float	p;
@@ -125,4 +124,8 @@ static inline void boxMuller64(double* in, double* out, uint offset) {
     out[u1idx] = sqrt( (real_t)(-2.0) * log(in[u1idx]) ) * cospi((real_t)(2.0) * in[u2idx]);
     out[u2idx] = sqrt( (real_t)(-2.0) * log(in[u1idx]) ) * sinpi((real_t)(2.0) * in[u2idx]);
 }
+#endif // __REAL_IS_DOUBLE__
+
+#if defined(__REAL_IS_DOUBLE__)
+#define XORWOW_NORM_double 2.328306549295727688e-10
 #endif // __REAL_IS_DOUBLE__

@@ -39,7 +39,7 @@ func (p *XORWOW_status_array_ptr) Init(seed uint64, events []*cl.Event) {
 	if events != nil {
 		seed_events = events
 	}
-	event := k_xorwow_seed_async(unsafe.Pointer(p.Status_buf), unsafe.Pointer(jump_mat), seed, &config{[]int{totalCount}, []int{p.GetGroupSize()}}, seed_events)
+	event := k_xorwow64_seed_async(unsafe.Pointer(p.Status_buf), unsafe.Pointer(jump_mat), seed, &config{[]int{totalCount}, []int{p.GetGroupSize()}}, seed_events)
 
 	p.Ini = true
 	err = cl.WaitForEvents([]*cl.Event{event})
@@ -57,15 +57,15 @@ func (p *XORWOW_status_array_ptr) GenerateUniform(d_data unsafe.Pointer, data_si
 
 	if Synchronous { // debug
 		ClCmdQueue.Finish()
-		timer.Start("xorwow_uniform")
+		timer.Start("xorwow64_uniform")
 	}
 
-	event := k_xorwow_uniform_async(unsafe.Pointer(p.Status_buf), d_data, data_size,
+	event := k_xorwow64_uniform_async(unsafe.Pointer(p.Status_buf), d_data, data_size,
 		&config{[]int{p.GetStatusSize()}, []int{p.GetGroupSize()}}, events)
 
 	if Synchronous { // debug
 		ClCmdQueue.Finish()
-		timer.Stop("xorwow_uniform")
+		timer.Stop("xorwow64_uniform")
 	}
 
 	return event
@@ -79,15 +79,15 @@ func (p *XORWOW_status_array_ptr) GenerateNormal(d_data unsafe.Pointer, data_siz
 
 	if Synchronous { // debug
 		ClCmdQueue.Finish()
-		timer.Start("xorwow_normal")
+		timer.Start("xorwow64_normal")
 	}
 
-	event := k_xorwow_normal_async(unsafe.Pointer(p.Status_buf), d_data, data_size,
+	event := k_xorwow64_normal_async(unsafe.Pointer(p.Status_buf), d_data, data_size,
 		&config{[]int{p.GetStatusSize()}, []int{p.GetGroupSize()}}, events)
 
 	if Synchronous { // debug
 		ClCmdQueue.Finish()
-		timer.Stop("xorwow_normal")
+		timer.Stop("xorwow64_normal")
 	}
 
 	return event

@@ -15,8 +15,8 @@ Generates a random 32-bit unsigned integer using xorwow RNG.
 */
 #if defined(__REAL_IS_DOUBLE__)
 __kernel void
-xorwow64_ulong(__global uint* state_buf,
-               __global uint* d_data,
+xorwow64_ulong(__global  uint* state_buf,
+               __global ulong*    d_data,
               int count){
     // Calculate indices
     int local_idx = get_local_id(0); // Work-item index within workgroup
@@ -47,6 +47,7 @@ xorwow64_ulong(__global uint* state_buf,
 
         // For each thread that is launched, iterate until the index is out of bounds
         for (uint pos = global_idx; pos < count; pos += grp_offset) {
+            ulong res = 0;
             const uint t = x[0] ^ (x[0] >> 2);
             x[0] = x[1];
             x[1] = x[2];
@@ -56,7 +57,19 @@ xorwow64_ulong(__global uint* state_buf,
 
             d += 362437;
 
-            d_data[pos] = (d + x[4]); // output value
+            res = (ulong)(d + x[4]);
+            res <<= 32;
+            const uint tt = x[0] ^ (x[0] >> 2);
+            x[0] = x[1];
+            x[1] = x[2];
+            x[2] = x[3];
+            x[3] = x[4];
+            x[4] = (x[4] ^ (x[4] << 4)) ^ (tt ^ (tt << 1));
+
+            d += 362437;
+
+            res ^= (ulong)(d + x[4]);
+            d_data[pos] = res; // output value
         }
 
         // update the state buffer with the latest state
