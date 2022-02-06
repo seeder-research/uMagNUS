@@ -34,10 +34,10 @@ typedef struct{
 } threefry_state;
 
 typedef struct{
-    uint counter[4];
-    uint result[4];
-    uint key[4];
-    uint tracker;
+    ulong counter[4];
+    ulong result[4];
+    ulong key[4];
+    ulong tracker;
 } threefry64_state;
 
 static inline ulong RotL64(ulong x, uint N){
