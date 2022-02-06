@@ -8,6 +8,11 @@
 #include <stdbool.h>
 #include "vkFFT.h"
 
+typedef enum vkfft_transform_dir {
+    VKFFT_FORWARD_TRANSFORM    = -1,
+    VKFFT_BACKWARD_TRANSFORM   =  1
+} vkfft_transform_dir;
+
 // Use a plan structure
 struct interfaceFFTPlan {
     VkFFTConfiguration*   config;
@@ -23,11 +28,6 @@ struct interfaceFFTPlan {
     uint64_t              inputBufferSize;
     uint64_t              outputBufferSize;
 };
-
-typedef enum vkfft_transform_dir {
-    VKFFT_FORWARD_TRANSFORM    = -1,
-    VKFFT_BACKWARD_TRANSFORM   =  1
-} vkfft_transform_dir;
 
 typedef struct interfaceFFTPlan interfaceFFTPlan;
 
@@ -80,9 +80,9 @@ interfaceFFTPlan* vkfftCreateDefaultFFTPlan(cl_context ctx) {
     }
 
     // Update internal pointers
-    plan->config->platform = &plan->platform;
-    plan->config->context = &plan->context;
-    plan->config->device = &plan->device;
+    plan->config->platform      = &plan->platform;
+    plan->config->context       = &plan->context;
+    plan->config->device        = &plan->device;
     plan->lParams->commandQueue = &plan->commandQueue;
 
     // Default to 3D plan but with all dimensions to be 1
@@ -91,20 +91,24 @@ interfaceFFTPlan* vkfftCreateDefaultFFTPlan(cl_context ctx) {
     plan->config->size[1] = 1;
     plan->config->size[2] = 1;
 
-    // Default to C2C transform and in-place invervse
-    plan->config->performR2C = 0;
+    // Default to in-place C2C transform where inverse
+    // is not normalized
+    plan->config->performR2C                 = 0;
     plan->config->inverseReturnToInputBuffer = 0;
-    plan->config->normalize = 0;
+    plan->config->normalize                  = 0;
 
     // Default to out-of-place transform
     plan->config->isInputFormatted = 1;
+
+    // Default to use on-chip units for sin and cos
+    plan->config->useLUT = 0;
 
     // Default to float
     // half   = -1
     // float  =  0
     // double =  1
-    plan->dataType = 0;
-    plan->config->halfPrecision = false;
+    plan->dataType                = 0;
+    plan->config->halfPrecision   = false;
     plan->config->doublePrecision = false;
 
     // Initialize flag to ensure plan is baked before execution can happen
@@ -117,7 +121,8 @@ interfaceFFTPlan* vkfftCreateDefaultFFTPlan(cl_context ctx) {
 // R2C (forward) and C2R (backward) transforms
 interfaceFFTPlan* vkfftCreateR2CFFTPlan(cl_context ctx) {
     interfaceFFTPlan* plan = vkfftCreateDefaultFFTPlan(ctx);
-    plan->config->performR2C = 1;
+
+    plan->config->performR2C                 = 1;
     plan->config->inverseReturnToInputBuffer = 1;
     return plan;
 }
@@ -135,7 +140,8 @@ void vkfftSetFFTPlanDataType(interfaceFFTPlan* plan, int dataType) {
     } else if (dataType > 0) {
         plan->config->halfPrecision   = false;
         plan->config->doublePrecision = true;
-        plan->config->useLUT = 1;
+        // Uncomment next line to force use of LUT to compute sin/cos for double
+        // plan->config->useLUT = 1;
     } else {
         plan->config->halfPrecision   = false;
         plan->config->doublePrecision = false;
@@ -145,20 +151,17 @@ void vkfftSetFFTPlanDataType(interfaceFFTPlan* plan, int dataType) {
 
 // Interface function to set up the FFT sizes
 void vkfftSetFFTPlanSize(interfaceFFTPlan* plan, size_t lengths[3]) {
-    plan->config->size[0] = lengths[0];
-    plan->config->size[1] = lengths[1];
-    plan->config->size[2] = lengths[2];
     // If the plan was previously baked, we need to clean up the plan
     if (plan->isBaked) {
         deleteVkFFT(plan->app);
-        plan->app = (VkFFTApplication*)calloc(1,sizeof(VkFFTApplication));
+        plan->app = (VkFFTApplication*)calloc(1, sizeof(VkFFTApplication));
     }
     plan->isBaked = false;
 
     ////// Order the lengths of the FFT so it can be "fast"
 
     // Default to 3D first but set all sizes to 1
-    plan->config->FFTdim = 3;
+    plan->config->FFTdim  = 3;
     plan->config->size[0] = 1;
     plan->config->size[1] = 1;
     plan->config->size[2] = 1;
@@ -234,8 +237,6 @@ void vkfftSetFFTPlanBufferSizes(interfaceFFTPlan* plan) {
     plan->config->inputBufferStride[1]  = plan->config->size[0]*plan->config->size[1];
     plan->config->inputBufferStride[2]  = plan->config->size[0]*plan->config->size[1]*plan->config->size[2];
     plan->config->bufferSize            = &plan->outputBufferSize;
-
-    plan->config->useLUT = 0;
 }
 
 // Interface to initializeVkFFT()
