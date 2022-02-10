@@ -118,11 +118,11 @@ func saveAs_sync(fname string, s *data.Slice, info data.Meta, format OutputForma
 	case OVF1_TEXT:
 		oommf.WriteOVF1(f, s, info, "text")
 	case OVF1_BINARY:
-		oommf.WriteOVF1(f, s, info, "binary 4")
+		oommf.WriteOVF1(f, s, info, "binary 8")
 	case OVF2_TEXT:
 		oommf.WriteOVF2(f, s, info, "text")
 	case OVF2_BINARY:
-		oommf.WriteOVF2(f, s, info, "binary 4")
+		oommf.WriteOVF2(f, s, info, "binary 8")
 	case DUMP:
 		dump.Write(f, s, info)
 	default:

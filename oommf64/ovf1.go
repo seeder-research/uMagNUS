@@ -33,7 +33,7 @@ func writeOVF1Data(out io.Writer, q *data.Slice, dataformat string) {
 	case "binary", "binary 8":
 		canonicalFormat = "Binary 8"
 		hdr(out, "Begin", "Data "+canonicalFormat)
-		writeOVF1Binary4(out, q)
+		writeOVF1Binary8(out, q)
 	default:
 		log.Fatalf("Illegal OVF data format: %v. Options are: Text, Binary 4, Binary 8", dataformat)
 	}
@@ -132,7 +132,7 @@ func writeOVF1Binary8(out io.Writer, array *data.Slice) (err error) {
                                 for c := 0; c < ncomp; c++ {
                                         // dirty conversion from float64 to [4]byte
                                         bytes = (*[8]byte)(unsafe.Pointer(&data[c][iz][iy][ix]))[:]
-					bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7] = bytes[7], bytes[6], bytes[5], bytes[4], bytes[3], bytes[2], bytes[1], bytes[0] 
+					bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7] = bytes[7], bytes[6], bytes[5], bytes[4], bytes[3], bytes[2], bytes[1], bytes[0]
                                         out.Write(bytes)
                                 }
                         }

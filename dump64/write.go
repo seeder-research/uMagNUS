@@ -32,7 +32,7 @@ func Write(out io.Writer, s *data.Slice, info data.Meta) error {
 	w.writeString("s") // time unit
 	w.writeString(info.Name)
 	w.writeString(info.Unit)
-	w.writeUInt64(4) // precision
+	w.writeUInt64(8) // precision
 
 	// return header write error before writing data
 	if w.err != nil {
@@ -81,6 +81,23 @@ const MAGIC = "#dump002" // identifies dump format
 
 // Writes the data.
 func (w *writer) writeData(array *data.Slice) {
+	data := array.Tensors()
+	size := array.Size()
+
+	ncomp := array.NComp()
+	for c := 0; c < ncomp; c++ {
+		for iz := 0; iz < size[2]; iz++ {
+			for iy := 0; iy < size[1]; iy++ {
+				for ix := 0; ix < size[0]; ix++ {
+					w.writeFloat64(float64(data[c][iz][iy][ix]))
+				}
+			}
+		}
+	}
+}
+
+// Writes the data as single-precision float.
+func (w *writer) writeData32(array *data.Slice) {
 	data := array.Tensors()
 	size := array.Size()
 
