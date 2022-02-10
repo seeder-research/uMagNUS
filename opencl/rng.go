@@ -47,9 +47,6 @@ func NewGenerator(name string) *Generator {
 		var prng_ptr Prng_
 		prng_ptr = NewMTGPRNGParams()
 		return &Generator{Name: "mtgp", PRNG: prng_ptr}
-	case "mrg32k3a":
-		fmt.Println("mrg32k3a not yet implemented")
-		return nil
 	case "threefry":
 		oclRAND.Init(ClCmdQueue, Synchronous, KernList)
 		var prng_ptr Prng_
@@ -73,8 +70,6 @@ func (g *Generator) CreatePNG() {
 		var prng_ptr Prng_
 		prng_ptr = NewMTGPRNGParams()
 		g.PRNG = prng_ptr
-	case "mrg32k3a":
-		fmt.Println("mrg32k3a not yet implemented")
 	case "threefry":
 		oclRAND.Init(ClCmdQueue, Synchronous, KernList)
 		var prng_ptr Prng_

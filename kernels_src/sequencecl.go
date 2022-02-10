@@ -82,7 +82,6 @@ var OCLKernelsList = []string{
 	"vecnorm",
 	"zeromask",
 	"addzhanglitorque2",
-	"mrg32k3a",
 	"mtgp32_init_seed_kernel",
 	"mtgp32_uniform",
 	"mtgp32_normal",
@@ -93,8 +92,7 @@ var OCLKernelsList = []string{
 	"threefry_seed",
 	"threefry_uint",
 	"threefry_uniform",
-	"threefry_normal",
-	"square"}
+	"threefry_normal"}
 
 var OCL64KernelsList = []string{
 	"xorwow64_seed",
