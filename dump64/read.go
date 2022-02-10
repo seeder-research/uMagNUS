@@ -1,5 +1,5 @@
 // legacy dump data format.
-package dump
+package dump64
 
 import (
 	"fmt"
@@ -18,6 +18,16 @@ func Read(in io.Reader) (*data.Slice, data.Meta, error) {
 	return r.readSlice()
 }
 
+func Read32(in io.Reader) (*data.Slice, data.Meta, error) {
+	r := newReader(in)
+	return r.readSlice32()
+}
+
+func ReadPrecision(in io.Reader) (uint64, error) {
+	r := newReader(in)
+	return r.readPrecision()
+}
+
 func ReadFile(fname string) (*data.Slice, data.Meta, error) {
 	f, err := os.Open(fname)
 	if err != nil {
@@ -25,6 +35,24 @@ func ReadFile(fname string) (*data.Slice, data.Meta, error) {
 	}
 	defer f.Close()
 	return Read(f)
+}
+
+func ReadFile32(fname string) (*data.Slice, data.Meta, error) {
+	f, err := os.Open(fname)
+	if err != nil {
+		return nil, data.Meta{}, err
+	}
+	defer f.Close()
+	return Read32(f)
+}
+
+func ReadFilePrecision(fname string) (uint64, error) {
+	f, err := os.Open(fname)
+	if err != nil {
+		return 0, err
+	}
+	defer f.Close()
+	return ReadPrecision(f)
 }
 
 func MustReadFile(fname string) (*data.Slice, data.Meta) {
@@ -182,6 +210,35 @@ func (r *reader) readSlice32() (s *data.Slice, info data.Meta, err error) {
 	}
 
 	return s, info, nil
+}
+
+// reads in dump files storing single-precision floats as double-precision
+func (r *reader) readPrecision() (uint64, error) {
+        r.err = nil // clear previous error, if any
+        magic := r.readString()
+        if r.err != nil {
+                return 0, r.err
+        }
+        if magic != MAGIC {
+                r.err = fmt.Errorf("dump: bad magic number:%v", magic)
+                return 0, r.err
+        }
+        _ = r.readInt()
+        _ = r.readInt() // backwards compatible coordinates!
+        _ = r.readInt()
+        _ = r.readInt()
+        _ = r.readFloat64()
+        _ = r.readFloat64()
+        _ = r.readFloat64()
+
+        _ = r.readString()
+        _ = r.readFloat64()
+        _ = r.readString() // time unit
+
+        _ = r.readString()
+        _ = r.readString()
+	precision := r.readUint64()
+        return precision, r.err
 }
 
 func (r *reader) readInt() int {

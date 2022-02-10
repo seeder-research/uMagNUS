@@ -1,4 +1,4 @@
-package dump
+package dump64
 
 import (
 	"bufio"
@@ -44,6 +44,38 @@ func Write(out io.Writer, s *data.Slice, info data.Meta) error {
 	return w.err
 }
 
+// Write the slice to out in binary format. Add time stamp.
+func Write32(out io.Writer, s *data.Slice, info data.Meta) error {
+	w := newWriter(out)
+
+	// Writes the header.
+	w.writeString(MAGIC)
+	w.writeUInt64(uint64(s.NComp()))
+	size := s.Size()
+	w.writeUInt64(uint64(size[2])) // backwards compatible coordinates!
+	w.writeUInt64(uint64(size[1]))
+	w.writeUInt64(uint64(size[0]))
+	cell := info.CellSize
+	w.writeFloat64(cell[2])
+	w.writeFloat64(cell[1])
+	w.writeFloat64(cell[0])
+	w.writeString(info.MeshUnit)
+	w.writeFloat64(info.Time)
+	w.writeString("s") // time unit
+	w.writeString(info.Name)
+	w.writeString(info.Unit)
+	w.writeUInt64(4) // precision
+
+	// return header write error before writing data
+	if w.err != nil {
+		return w.err
+	}
+
+	w.writeData32(s)
+	w.writeHash()
+	return w.err
+}
+
 // Write the slice to file in binary format. Add time stamp.
 func WriteFile(fname string, s *data.Slice, info data.Meta) error {
 	f, err := os.OpenFile(fname, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
@@ -54,6 +86,18 @@ func WriteFile(fname string, s *data.Slice, info data.Meta) error {
 	w := bufio.NewWriter(f)
 	defer w.Flush()
 	return Write(w, s, info)
+}
+
+// Write the slice to file in binary format. Add time stamp.
+func WriteFile32(fname string, s *data.Slice, info data.Meta) error {
+	f, err := os.OpenFile(fname, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	w := bufio.NewWriter(f)
+	defer w.Flush()
+	return Write32(w, s, info)
 }
 
 // Write the slice to file in binary format, panic on error.
