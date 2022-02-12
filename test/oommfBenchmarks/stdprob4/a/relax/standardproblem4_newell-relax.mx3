@@ -1,0 +1,50 @@
+/*
+	Micromagnetic standard problem 4 (a) according to
+	http://www.ctcms.nist.gov/~rdm/mumag.org.html
+*/
+
+// geometry
+	setgridsize(200, 50, 1)
+	setcellsize(2.5e-9, 2.5e-9, 3e-9)
+
+// material
+	Msat  = 1600e3
+	Aex   = 13e-12
+	E_total.get()  // try to trigger bad lex2
+
+	Msat  = 800e3
+	alpha = 0.02
+	m  = uniform(1, .25, .1)
+
+	EnableDemag = false
+	EnableNewellDemag = true
+
+// relax
+	RelaxTorqueThreshold = 1e2
+	relax()
+	save(m)
+
+	s := loadfile("stdprob4a.ovf")
+	expect("size", s.size()[0], 200, 0)
+	expect("size", s.size()[1], 50, 0)
+	expect("size", s.size()[2], 1, 0)
+	diffNormG := -1.0
+	for ii:=0; ii<128; ii++{
+		for jj:=0; jj<32; jj++{
+			for kk:=0; kk<1; kk++ {
+				mref  := m.GetCell(ii, jj, kk)
+				sref  := s.get(0, ii, jj, kk)
+				xdiff := mref[0] - sref
+				sref   = s.get(1, ii, jj, kk)
+				ydiff := mref[1] - sref
+				sref   = s.get(2, ii, jj, kk)
+				zdiff := mref[2] - sref
+				diffNorm := sqrt(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff)
+				if diffNorm > diffNormG {
+					diffNormG = diffNorm
+				}
+			}
+		}
+	}
+
+	print("Maximum norm of vector difference = ", diffNormG)

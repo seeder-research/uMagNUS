@@ -1019,7 +1019,7 @@ func NewellDemagKernel(inputSize, pbc [3]int, cellsize [3]float64, asymptotic_ra
 	}()
 
 	// Try to load kernel
-	basename := fmt.Sprint(cacheDir, "/", "mumax3kernel_", inputSize, "_", pbc, "_", cellsize, "_", zero_self_demag, "_")
+	basename := fmt.Sprint(cacheDir, "/", "uMagNUSkernel_", inputSize, "_", pbc, "_", cellsize, "_", zero_self_demag, "_")
 	var errLoad error
 	for i := 0; i < 3; i++ {
 		for j := i; j < 3; j++ {
