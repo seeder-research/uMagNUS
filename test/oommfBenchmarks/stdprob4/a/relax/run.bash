@@ -4,7 +4,7 @@ export UMAGNUS=uMagNUS
 
 ## Run OOMMF to obtain results
 tclsh ${TCL_OOMMF} boxsi stdprob4.mif && \
-cp stdprob4-cs2.50x2.50x3.00-Oxs_MinDriver-Spin-00-0001388.omf \
+cp stdprob4-cs2.50x2.50x3.00-Oxs_MinDriver-Spin-00-*.omf \
   stdprob4a.ovf && \
 rm -rf /tmp/uMagNUS*.ovf \
   *.out && \

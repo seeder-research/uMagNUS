@@ -1,0 +1,74 @@
+/*
+	Micromagnetic standard problem 4 (a) according to
+	http://www.ctcms.nist.gov/~rdm/mumag.org.html
+*/
+
+// geometry
+	setgridsize(200, 50, 1)
+	setcellsize(2.5e-9, 2.5e-9, 3e-9)
+
+// material
+	Msat  = 800e3
+	Aex   = 13e-12
+	alpha = 0.02
+	m.loadfile("./oommf-start.ovf")
+
+	EnableDemag = false
+	EnableNewellDemag = true
+
+	TOL := 1e-5
+	MinDt = 1e-18
+	MaxDt = 5e-13
+//	MaxErr = 2e-1
+//	RelErr = 1e-2
+
+// compare with loaded magnetization
+	diffNormG := -1.0
+	s := loadfile("./oommf-start.ovf")
+	for ii:=0; ii<200; ii++{
+		for jj:=0; jj<50; jj++{
+			for kk:=0; kk<1; kk++{
+				mref  := m.GetCell(ii, jj, kk)
+				sref  := s.get(0, ii, jj, kk)
+				xdiff := mref[0] - sref
+				sref   = s.get(1, ii, jj, kk)
+				ydiff := mref[1] - sref
+				sref   = s.get(2, ii, jj, kk)
+				zdiff := mref[2] - sref
+				diffNorm := sqrt(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff)
+				if diffNorm > diffNormG {
+					diffNormG = diffNorm
+				}
+			}
+		}
+	}
+	print("Maximum error vector norm (loaded) = ", diffNormG)
+
+// reversal
+	tableautosave(10e-12)
+	autosave(m, 100e-12)
+	autosnapshot(m, 50e-12)
+	B_ext = vector(-35.5E-3, -6.3E-3, 0)
+	run(7.53e-9)
+
+// compare with oommf result
+	diffNormG = -1.0
+	s = loadfile("./oommf-end.ovf")
+	for ii:=0; ii<200; ii++{
+		for jj:=0; jj<50; jj++{
+			for kk:=0; kk<1; kk++{
+				mref  := m.GetCell(ii, jj, kk)
+				sref  := s.get(0, ii, jj, kk)
+				xdiff := mref[0] - sref
+				sref   = s.get(1, ii, jj, kk)
+				ydiff := mref[1] - sref
+				sref   = s.get(2, ii, jj, kk)
+				zdiff := mref[2] - sref
+				diffNorm := sqrt(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff)
+				if diffNorm > diffNormG {
+					diffNormG = diffNorm
+				}
+			}
+		}
+	}
+	print("Maximum error vector norm (final) = ", diffNormG)
