@@ -4,7 +4,7 @@
 package main
 
 import (
-	. "github.com/seeder-research/uMagNUS/engine"
+	. "github.com/seeder-research/uMagNUS/engine64"
 )
 
 func main() {

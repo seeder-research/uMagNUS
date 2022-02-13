@@ -18,8 +18,8 @@ Due to this difference, we need to add the following constant value to the divis
 package main
 
 import (
-	. "github.com/seeder-research/uMagNUS/engine"
-	"github.com/seeder-research/uMagNUS/opencl"
+	. "github.com/seeder-research/uMagNUS/engine64"
+	opencl "github.com/seeder-research/uMagNUS/opencl64"
 )
 
 const kB = 1.38064852e-23 // Boltzmann constant

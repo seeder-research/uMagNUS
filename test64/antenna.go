@@ -4,9 +4,9 @@
 package main
 
 import (
-	"github.com/seeder-research/uMagNUS/data"
-	. "github.com/seeder-research/uMagNUS/engine"
-	"github.com/seeder-research/uMagNUS/oommf"
+	data "github.com/seeder-research/uMagNUS/data64"
+	. "github.com/seeder-research/uMagNUS/engine64"
+	oommf "github.com/seeder-research/uMagNUS/oommf64"
 	"math"
 	"os"
 )
