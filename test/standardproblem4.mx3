@@ -20,7 +20,7 @@
 	relax()
 	save(m)
 	TOL := 1e-5
-	expectv("m", m.average(), vector(0.9669684171676636,  0.1252732127904892, 0), TOL)
+	expectv("m", m.average(), vector(0.9669684171676636,  0.1252832127904892, 0), TOL)
 
 // reversal
 	tableautosave(10e-12)
@@ -28,4 +28,4 @@
 	autosnapshot(m, 50e-12)
 	B_ext = vector(-24.6E-3, 4.3E-3, 0)
 	run(1e-9)
-	expectv("m", m.average(), vector(-0.9846124053001404, 0.12604089081287384, 0.04327124357223511), TOL)
+	expectv("m", m.average(), vector(-0.9846124053001404, 0.12604689081287384, 0.04327124357223511), TOL)

@@ -87,7 +87,7 @@ ex := abs(val*pre - ref)
 ey := abs(val2*pre2 - ref2)
 
 ERRMAX := 0.004
-ERRMIN := 3e-6
+ERRMIN := 4e-6
 expect("max((ΔFmel).x)", errx, 0., ERRMAX)
 expect("max((ΔFmel).y)", erry, 0., ERRMAX)
 expect("((ΔFmel).x)@center", ex, 0., ERRMIN)

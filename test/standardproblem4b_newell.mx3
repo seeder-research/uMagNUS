@@ -19,10 +19,10 @@
 // relax
 	relax()
 	TOL := 1e-3
-	expectv("m", m.average(), vector(0.9669684171676636, 0.1252732276916504, 0), TOL)
+	expectv("m", m.average(), vector(0.9669625163078308, 0.12528464198112488, 0), TOL)
 
 // reversal
 	B_ext = vector(-35.5E-3, -6.3E-3, 0)
 	run(1e-9)
-	expectv("m", m.average(), vector(-0.9692331552505493, -0.12039542198181152,  -0.0053076110780239105), TOL)
+	expectv("m", m.average(), vector(-0.9702987670898438, -0.12229042601585388,  -0.004722175188362598), TOL)
 
