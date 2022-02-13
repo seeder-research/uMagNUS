@@ -1,0 +1,51 @@
+/*
+	Micromagnetic standard problem 5
+	as proposed by M. Najafi et al., JAP 105, 113914 (2009).
+	Reference solution by mumax2.
+*/
+
+setgridsize(50, 50, 5)
+setcellsize(2e-9, 2e-9, 2e-9)
+
+Msat  = 800e3
+Aex   = 13e-12
+m     = vortex(1, 1)
+alpha = 1
+
+MinDt = 1e-18
+MaxDt = 1e-13
+//MaxErr = 1e-7
+//RelErr = 1e-6
+
+EnableDemag = false
+EnableNewellDemag = true
+
+run(2.5163376312867758e-10)
+
+alpha = 0.1
+xi    = 0.05
+J     = vector(1e12, 0, 0)
+Pol   = 1
+
+run(1.1132340819750373e-8)
+
+s := loadfile("./oommf-end.ovf")
+diffNormG := -1.0
+for ii:=0; ii<50; ii++{
+	for jj:=0; jj<50; jj++{
+		for kk:=0; kk<5; kk++{
+			mref     := m.GetCell(ii, jj, kk)
+			sref     := s.get(0, ii, jj, kk)
+			xdiff    := mref[0] - sref
+			sref      = s.get(1, ii, jj, kk)
+			ydiff    := mref[1] - sref
+			sref      = s.get(2, ii, jj, kk)
+			zdiff    := mref[2] - sref
+			diffNorm := sqrt(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff)
+			if diffNorm > diffNormG {
+				diffNormG = diffNorm
+			}
+		}
+	}
+}
+print("Maximum norm of error vector = ", diffNormG)

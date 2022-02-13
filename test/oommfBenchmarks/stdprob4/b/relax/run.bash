@@ -10,5 +10,7 @@ rm -rf /tmp/uMagNUS*.ovf \
   *.out && \
 ${UMAGNUS} -http "" -f -failfast -paranoid=false -cache /tmp standardproblem4b_newell-relax.mx3 && \
 mv standardproblem4b_newell-relax.out standardproblem4b_newell-relax32.res && \
+rm -rf /tmp/uMagNUS*.ovf \
+  *.out && \
 ${UMAGNUS}64 -http "" -f -failfast -paranoid=false -cache /tmp standardproblem4b_newell-relax.mx3 && \
 mv standardproblem4b_newell-relax.out standardproblem4b_newell-relax64.res

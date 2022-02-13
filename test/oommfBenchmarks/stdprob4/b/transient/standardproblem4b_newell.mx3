@@ -3,10 +3,6 @@
 	http://www.ctcms.nist.gov/~rdm/mumag.org.html
 */
 
-// precision
-// 0 if single-precision, otherwise double precision 
-	precision := 0
-
 // geometry
 	setgridsize(200, 50, 1)
 	setcellsize(2.5e-9, 2.5e-9, 3e-9)
