@@ -8,8 +8,8 @@ import (
 
 const MTGPDC_MEXP = 11213
 const MTGPDC_N = 351
-const MTGPDC_FLOOR_2P = 256
-const MTGPDC_CEIL_2P = 512
+const MTGPDC_FLOOR_2P = 128
+const MTGPDC_CEIL_2P = 256
 const MTGPDC_TN = MTGPDC_FLOOR_2P
 const MTGPDC_LS = (MTGPDC_TN * 3)
 const MTGPDC_TS = 16
@@ -17,29 +17,29 @@ const MTGPDC_TS = 16
 const MTGPDC_PARAMS_NUM = mtgpdc_params_11213_num
 
 var mtgpdc_params_num = mtgpdc_params_11213_num
-var MTGP32_params_fast_ = MTGP32_params_fast_11213
+var MTGP64_params_fast_ = MTGP64_params_fast_11213
 
-type MTGP32dc_params_fast_t struct {
+type MTGP64dc_params_fast_t struct {
 	mexp        int        /**< Mersenne exponent. This is redundant. */
 	pos         int        /**< pick up position. */
 	sh1         int        /**< shift value 1. 0 < sh1 < 32. */
 	sh2         int        /**< shift value 2. 0 < sh2 < 32. */
-	tbl         [16]uint32 /**< a small matrix. */
-	tmp_tbl     [16]uint32 /**< a small matrix for tempering. */
-	flt_tmp_tbl [16]uint32 /**< a small matrix for tempering and converting to float. */
-	mask        uint32     /**< This is a mask for state space */
+	tbl         [16]uint64 /**< a small matrix. */
+	tmp_tbl     [16]uint64 /**< a small matrix for tempering. */
+	flt_tmp_tbl [16]uint64 /**< a small matrix for tempering and converting to float. */
+	mask        uint64     /**< This is a mask for state space */
 	poly_sha1   [21]string /**< SHA1 digest */
 }
 
-type MTGP32dc_params_array_ptr struct {
+type MTGP64dc_params_array_ptr struct {
 	Ini             bool
 	Pos             []int
 	Sh1             []int
 	Sh2             []int
-	Rec             []uint32
-	Temper          []uint32
-	Flt_temper      []uint32
-	Status          []uint32
+	Rec             []uint64
+	Temper          []uint64
+	Flt_temper      []uint64
+	Status          []uint64
 	Pos_buf         *cl.MemObject
 	Sh1_buf         *cl.MemObject
 	Sh2_buf         *cl.MemObject
@@ -59,34 +59,34 @@ type MTGP32dc_params_array_ptr struct {
 	ClCtx           *cl.Context
 }
 
-func NewMTGPParams() *MTGP32dc_params_array_ptr {
-	q := new(MTGP32dc_params_array_ptr)
+func NewMTGPParams() *MTGP64dc_params_array_ptr {
+	q := new(MTGP64dc_params_array_ptr)
 	q.Ini = false
 	q.GroupSize = MTGPDC_N
 	q.GroupCount = 1
 	return q
 }
 
-func (p *MTGP32dc_params_array_ptr) GetMTGPArrays() {
+func (p *MTGP64dc_params_array_ptr) GetMTGPArrays() {
 	if (p.GroupSize > mtgpdc_params_num) || (p.GroupSize < 0) {
 		log.Fatalln("Input range: 0 < GroupSize < ", mtgpdc_params_num)
 	}
-	rec_array := make([]uint32, (MTGPDC_TS * p.GroupCount))
-	temper_array := make([]uint32, (MTGPDC_TS * p.GroupCount))
-	flt_temper_array := make([]uint32, (MTGPDC_TS * p.GroupCount))
+	rec_array := make([]uint64, (MTGPDC_TS * p.GroupCount))
+	temper_array := make([]uint64, (MTGPDC_TS * p.GroupCount))
+	flt_temper_array := make([]uint64, (MTGPDC_TS * p.GroupCount))
 	pos_array := make([]int, p.GroupCount)
 	sh1_array := make([]int, p.GroupCount)
 	sh2_array := make([]int, p.GroupCount)
-	status_array := make([]uint32, MTGPDC_N*p.GroupCount)
+	status_array := make([]uint64, (MTGPDC_N * p.GroupCount))
 	for i := 0; i < p.GroupCount; i++ {
 		for j := 0; j < MTGPDC_TS; j++ {
-			rec_array[(i*MTGPDC_TS)+j] = MTGP32_params_fast_[i].tbl[j]
-			temper_array[(i*MTGPDC_TS)+j] = MTGP32_params_fast_[i].tmp_tbl[j]
-			flt_temper_array[(i*MTGPDC_TS)+j] = MTGP32_params_fast_[i].flt_tmp_tbl[j]
+			rec_array[(i*MTGPDC_TS)+j] = MTGP64_params_fast_[i].tbl[j]
+			temper_array[(i*MTGPDC_TS)+j] = MTGP64_params_fast_[i].tmp_tbl[j]
+			flt_temper_array[(i*MTGPDC_TS)+j] = MTGP64_params_fast_[i].flt_tmp_tbl[j]
 		}
-		pos_array[i] = MTGP32_params_fast_[i].pos
-		sh1_array[i] = MTGP32_params_fast_[i].sh1
-		sh2_array[i] = MTGP32_params_fast_[i].sh2
+		pos_array[i] = MTGP64_params_fast_[i].pos
+		sh1_array[i] = MTGP64_params_fast_[i].sh1
+		sh2_array[i] = MTGP64_params_fast_[i].sh2
 	}
 
 	p.Pos = pos_array
@@ -113,40 +113,40 @@ func (p *MTGP32dc_params_array_ptr) GetMTGPArrays() {
 	p.Status_buf = nil
 }
 
-func (p *MTGP32dc_params_array_ptr) CreateParamBuffers(context *cl.Context) {
+func (p *MTGP64dc_params_array_ptr) CreateParamBuffers(context *cl.Context) {
 	var err error
 	p.Pos_buf, err = context.CreateBufferUnsafe(cl.MemReadOnly, int(unsafe.Sizeof(p.Pos[0]))*len(p.Pos), nil)
 	if err != nil {
-		log.Fatalln("Unable to create buffer for MTGP32 pos array!")
+		log.Fatalln("Unable to create buffer for MTGP64 pos array!")
 	}
 	p.Sh1_buf, err = context.CreateBufferUnsafe(cl.MemReadOnly, int(unsafe.Sizeof(p.Sh1[0]))*len(p.Sh1), nil)
 	if err != nil {
-		log.Fatalln("Unable to create buffer for MTGP32 sh1 array!")
+		log.Fatalln("Unable to create buffer for MTGP64 sh1 array!")
 	}
 	p.Sh2_buf, err = context.CreateBufferUnsafe(cl.MemReadOnly, int(unsafe.Sizeof(p.Sh2[0]))*len(p.Sh2), nil)
 	if err != nil {
-		log.Fatalln("Unable to create buffer for MTGP32 sh2 array!")
+		log.Fatalln("Unable to create buffer for MTGP64 sh2 array!")
 	}
 	p.Rec_buf, err = context.CreateBufferUnsafe(cl.MemReadOnly, int(unsafe.Sizeof(p.Rec[0]))*len(p.Rec), nil)
 	if err != nil {
-		log.Fatalln("Unable to create buffer for MTGP32 rec array!")
+		log.Fatalln("Unable to create buffer for MTGP64 rec array!")
 	}
 	p.Temper_buf, err = context.CreateBufferUnsafe(cl.MemReadOnly, int(unsafe.Sizeof(p.Temper[0]))*len(p.Temper), nil)
 	if err != nil {
-		log.Fatalln("Unable to create buffer for MTGP32 temper array!")
+		log.Fatalln("Unable to create buffer for MTGP64 temper array!")
 	}
 	p.Flt_temper_buf, err = context.CreateBufferUnsafe(cl.MemReadOnly, int(unsafe.Sizeof(p.Flt_temper[0]))*len(p.Flt_temper), nil)
 	if err != nil {
-		log.Fatalln("Unable to create buffer for MTGP32 flt_temper array!")
+		log.Fatalln("Unable to create buffer for MTGP64 flt_temper array!")
 	}
 	p.Status_buf, err = context.CreateBufferUnsafe(cl.MemReadWrite, int(unsafe.Sizeof(p.Status[0]))*len(p.Status), nil)
 	if err != nil {
-		log.Fatalln("Unable to create buffer for MTGP32 status array!")
+		log.Fatalln("Unable to create buffer for MTGP64 status array!")
 	}
 	p.SetContext(context)
 }
 
-func (p *MTGP32dc_params_array_ptr) LoadAllParamBuffersToDevice(eventWaitList []*cl.Event) ([]*cl.Event, error) {
+func (p *MTGP64dc_params_array_ptr) LoadAllParamBuffersToDevice(eventWaitList []*cl.Event) ([]*cl.Event, error) {
 	var err error
 
 	var pos_event *cl.Event
@@ -188,7 +188,7 @@ func (p *MTGP32dc_params_array_ptr) LoadAllParamBuffersToDevice(eventWaitList []
 	return []*cl.Event{pos_event, sh1_event, sh2_event, rec_event, temper_event, flt_temper_event}, nil
 }
 
-func (p *MTGP32dc_params_array_ptr) LoadStatusBuffersToDevice(eventWaitList []*cl.Event) (*cl.Event, error) {
+func (p *MTGP64dc_params_array_ptr) LoadStatusBuffersToDevice(eventWaitList []*cl.Event) (*cl.Event, error) {
 	status_event, err := ClCmdQueue.EnqueueWriteBuffer(p.Status_buf, false, 0, p.Status_size, unsafe.Pointer(&p.Status[0]), eventWaitList)
 	if err != nil {
 		log.Fatalln("Unable to write status buffer to device: ", err)
@@ -196,7 +196,7 @@ func (p *MTGP32dc_params_array_ptr) LoadStatusBuffersToDevice(eventWaitList []*c
 	return status_event, nil
 }
 
-func (p *MTGP32dc_params_array_ptr) LoadStatusBuffersFromDevice(eventWaitList []*cl.Event) (*cl.Event, error) {
+func (p *MTGP64dc_params_array_ptr) LoadStatusBuffersFromDevice(eventWaitList []*cl.Event) (*cl.Event, error) {
 	status_event, err := ClCmdQueue.EnqueueReadBuffer(p.Status_buf, false, 0, p.Status_size, unsafe.Pointer(&p.Status[0]), eventWaitList)
 	if err != nil {
 		log.Fatalln("Unable to read status buffer from device: ", err)
@@ -204,70 +204,70 @@ func (p *MTGP32dc_params_array_ptr) LoadStatusBuffersFromDevice(eventWaitList []
 	return status_event, nil
 }
 
-func (p *MTGP32dc_params_array_ptr) SetRecursionArray(arr []uint32) {
+func (p *MTGP64dc_params_array_ptr) SetRecursionArray(arr []uint64) {
 	p.Rec = arr
 }
 
-func (p *MTGP32dc_params_array_ptr) GetRecursionArray() []uint32 {
+func (p *MTGP64dc_params_array_ptr) GetRecursionArray() []uint64 {
 	return p.Rec
 }
 
-func (p *MTGP32dc_params_array_ptr) SetPositionArray(arr []int) {
+func (p *MTGP64dc_params_array_ptr) SetPositionArray(arr []int) {
 	p.Pos = arr
 }
 
-func (p *MTGP32dc_params_array_ptr) GetPositionArray() []int {
+func (p *MTGP64dc_params_array_ptr) GetPositionArray() []int {
 	return p.Pos
 }
 
-func (p *MTGP32dc_params_array_ptr) SetSH1Array(arr []int) {
+func (p *MTGP64dc_params_array_ptr) SetSH1Array(arr []int) {
 	p.Sh1 = arr
 }
 
-func (p *MTGP32dc_params_array_ptr) GetSH1Array() []int {
+func (p *MTGP64dc_params_array_ptr) GetSH1Array() []int {
 	return p.Sh1
 }
 
-func (p *MTGP32dc_params_array_ptr) SetSH2Array(arr []int) {
+func (p *MTGP64dc_params_array_ptr) SetSH2Array(arr []int) {
 	p.Sh2 = arr
 }
 
-func (p *MTGP32dc_params_array_ptr) GetSH2Array() []int {
+func (p *MTGP64dc_params_array_ptr) GetSH2Array() []int {
 	return p.Sh2
 }
 
-func (p *MTGP32dc_params_array_ptr) SetStatusArray(arr []uint32) {
+func (p *MTGP64dc_params_array_ptr) SetStatusArray(arr []uint64) {
 	p.Status = arr
 }
 
-func (p *MTGP32dc_params_array_ptr) GetStatusArray() []uint32 {
+func (p *MTGP64dc_params_array_ptr) GetStatusArray() []uint64 {
 	return p.Status
 }
 
-func (p *MTGP32dc_params_array_ptr) SetGroupSize(in int) {
+func (p *MTGP64dc_params_array_ptr) SetGroupSize(in int) {
 	p.GroupSize = in
 }
 
-func (p *MTGP32dc_params_array_ptr) GetGroupSize() int {
+func (p *MTGP64dc_params_array_ptr) GetGroupSize() int {
 	return p.GroupSize
 }
 
-func (p *MTGP32dc_params_array_ptr) SetGroupCount(in int) {
+func (p *MTGP64dc_params_array_ptr) SetGroupCount(in int) {
 	p.GroupCount = in
 }
 
-func (p *MTGP32dc_params_array_ptr) GetGroupCount() int {
+func (p *MTGP64dc_params_array_ptr) GetGroupCount() int {
 	return p.GroupCount
 }
 
-func (p *MTGP32dc_params_array_ptr) RecommendSize() int {
+func (p *MTGP64dc_params_array_ptr) RecommendSize() int {
 	return 12 * p.GroupCount * MTGPDC_TN
 }
 
-func (p *MTGP32dc_params_array_ptr) SetContext(context *cl.Context) {
+func (p *MTGP64dc_params_array_ptr) SetContext(context *cl.Context) {
 	p.ClCtx = context
 }
 
-func (p *MTGP32dc_params_array_ptr) GetContext() *cl.Context {
+func (p *MTGP64dc_params_array_ptr) GetContext() *cl.Context {
 	return p.ClCtx
 }

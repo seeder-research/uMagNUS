@@ -10,16 +10,16 @@ import (
 	"math/rand"
 )
 
-func (p *MTGP32dc_params_array_ptr) Init(seed uint64, events []*cl.Event) {
+func (p *MTGP64dc_params_array_ptr) Init(seed uint64, events []*cl.Event) {
 
 	// Generate random seed array to seed the PRNG
 	rand.Seed((int64)(seed))
 	totalCount := p.GetGroupCount()
-	seed_arr := make([]uint32, totalCount)
+	seed_arr := make([]uint64, totalCount)
 	for idx := 0; idx < totalCount; idx++ {
 		tmpNum := rand.Uint32()
 		for tmpNum == 0 {
-			tmpNum = rand.Uint32()
+			tmpNum = rand.Uint64()
 		}
 		seed_arr[idx] = tmpNum
 	}
@@ -29,7 +29,7 @@ func (p *MTGP32dc_params_array_ptr) Init(seed uint64, events []*cl.Event) {
 	seed_buf, err := context.CreateBufferUnsafe(cl.MemReadWrite, int(unsafe.Sizeof(seed_arr[0]))*totalCount, nil)
 	defer seed_buf.Release()
 	if err != nil {
-		log.Fatalln("Unable to create buffer for mtgp32 seed array!")
+		log.Fatalln("Unable to create buffer for mtgp64 seed array!")
 	}
 	var seed_event *cl.Event
 	seed_event, err = ClCmdQueue.EnqueueWriteBuffer(seed_buf, false, 0, int(unsafe.Sizeof(seed_arr[0]))*totalCount, unsafe.Pointer(&seed_arr[0]), nil)
@@ -43,7 +43,7 @@ func (p *MTGP32dc_params_array_ptr) Init(seed uint64, events []*cl.Event) {
 		}
 	}
 
-	event := k_mtgp32_init_seed_kernel_async(unsafe.Pointer(p.Rec_buf), unsafe.Pointer(p.Temper_buf), unsafe.Pointer(p.Flt_temper_buf), unsafe.Pointer(p.Pos_buf),
+	event := k_mtgp64_init_seed_kernel_async(unsafe.Pointer(p.Rec_buf), unsafe.Pointer(p.Temper_buf), unsafe.Pointer(p.Flt_temper_buf), unsafe.Pointer(p.Pos_buf),
 		unsafe.Pointer(p.Sh1_buf), unsafe.Pointer(p.Sh2_buf), unsafe.Pointer(p.Status_buf), unsafe.Pointer(seed_buf),
 		&config{[]int{p.GetGroupCount() * p.GetGroupSize()}, []int{p.GetGroupSize()}}, []*cl.Event{seed_event})
 
@@ -55,7 +55,7 @@ func (p *MTGP32dc_params_array_ptr) Init(seed uint64, events []*cl.Event) {
 
 }
 
-func (p *MTGP32dc_params_array_ptr) GenerateUniform(d_data unsafe.Pointer, data_size int, events []*cl.Event) *cl.Event {
+func (p *MTGP64dc_params_array_ptr) GenerateUniform(d_data unsafe.Pointer, data_size int, events []*cl.Event) *cl.Event {
 
 	if p.Ini == false {
 		log.Fatalln("Generator has not been initialized!")
@@ -70,22 +70,22 @@ func (p *MTGP32dc_params_array_ptr) GenerateUniform(d_data unsafe.Pointer, data_
 
 	if Synchronous { // debug
 		ClCmdQueue.Finish()
-		timer.Start("mtgp32_uniform")
+		timer.Start("mtgp64_uniform")
 	}
 
-	event := k_mtgp32_uniform_async(unsafe.Pointer(p.Rec_buf), unsafe.Pointer(p.Temper_buf), unsafe.Pointer(p.Flt_temper_buf), unsafe.Pointer(p.Pos_buf),
+	event := k_mtgp64_uniform_async(unsafe.Pointer(p.Rec_buf), unsafe.Pointer(p.Temper_buf), unsafe.Pointer(p.Flt_temper_buf), unsafe.Pointer(p.Pos_buf),
 		unsafe.Pointer(p.Sh1_buf), unsafe.Pointer(p.Sh2_buf), unsafe.Pointer(p.Status_buf), d_data, tmpSize/p.GetGroupCount(),
 		&config{[]int{item_num}, []int{MTGPDC_TN}}, events)
 
 	if Synchronous { // debug
 		ClCmdQueue.Finish()
-		timer.Stop("mtgp32_uniform")
+		timer.Stop("mtgp64_uniform")
 	}
 
 	return event
 }
 
-func (p *MTGP32dc_params_array_ptr) GenerateNormal(d_data unsafe.Pointer, data_size int, events []*cl.Event) *cl.Event {
+func (p *MTGP64dc_params_array_ptr) GenerateNormal(d_data unsafe.Pointer, data_size int, events []*cl.Event) *cl.Event {
 
 	if p.Ini == false {
 		log.Fatalln("Generator has not been initialized!")
@@ -100,16 +100,16 @@ func (p *MTGP32dc_params_array_ptr) GenerateNormal(d_data unsafe.Pointer, data_s
 
 	if Synchronous { // debug
 		ClCmdQueue.Finish()
-		timer.Start("mtgp32_normal")
+		timer.Start("mtgp64_normal")
 	}
 
-	event := k_mtgp32_normal_async(unsafe.Pointer(p.Rec_buf), unsafe.Pointer(p.Temper_buf), unsafe.Pointer(p.Flt_temper_buf), unsafe.Pointer(p.Pos_buf),
+	event := k_mtgp64_normal_async(unsafe.Pointer(p.Rec_buf), unsafe.Pointer(p.Temper_buf), unsafe.Pointer(p.Flt_temper_buf), unsafe.Pointer(p.Pos_buf),
 		unsafe.Pointer(p.Sh1_buf), unsafe.Pointer(p.Sh2_buf), unsafe.Pointer(p.Status_buf), d_data, tmpSize/p.GetGroupCount(),
 		&config{[]int{item_num}, []int{MTGPDC_TN}}, events)
 
 	if Synchronous { // debug
 		ClCmdQueue.Finish()
-		timer.Stop("mtgp32_normal")
+		timer.Stop("mtgp64_normal")
 	}
 
 	return event

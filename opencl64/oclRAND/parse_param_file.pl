@@ -73,7 +73,8 @@ for (my $idx1 = 0; $idx1 < $total_num; $idx1++) {
 	# Error check if the number of entries is unexpected
 	my $num_elem = scalar(@row_elem_arr);
 	if ($num_elem < 66) {
-	    print "Detected invalid line. Exitiing...\n";
+	    print "line has ".$num_elem." items. \n";
+	    print "Detected invalid line. Exiting...\n";
 		last;
 	}
 
@@ -111,6 +112,19 @@ for (my $idx1 = 0; $idx1 < $total_num; $idx1++) {
 	$mexpVal = $row_elem_arr[1];
 	my $mexp = "        int(" . $row_elem_arr[1] . "),\n";
 
+	# Grab the uint size of the RNG
+	my $uLen = "uint";
+	if ($row_elem_arr[2] eq "uint32_t") {
+		$uLen = "uint32";
+	} else {
+		if ($row_elem_arr[2] eq "uint64_t") {
+			$uLen = "uint64";
+		} else {
+		    print "Invalid type of uint detected. Exiting...\n";
+			last;
+		}
+	}
+
 	# Grab the index of the RNG parameter
 	my $rid = $row_elem_arr[3];
 
@@ -124,7 +138,7 @@ for (my $idx1 = 0; $idx1 < $total_num; $idx1++) {
 	my $sh2 = "        int(" . $row_elem_arr[6] . "),\n";
 
 	# Grab the mask entry and process into string we should output
-	my $mask = "        uint32(" . $row_elem_arr[15] . "),\n";
+	my $mask = "        " . $uLen . "(" . $row_elem_arr[15] . "),\n";
 
 	# Grab the weight
 	my $weight = $row_elem_arr[16];
@@ -136,7 +150,7 @@ for (my $idx1 = 0; $idx1 < $total_num; $idx1++) {
 	my $comment = "        /* No." . $rid . " delta:" . $delta . " weight:" . $weight . " */\n";
 
 	# Process RNG tbl and convert to output string
-	my $tbl_string="        [16]uint32{";
+	my $tbl_string="        [16]" . $uLen . "{";
 	for (my $idx2 = 0; $idx2 < 16; $idx2++) {
 		$tbl_string = $tbl_string . $row_elem_arr[18+$idx2];
 		if ($idx2 == 15) {
@@ -147,7 +161,7 @@ for (my $idx1 = 0; $idx1 < $total_num; $idx1++) {
 	}
 
 	# Process RNG tmp and convert to output string
-	my $temper_string="        [16]uint32{";
+	my $temper_string="        [16]" . $uLen . "{";
 	for (my $idx2 = 0; $idx2 < 16; $idx2++) {
 		$temper_string = $temper_string . $row_elem_arr[34+$idx2];
 		if ($idx2 == 15) {
@@ -158,7 +172,7 @@ for (my $idx1 = 0; $idx1 < $total_num; $idx1++) {
 	}
 
 	# Process RNG flt_tmp_tbl and convert to output string
-	my $flt_temper_tbl="        [16]uint32{";
+	my $flt_temper_tbl="        [16]" . $uLen . "{";
 	for (my $idx2 = 0; $idx2 < 16; $idx2++) {
 		$flt_temper_tbl = $flt_temper_tbl . $row_elem_arr[50+$idx2];
 		if ($idx2 == 15) {
@@ -182,14 +196,18 @@ for (my $idx1 = 0; $idx1 < $total_num; $idx1++) {
 	}
 
 	# Build the output string corresponding to detected line parameters
-	my $dataString = $initString . $comment . $mexp . $pos . $sh1 . $sh2 . $tbl_string . $temper_string . $flt_temper_tbl . $mask . $sha_str . "     },";
+	my $dataString = $initString . $comment . $mexp . $pos . $sh1 . $sh2 . $tbl_string . $temper_string . $flt_temper_tbl . $mask . $sha_str . "    },";
 
 	# If this is the first line, we need to print the
 	# leading characters in the full output code. Otherwise,
 	# need to print the characters between definitions of
 	# RNG parameters
 	if ($idx1 == 0) {
-	    print $ofh "var MTGP32_params_fast_" . $mexpVal . " = []MTGP32dc_params_fast_t{\n" . $dataString;
+		if ($uLen eq "uint32") {
+			print $ofh "var MTGP32_params_fast_" . $mexpVal . " = []MTGP32dc_params_fast_t{\n" . $dataString;
+		} else {
+			print $ofh "var MTGP64_params_fast_" . $mexpVal . " = []MTGP64dc_params_fast_t{\n" . $dataString;
+		}
 	} else {
 		print $ofh "\n" . $dataString;
 	}
@@ -204,6 +222,7 @@ close $ifh;
 
 # Print trailing characters of output string
 print $ofh "\n};\n";
+$actual_count--;
 print $ofh "const mtgpdc_params_" . $mexpVal . "_num = " . $actual_count . "\n";
 
 # If output file was given, we need to close the handle to the temporary
