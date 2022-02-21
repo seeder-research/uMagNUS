@@ -14,9 +14,10 @@ Generates a random 32-bit unsigned integer using xorwow RNG.
 @param d_data Output.
 */
 __kernel void
-xorwow_uint(__global uint* state_buf,
-            __global uint*    d_data,
-            int count){
+xorwow_uint(
+    __global uint* __restrict state_buf,
+    __global uint* __restrict   d_data,
+    int count){
     // Calculate indices
     int local_idx = get_local_id(0); // Work-item index within workgroup
     int grp_sz = get_local_size(0); // Total number of work-items in each workgroup

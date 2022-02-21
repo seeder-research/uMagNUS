@@ -15,14 +15,15 @@
  * @param[in] seed initializing seed
  */
 __kernel void
-mtgp32_init_seed_kernel(__constant uint*         param_tbl,
-                        __constant uint*        temper_tbl,
-                        __constant uint* single_temper_tbl,
-                        __constant uint*           pos_tbl,
-                        __constant uint*           sh1_tbl,
-                        __constant uint*           sh2_tbl,
-                        __global   uint*          d_status,
-                        __global   uint*              seed) {
+mtgp32_seed(
+    __constant uint*                   param_tbl,
+    __constant uint*                  temper_tbl,
+    __constant uint*           single_temper_tbl,
+    __constant uint*                     pos_tbl,
+    __constant uint*                     sh1_tbl,
+    __constant uint*                     sh2_tbl,
+    __global   uint* __restrict         d_status,
+    __global   uint* __restrict             seed) {
     const int gid = get_group_id(0);
     const int lid = get_local_id(0);
     const int local_size = get_local_size(0);

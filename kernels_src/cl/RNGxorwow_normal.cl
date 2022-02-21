@@ -14,9 +14,10 @@ Generates a random float using xorwow RNG.
 @param d_data Output.
 */
 __kernel void
-xorwow_normal(__global  uint* state_buf,
-              __global float*    d_data,
-             int count){
+xorwow_normal(
+    __global  uint* __restrict state_buf,
+    __global float* __restrict    d_data,
+    int count){
     // Calculate indices
     int local_idx = get_local_id(0); // Work-item index within workgroup
     int grp_sz = get_local_size(0); // Total number of work-items in each workgroup

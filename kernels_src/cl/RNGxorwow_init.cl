@@ -24,9 +24,10 @@ Seeds xorwow RNG.
 @param seed Value used for seeding. Should be randomly generated for each instance of generator (thread).
 */
 __kernel void
-xorwow_seed(__global uint* __restrict       state_buf,
-            __global uint* __restrict g_jump_matrices,
-            ulong seed) {
+xorwow_seed(
+    __global uint* __restrict       state_buf,
+    __global uint* __restrict g_jump_matrices,
+    ulong seed) {
     // Calculate indices
     int local_idx = get_local_id(0); // Work-item index within workgroup
     int grp_sz = get_local_size(0); // Total number of work-items in each workgroup

@@ -43,7 +43,7 @@ func (p *MTGP32dc_params_array_ptr) Init(seed uint64, events []*cl.Event) {
 		}
 	}
 
-	event := k_mtgp32_init_seed_kernel_async(unsafe.Pointer(p.Rec_buf), unsafe.Pointer(p.Temper_buf), unsafe.Pointer(p.Flt_temper_buf), unsafe.Pointer(p.Pos_buf),
+	event := k_mtgp32_seed_async(unsafe.Pointer(p.Rec_buf), unsafe.Pointer(p.Temper_buf), unsafe.Pointer(p.Flt_temper_buf), unsafe.Pointer(p.Pos_buf),
 		unsafe.Pointer(p.Sh1_buf), unsafe.Pointer(p.Sh2_buf), unsafe.Pointer(p.Status_buf), unsafe.Pointer(seed_buf),
 		&config{[]int{p.GetGroupCount() * p.GetGroupSize()}, []int{p.GetGroupSize()}}, []*cl.Event{seed_event})
 
@@ -114,3 +114,4 @@ func (p *MTGP32dc_params_array_ptr) GenerateNormal(d_data unsafe.Pointer, data_s
 
 	return event
 }
+

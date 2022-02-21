@@ -17,7 +17,7 @@ func (p *MTGP64dc_params_array_ptr) Init(seed uint64, events []*cl.Event) {
 	totalCount := p.GetGroupCount()
 	seed_arr := make([]uint64, totalCount)
 	for idx := 0; idx < totalCount; idx++ {
-		tmpNum := rand.Uint32()
+		tmpNum := rand.Uint64()
 		for tmpNum == 0 {
 			tmpNum = rand.Uint64()
 		}
@@ -43,7 +43,7 @@ func (p *MTGP64dc_params_array_ptr) Init(seed uint64, events []*cl.Event) {
 		}
 	}
 
-	event := k_mtgp64_init_seed_kernel_async(unsafe.Pointer(p.Rec_buf), unsafe.Pointer(p.Temper_buf), unsafe.Pointer(p.Flt_temper_buf), unsafe.Pointer(p.Pos_buf),
+	event := k_mtgp64_seed_async(unsafe.Pointer(p.Rec_buf), unsafe.Pointer(p.Temper_buf), unsafe.Pointer(p.Flt_temper_buf), unsafe.Pointer(p.Pos_buf),
 		unsafe.Pointer(p.Sh1_buf), unsafe.Pointer(p.Sh2_buf), unsafe.Pointer(p.Status_buf), unsafe.Pointer(seed_buf),
 		&config{[]int{p.GetGroupCount() * p.GetGroupSize()}, []int{p.GetGroupSize()}}, []*cl.Event{seed_event})
 

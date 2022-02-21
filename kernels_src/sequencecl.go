@@ -14,7 +14,8 @@ var OCLHeadersList = []string{
 	"amul",
 	"RNG_common",
 	"RNGmrg32k3a",
-	"RNGmtgp",
+	"RNGmtgp32",
+	"RNGmtgp64",
 	"RNGthreefry",
 	"RNGxorwow",
 	"sum"}
@@ -82,7 +83,8 @@ var OCLKernelsList = []string{
 	"vecnorm",
 	"zeromask",
 	"addzhanglitorque2",
-	"mtgp32_init_seed_kernel",
+	"mtgp32_seed",
+	"mtgp32_uint",
 	"mtgp32_uniform",
 	"mtgp32_normal",
 	"xorwow_seed",
@@ -95,6 +97,10 @@ var OCLKernelsList = []string{
 	"threefry_normal"}
 
 var OCL64KernelsList = []string{
+	"mtgp64_seed",
+	"mtgp64_ulong",
+	"mtgp64_uniform",
+	"mtgp64_normal",
 	"xorwow64_seed",
 	"xorwow64_ulong",
 	"xorwow64_normal",

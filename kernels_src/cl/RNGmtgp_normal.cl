@@ -16,15 +16,16 @@
  * @param[in] size number of output data requested.
  */
 __kernel void
-mtgp32_normal(__constant uint*         param_tbl,
-              __constant uint*        temper_tbl,
-              __constant uint* single_temper_tbl,
-              __constant uint*           pos_tbl,
-              __constant uint*           sh1_tbl,
-              __constant uint*           sh2_tbl,
-              __global   uint*          d_status,
-              __global  float*            d_data,
-              int size) {
+mtgp32_normal(
+    __constant uint*                    param_tbl,
+    __constant uint*                   temper_tbl,
+    __constant uint*            single_temper_tbl,
+    __constant uint*                      pos_tbl,
+    __constant uint*                      sh1_tbl,
+    __constant uint*                      sh2_tbl,
+    __global   uint* __restrict          d_status,
+    __global  float* __restrict            d_data,
+    int size) {
     const int gid = get_group_id(0);
     const int lid = get_local_id(0);
     __local uint status[MTGP32_LS];

@@ -31,14 +31,14 @@ type Generator struct {
 	sup_offset int
 }
 
-const MTGP32_MEXP = oclRAND.MTGPDC_MEXP
-const MTGP32_N = oclRAND.MTGPDC_N
-const MTGP32_FLOOR_2P = oclRAND.MTGPDC_FLOOR_2P
-const MTGP32_CEIL_2P = oclRAND.MTGPDC_CEIL_2P
-const MTGP32_TN = oclRAND.MTGPDC_TN
-const MTGP32_LS = oclRAND.MTGPDC_LS
-const MTGP32_TS = oclRAND.MTGPDC_TS
-const MTGP32_PARAM_NUM = oclRAND.MTGPDC_PARAMS_NUM
+const MTGP64_MEXP = oclRAND.MTGPDC_MEXP
+const MTGP64_N = oclRAND.MTGPDC_N
+const MTGP64_FLOOR_2P = oclRAND.MTGPDC_FLOOR_2P
+const MTGP64_CEIL_2P = oclRAND.MTGPDC_CEIL_2P
+const MTGP64_TN = oclRAND.MTGPDC_TN
+const MTGP64_LS = oclRAND.MTGPDC_LS
+const MTGP64_TS = oclRAND.MTGPDC_TS
+const MTGP64_PARAM_NUM = oclRAND.MTGPDC_PARAMS_NUM
 
 func NewGenerator(name string) *Generator {
 	switch name {
@@ -47,9 +47,6 @@ func NewGenerator(name string) *Generator {
 		var prng_ptr Prng_
 		prng_ptr = NewMTGPRNGParams()
 		return &Generator{Name: "mtgp", PRNG: prng_ptr}
-	case "mrg32k3a":
-		fmt.Println("mrg32k3a not yet implemented")
-		return nil
 	case "threefry":
 		oclRAND.Init(ClCmdQueue, Synchronous, KernList)
 		var prng_ptr Prng_
@@ -73,8 +70,6 @@ func (g *Generator) CreatePNG() {
 		var prng_ptr Prng_
 		prng_ptr = NewMTGPRNGParams()
 		g.PRNG = prng_ptr
-	case "mrg32k3a":
-		fmt.Println("mrg32k3a not yet implemented")
 	case "threefry":
 		oclRAND.Init(ClCmdQueue, Synchronous, KernList)
 		var prng_ptr Prng_
@@ -219,23 +214,23 @@ func (g *Generator) Normal(data unsafe.Pointer, d_size int, events []*cl.Event) 
 	}
 }
 
-func NewMTGPRNGParams() *oclRAND.MTGP32dc_params_array_ptr {
+func NewMTGPRNGParams() *oclRAND.MTGP64dc_params_array_ptr {
 	var err error
 	var events_list []*cl.Event
 	var event *cl.Event
 	tmp := oclRAND.NewMTGPParams()
-	//maxNumGroups, max_size := ClCUnits, MTGP32_PARAM_NUM
-	maxNumGroups, max_size := 1, MTGP32_PARAM_NUM
+	//maxNumGroups, max_size := ClCUnits, MTGP64_PARAM_NUM
+	maxNumGroups, max_size := 1, MTGP64_PARAM_NUM
 	if maxNumGroups > max_size {
 		maxNumGroups = max_size
 	}
 	tmp.SetGroupCount(maxNumGroups)
-	if ClWGSize < MTGP32_TN {
+	if ClWGSize < MTGP64_TN {
 		log.Fatalln("Unable to use PRNG on device! Insufficient resources for parallel work-items")
 	}
-	local_item := MTGP32_N
+	local_item := MTGP64_N
 	if local_item > ClWGSize {
-		local_item = MTGP32_TN
+		local_item = MTGP64_TN
 	}
 	tmp.SetGroupSize(local_item)
 	tmp.GetMTGPArrays()
