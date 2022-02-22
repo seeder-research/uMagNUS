@@ -26,7 +26,8 @@ var (
 	LastErr, PeakErr        float64                      // error of last step, highest error ever
 	LastTorque              float64                      // maxTorque of last time step
 	NSteps, NUndone, NEvals int                          // number of good steps, undone steps
-	ErrConv                 float64  = 1e-6              // Error tolerance for fixed point iterations of implicit solvers
+	AbsErrConv              float64  = 1e4               // Absolute error tolerance for fixed point iterations of implicit solvers
+	RelErrConv              float64  = 1e-4              // Relative error tolerance for fixed point iterations of implicit solvers
 	NConv                   int      = 60                // Number of iterations to try for fixed point iterations of implicit solvers
 	FixDt                   float64                      // fixed time step?
 	stepper                 Stepper                      // generic step, can be EulerStep, HeunStep, etc
@@ -44,6 +45,8 @@ func init() {
 	DeclVar("MaxDt", &MaxDt, "Maximum time step the solver can take (s)")
 	DeclVar("MaxErr", &MaxErr, "Maximum error per step the solver can tolerate (default = 1e-5)")
 	DeclVar("RelErr", &RelErr, "Maximum relative error per step the solver can tolerate (default = 1e-4)")
+	DeclVar("AbsErrConv", &AbsErrConv, "Absolute error the implicit solver can tolerate for fixed point iteration (default = 1e4)")
+	DeclVar("RelErrConv", &RelErrConv, "Relative error the implicit solver can tolerate for fixed point iteration (default = 1e-4)")
 	DeclVar("Headroom", &Headroom, "Solver headroom (default = 0.8)")
 	DeclVar("FixDt", &FixDt, "Set a fixed time step, 0 disables fixed step (which is the default)")
 	DeclFunc("Exit", Exit, "Exit from the program")

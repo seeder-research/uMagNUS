@@ -7,7 +7,7 @@ import (
 	"github.com/seeder-research/uMagNUS/util"
 )
 
-func fixedPtIterations(hFac float32, Y, ks *data.Slice) (float64, float64) {
+func fixedPtIterations(hFac float32, Y, ks *data.Slice) (float64, int) {
 	// For implicit solvers, there is a need to solve for
 	// k_{s} = f( (t_{n} + c_{s} h),
 	//            (y_{n} + \sum_{i=1}^{s}( a_{s,i} h k_{i}) ),
@@ -35,11 +35,12 @@ func fixedPtIterations(hFac float32, Y, ks *data.Slice) (float64, float64) {
 
 	// Initialize loop state so at least one iteration
 	// of for loop gets executed
-	errIter := 2.0 * ErrConv
-	Niters := 1
+	ErrIter := float32(0.0)
+	iterate := true
+	Niters := 0
 
 	// fixed point iterations until converence criterion reached
-	for (errIter > ErrConv) && (Niters < NConv) {
+	for ; iterate && (Niters < NConv); Niters++ {
 		// Update guess
 		opencl.Madd2(yPred, Y, kPrev, 1.0, hFac) // y = y0 + dt * dy
 		M.normalize()
@@ -47,8 +48,10 @@ func fixedPtIterations(hFac float32, Y, ks *data.Slice) (float64, float64) {
 
 		// Calculate error as the difference in calculated predictions
 		// in consecutive fixed point iterations
-		errIter = opencl.MaxVecDiff(ks, kPrev)
-		Niters++
+		ErrIter = opencl.MaxVecDiff(ks, kPrev)
+		KsNorm := opencl.MaxVecNorm(ks)
+		relErr := RelErrConv * ksNorm
+		iterate = (ErrIter > AbsErrConv) && (ErrIter > relErr)
 
 		// Record fixed point result for next iteration
 		data.Copy(kPrev, ks)
