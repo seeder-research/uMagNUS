@@ -1,31 +1,31 @@
 package engine
 
 import (
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/opencl"
+	data "github.com/seeder-research/uMagNUS/data"
+	opencl "github.com/seeder-research/uMagNUS/opencl"
 	"github.com/seeder-research/uMagNUS/util"
 	"math"
 )
 
 // Explicit singly diagonal implicit Rnge-Kutta (ESDIRK) solver.
-// ESDIRK32b
-// 2nd order, 4 stages per step, adaptive step.
+// ESDIRK32a
+// 3rd order, 4 stages per step, adaptive step.
 // Anne Kværnø, Singly diagonal implicit Runge-Kutta methods
 // with explicit first stage," BIT Numerical Mathematics vol. 44,
-// 489-502, 2004. 
-// 	http://en.wikipedia.org/wiki/Bogacki-Shampine_method
-// Advance using y{n+1}
+// 489-502, 2004.
+//
+// Advance using z{n+1}
 // 	k1 = f(tn, yn)
-// 	k2 = f(tn + 0.5857864376 h, yn + 0.2928932188 h k1 + 0.2928932188 h k2)
-// 	k3 = f(tn + h, yn + 0.353553390567523 h k1 + 0.353553390632477 h k2 + 0.2928932188 h k3)
-// 	y{n+1}  = yn + 0.353553390567523 h k1 + 0.353553390632477 h k2 + 0.2928932188 h k3 // 2nd order
-// 	k4 = f(tn + h, yn + 0.215482203122508 h k1 + 0.686886723913539 h k2 - 0.195262145836047 h k3 + 0.2928932188 h k4)
-// 	z{n+1} = yn + 0.215482203122508 h k1 + 0.686886723913539 h k2 - 0.195262145836047 h k3 + 0.2928932188 h k4 // 3rd order
-type ESDIRK32B struct {
+// 	k2 = f(tn + 0.871733043 h, yn + 0.4358665215 h k1 + 0.4358665215 h k2)
+// 	k3 = f(tn + h, yn + 0.490563388419108 h k1 + 0.073570090080892 h k2 + 0.4358665215 h k3)
+// 	y{n+1}  = yn + 0.490563388419108 h k1 + 0.073570090080892 h k2 + 0.4358665215 h k3 // 2nd order
+// 	k4 = f(tn + h, yn + 0.308809969973036 h k1 + 1.490563388254108 h k2 - 1.235239879727145 h k3 + 0.4358665215 h k4)
+// 	z{n+1} = yn + 0.308809969973036 h k1 + 1.490563388254108 h k2 - 1.235239879727145 h k3 + 0.4358665215 h k4 // 3rd order
+type ESDIRK32A struct {
 	k1 *data.Slice // torque at end of step is kept for beginning of next step
 }
 
-func (rk *RK23) Step() {
+func (esdirk *ESDIRK32A) Step() {
 	m := M.Buffer()
 	size := m.Size()
 
@@ -34,19 +34,19 @@ func (rk *RK23) Step() {
 	}
 
 	// upon resize: remove wrongly sized k1
-	if rk.k1.Size() != m.Size() {
-		rk.Free()
+	if esdirk.k1.Size() != m.Size() {
+		esdirk.Free()
 	}
 
 	// first step ever: one-time k1 init and eval
-	if rk.k1 == nil {
-		rk.k1 = opencl.NewSlice(3, size)
-		torqueFn(rk.k1)
+	if esdirk.k1 == nil {
+		esdirk.k1 = opencl.NewSlice(3, size)
+		torqueFn(esdirk.k1)
 	}
 
 	// FSAL cannot be used with temperature
 	if !Temp.isZero() {
-		torqueFn(rk.k1)
+		torqueFn(esdirk.k1)
 	}
 
 	t0 := Time
@@ -65,27 +65,40 @@ func (rk *RK23) Step() {
 	// there is no explicit stage 1: k1 from previous step
 
 	// stage 2
-	Time = t0 + (1./2.)*Dt_si
-	opencl.Madd2(m, m, rk.k1, 1, (1./2.)*h) // m = m*1 + k1*h/2
+	Time = t0 + (0.871733043)*Dt_si
+	opencl.Madd2(m, m0, esdirk.k1, 1, (0.871733043)*h) // m{try} = m*1 + 0.871733043*k1
 	M.normalize()
-	torqueFn(k2)
+	m_ := opencl.Buffer(3, size)
+	defer opencl.Recycle(m_)
+	data.Copy(m_, m)
+	data.Copy(k2, esdirk.k1)
+	_, _, _ = fixedPtIterations((0.4358665215)*h, m_, k2)
 
 	// stage 3
-	Time = t0 + (3./4.)*Dt_si
-	opencl.Madd2(m, m0, k2, 1, (3./4.)*h) // m = m0*1 + k2*3/4
+	Time = t0 + Dt_si
+	opencl.Madd3(m, m0, esdirk.k1, k2, 1, (0.490563388419108)*h, (0.073570090080892)*h) // m = m0*1 + k1*0.490563388419108 + k2*0.073570090080892
 	M.normalize()
-	torqueFn(k3)
+	data.Copy(m_, m)
+	data.Copy(k3, k2)
+	_, _, _ = fixedPtIterations((0.4358665215)*h, m_, k3)
+
+	// stage 4
+	Time = t0 + Dt_si
+	opencl.Madd4(m, m0, esdirk.k1, k2, k3, 1, (0.308809969973036)*h, (1.490563388254108)*h, (-1.235239879727145)*h) // m = m0*1 + k1*0.308809969973036 + k2*1.490563388254108 - k3*1.235239879727145
+	M.normalize()
+	data.Copy(m_, m)
+	data.Copy(k4, k3)
+	_, _, _ = fixedPtIterations((0.4358665215)*h, m_, k4)
 
 	// 3rd order solution
-	opencl.Madd4(m, m0, rk.k1, k2, k3, 1, (2./9.)*h, (1./3.)*h, (4./9.)*h)
+	opencl.Madd5(m, m0, esdirk.k1, k2, k3, k4, 1, (0.308809969973036)*h, (1.490563388254108)*h, (-1.235239879727145)*h, (0.4358665215)*h) // m = m0*1 + k1*0.308809969973036 + k2*1.490563388254108 - k3*1.235239879727145 + k4*0.4358665215
 	M.normalize()
 
 	// error estimate
 	Time = t0 + Dt_si
-	torqueFn(k4)
 	Err := k2 // re-use k2 as error
 	// difference of 3rd and 2nd order torque without explicitly storing them first
-	opencl.Madd4(Err, rk.k1, k2, k3, k4, (7./24.)-(2./9.), (1./4.)-(1./3.), (1./3.)-(4./9.), (1. / 8.))
+	opencl.Madd4(Err, esdirk.k1, k2, k3, k4, (-0.181753418446072), (1.41699329817322), (-1.67110640122714), (0.4358665215))
 
 	// determine error
 	err := opencl.MaxVecNorm(Err) * float64(h)
@@ -120,7 +133,7 @@ func (rk *RK23) Step() {
 			} else {
 				adaptDt(math.Pow(RelErr/rlerr, 1./3.))
 			}
-			data.Copy(rk.k1, k4) // FSAL
+			data.Copy(esdirk.k1, k4) // FSAL
 		} else {
 			// undo bad step
 			//util.Println("Bad step at t=", t0, ", err=", err)
@@ -141,7 +154,7 @@ func (rk *RK23) Step() {
 	}
 }
 
-func (rk *RK23) Free() {
-	rk.k1.Free()
-	rk.k1 = nil
+func (esdirk *ESDIRK32A) Free() {
+	esdirk.k1.Free()
+	esdirk.k1 = nil
 }

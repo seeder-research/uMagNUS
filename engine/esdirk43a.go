@@ -1,8 +1,8 @@
 package engine
 
 import (
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/opencl"
+	data "github.com/seeder-research/uMagNUS/data"
+	opencl "github.com/seeder-research/uMagNUS/opencl"
 	"github.com/seeder-research/uMagNUS/util"
 	"math"
 )
@@ -22,7 +22,7 @@ type ESDIRK43A struct {
 	k1 *data.Slice // torque at end of step is kept for beginning of next step
 }
 
-func (rk *RK23) Step() {
+func (esdirk *ESDIRK43A) Step() {
 	m := M.Buffer()
 	size := m.Size()
 
@@ -31,25 +31,27 @@ func (rk *RK23) Step() {
 	}
 
 	// upon resize: remove wrongly sized k1
-	if rk.k1.Size() != m.Size() {
-		rk.Free()
+	if esdirk.k1.Size() != m.Size() {
+		esdirk.Free()
 	}
 
 	// first step ever: one-time k1 init and eval
-	if rk.k1 == nil {
-		rk.k1 = opencl.NewSlice(3, size)
-		torqueFn(rk.k1)
+	if esdirk.k1 == nil {
+		esdirk.k1 = opencl.NewSlice(3, size)
+		torqueFn(esdirk.k1)
 	}
 
 	// FSAL cannot be used with temperature
 	if !Temp.isZero() {
-		torqueFn(rk.k1)
+		torqueFn(esdirk.k1)
 	}
 
 	t0 := Time
 	// backup magnetization
 	m0 := opencl.Buffer(3, size)
+	m_ := opencl.Buffer(3, size)
 	defer opencl.Recycle(m0)
+	defer opencl.Recycle(m_)
 	data.Copy(m0, m)
 
 	k2, k3, k4 := opencl.Buffer(3, size), opencl.Buffer(3, size), opencl.Buffer(3, size)
@@ -62,27 +64,37 @@ func (rk *RK23) Step() {
 	// there is no explicit stage 1: k1 from previous step
 
 	// stage 2
-	Time = t0 + (1./2.)*Dt_si
-	opencl.Madd2(m, m, rk.k1, 1, (1./2.)*h) // m = m*1 + k1*h/2
+	Time = t0 + (0.87173304301691799883)*Dt_si
+	opencl.Madd2(m, m0, esdirk.k1, 1, (0.43586652150845899942)*h) // m = m*1 + k1*0.43586652150845899942
 	M.normalize()
-	torqueFn(k2)
+	data.Copy(m_, m)
+	data.Copy(k2, esdirk.k1)
+	_, _, _ = fixedPtIterations((0.43586652150845899942)*h, m_, k2)
 
 	// stage 3
-	Time = t0 + (3./4.)*Dt_si
-	opencl.Madd2(m, m0, k2, 1, (3./4.)*h) // m = m0*1 + k2*3/4
+	Time = t0 + (0.46823874485184439565)*Dt_si
+	opencl.Madd3(m, m0, esdirk.k1, k2, 1, (0.14073777472470619619)*h, (0.1083655513813208000)*h) // m = m0*1 + k1*0.14073777472470619619 + k2*0.1083655513813208000
 	M.normalize()
-	torqueFn(k3)
+	data.Copy(m_, m)
+	data.Copy(k3, k2)
+	_, _, _ = fixedPtIterations((0.43586652150845899942)*h, m_, k3)
+
+	// stage 4
+	Time = t0 + Dt_si
+	opencl.Madd5(m, m0, esdirk.k1, k2, k3, k4, 1, (0.10239940061991099768)*h, (-0.3768784522555561061)*h, (0.83861253012718610911)*h, (0.43586652150845899942)*h) // m = m0*1 + k1*0.10239940061991099768 - k2*0.3768784522555561061 + k3*0.83861253012718610911 + k4*0.43586652150845899942
+	M.normalize()
+	data.Copy(m_, m)
+	data.Copy(k4, k3)
+	_, _, _ = fixedPtIterations((0.43586652150845899942)*h, m_, k4)
 
 	// 3rd order solution
-	opencl.Madd4(m, m0, rk.k1, k2, k3, 1, (2./9.)*h, (1./3.)*h, (4./9.)*h)
+	opencl.Madd5(m, m0, esdirk.k1, k2, k3, k4, 1, (0.10239940061991099768)*h, (-0.3768784522555561061)*h, (0.83861253012718610911)*h, (0.43586652150845899942)*h)
 	M.normalize()
 
 	// error estimate
-	Time = t0 + Dt_si
-	torqueFn(k4)
 	Err := k2 // re-use k2 as error
-	// difference of 3rd and 2nd order torque without explicitly storing them first
-	opencl.Madd4(Err, rk.k1, k2, k3, k4, (7./24.)-(2./9.), (1./4.)-(1./3.), (1./3.)-(4./9.), (1. / 8.))
+	// difference of 3rd and 4th order torque without explicitly storing them first
+	opencl.Madd4(Err, esdirk.k1, k2, k3, k4, (-0.05462549724041393942), (-0.49420889362599495480), (0.22193449973506464477), (0.32689989113134424957))
 
 	// determine error
 	err := opencl.MaxVecNorm(Err) * float64(h)
@@ -117,7 +129,7 @@ func (rk *RK23) Step() {
 			} else {
 				adaptDt(math.Pow(RelErr/rlerr, 1./3.))
 			}
-			data.Copy(rk.k1, k4) // FSAL
+			data.Copy(esdirk.k1, k4) // FSAL
 		} else {
 			// undo bad step
 			//util.Println("Bad step at t=", t0, ", err=", err)
@@ -138,7 +150,7 @@ func (rk *RK23) Step() {
 	}
 }
 
-func (rk *RK23) Free() {
-	rk.k1.Free()
-	rk.k1 = nil
+func (esdirk *ESDIRK43A) Free() {
+	esdirk.k1.Free()
+	esdirk.k1 = nil
 }

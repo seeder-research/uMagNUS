@@ -7,7 +7,7 @@ import (
 	"github.com/seeder-research/uMagNUS/util"
 )
 
-func fixedPtIterations(hFac float32, Y, ks *data.Slice) (float64, int) {
+func fixedPtIterations(hFac float32, Y, ks *data.Slice) (float64, float64, int) {
 	// For implicit solvers, there is a need to solve for
 	// k_{s} = f( (t_{n} + c_{s} h),
 	//            (y_{n} + \sum_{i=1}^{s}( a_{s,i} h k_{i}) ),
@@ -35,7 +35,8 @@ func fixedPtIterations(hFac float32, Y, ks *data.Slice) (float64, int) {
 
 	// Initialize loop state so at least one iteration
 	// of for loop gets executed
-	ErrIter := float32(0.0)
+	ErrIter := float64(0.0)
+	relErr := float64(0.0)
 	iterate := true
 	Niters := 0
 
@@ -48,9 +49,9 @@ func fixedPtIterations(hFac float32, Y, ks *data.Slice) (float64, int) {
 
 		// Calculate error as the difference in calculated predictions
 		// in consecutive fixed point iterations
-		ErrIter = opencl.MaxVecDiff(ks, kPrev)
-		KsNorm := opencl.MaxVecNorm(ks)
-		relErr := RelErrConv * ksNorm
+		ErrIter = float64(opencl.MaxVecDiff(ks, kPrev))
+		ksNorm := float64(opencl.MaxVecNorm(ks))
+		relErr = RelErrConv * ksNorm
 		iterate = (ErrIter > AbsErrConv) && (ErrIter > relErr)
 
 		// Record fixed point result for next iteration
@@ -60,5 +61,5 @@ func fixedPtIterations(hFac float32, Y, ks *data.Slice) (float64, int) {
 	if Niters == NConv {
 		util.Log("fixed point iterations exceeded limit!")
 	}
-	return errIter, Niters
+	return ErrIter, relErr, Niters
 }
