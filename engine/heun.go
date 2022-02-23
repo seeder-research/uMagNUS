@@ -1,8 +1,10 @@
 package engine
 
 import (
+	data "github.com/seeder-research/uMagNUS/data"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
 	util "github.com/seeder-research/uMagNUS/util"
+	"math"
 )
 
 // Adaptive Heun solver.
@@ -12,7 +14,10 @@ type Heun struct{}
 func (he *Heun) Step() {
 	y := M.Buffer()
 	dy0 := opencl.Buffer(VECTOR, y.Size())
+	m0 := opencl.Buffer(VECTOR, y.Size())
 	defer opencl.Recycle(dy0)
+	defer opencl.Recycle(m0)
+	data.Copy(m0, y)
 
 	if FixDt != 0 {
 		Dt_si = FixDt
@@ -31,19 +36,24 @@ func (he *Heun) Step() {
 	Time += Dt_si
 	torqueFn(dy)
 
-	Err := opencl.Buffer(3, y.Size())
-	defer opencl.Recycle(Err)
-	opencl.Madd2(Err, dy0, dy, 1., -1.)
+	err := opencl.MaxVecDiff(dy0, dy) * float64(dt)
 
-	if simpleController(Err, float64(dt), he.AdvOrder(), he.AdvOrder()+1) {
+	// adjust next time step
+	if err < MaxErr || Dt_si <= MinDt || FixDt != 0 { // mindt check to avoid infinite loop
 		// step OK
 		opencl.Madd3(y, y, dy, dy0, 1, 0.5*dt, -0.5*dt)
 		M.normalize()
+		NSteps++
+		adaptDt(math.Pow(MaxErr/err, 1./2.))
+		setLastErr(err)
 		setMaxTorque(dy)
 	} else {
-                // undo bad step
+		// undo bad step
+		util.Assert(FixDt == 0)
 		Time -= Dt_si
-		opencl.Madd2(y, y, dy0, 1, -dt)
+		data.Copy(y, m0)
+		NUndone++
+		adaptDt(math.Pow(MaxErr/err, 1./3.))
 	}
 }
 

@@ -8,7 +8,7 @@ import (
 )
 
 // Time step controller to be used with these solvers:
-//   Euler, Heun
+//   Heun, RK4
 func simpleController(Err *data.Slice, h float64, accOrder, rejOrder int) bool {
 
 	// determine error
