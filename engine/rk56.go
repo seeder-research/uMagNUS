@@ -8,7 +8,10 @@ import (
 )
 
 type RK56 struct {
-	k1 *data.Slice // torque at end of step is kept for beginning of next step
+	k1       *data.Slice // torque at end of step is kept for beginning of next step
+	EmType   bool
+	AdvOrder int
+	EmOrder  int
 }
 
 func (rk *RK56) Step() {

@@ -17,7 +17,10 @@ import (
 // 	k4 = f(tn + h, y{n+1})
 // 	z{n+1} = yn + 7/24 h k1 + 1/4 h k2 + 1/3 h k3 + 1/8 h k4 // 2nd order
 type RK23 struct {
-	k1 *data.Slice // torque at end of step is kept for beginning of next step
+	k1       *data.Slice // torque at end of step is kept for beginning of next step
+	EmType   bool
+	AdvOrder int
+	EmOrder  int
 }
 
 func (rk *RK23) Step() {

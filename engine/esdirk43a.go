@@ -19,7 +19,10 @@ import (
 // 	y{n+1}  = yn + 0.10239940061991 h k1 - 0.37687845225556 h k2 + 0.83861253012719 h k3 + 0.43586652150846 h k4  // 3rd order
 // 	z{n+1} = yn + 0.15702489786032493710 h k1 + 0.11733044137043884870 h k2 + 0.61667803039212146434 h k3 + 0.10896663037711474985 h k4) // 4th order
 type ESDIRK43A struct {
-	k1 *data.Slice // torque at end of step is kept for beginning of next step
+	k1       *data.Slice // torque at end of step is kept for beginning of next step
+	EmType   bool
+	AdvOrder int
+	EmOrder  int
 }
 
 func (esdirk *ESDIRK43A) Step() {

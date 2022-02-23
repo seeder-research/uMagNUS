@@ -5,7 +5,11 @@ import (
 	"github.com/seeder-research/uMagNUS/util"
 )
 
-type Euler struct{}
+type Euler struct {
+	EmType   bool
+	AdvOrder int
+	EmOrder  int
+}
 
 // Euler method, can be used as solver.Step.
 func (_ *Euler) Step() {

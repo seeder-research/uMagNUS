@@ -9,6 +9,9 @@ import (
 
 // Classical 4th order RK solver.
 type RK4 struct {
+	EmType   bool
+	AdvOrder int
+	EmOrder  int
 }
 
 func (rk *RK4) Step() {

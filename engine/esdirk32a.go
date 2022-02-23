@@ -22,7 +22,10 @@ import (
 // 	k4 = f(tn + h, yn + 0.308809969973036 h k1 + 1.490563388254108 h k2 - 1.235239879727145 h k3 + 0.4358665215 h k4)
 // 	z{n+1} = yn + 0.308809969973036 h k1 + 1.490563388254108 h k2 - 1.235239879727145 h k3 + 0.4358665215 h k4 // 3rd order
 type ESDIRK32A struct {
-	k1 *data.Slice // torque at end of step is kept for beginning of next step
+	k1       *data.Slice // torque at end of step is kept for beginning of next step
+	EmType   bool
+	AdvOrder int
+	EmOrder  int
 }
 
 func (esdirk *ESDIRK32A) Step() {

@@ -8,7 +8,10 @@ import (
 )
 
 type BackwardEuler struct {
-	dy1 *data.Slice
+	dy1      *data.Slice
+	EmType   bool
+	AdvOrder int
+	EmOrder  int
 }
 
 // Euler method, can be used as solver.Step.

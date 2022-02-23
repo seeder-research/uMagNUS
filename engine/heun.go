@@ -7,7 +7,11 @@ import (
 )
 
 // Adaptive Heun solver.
-type Heun struct{}
+type Heun struct {
+	EmType   bool
+	AdvOrder int
+	EmOrder  int
+}
 
 // Adaptive Heun method, can be used as solver.Step
 func (_ *Heun) Step() {
