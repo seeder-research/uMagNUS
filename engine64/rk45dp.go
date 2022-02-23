@@ -102,14 +102,14 @@ func (rk *RK45DP) Free() {
 	rk.k1 = nil
 }
 
-func (s *RK45DP) EmType() bool {
+func (_ *RK45DP) EmType() bool {
 	return true
 }
 
-func (s *RK45DP) AdvOrder() int {
+func (_ *RK45DP) AdvOrder() int {
 	return 5
 }
 
-func (s *RK45DP) EmOrder() int {
+func (_ *RK45DP) EmOrder() int {
 	return 4
 }

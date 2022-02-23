@@ -3,8 +3,6 @@ package engine
 import (
 	data "github.com/seeder-research/uMagNUS/data"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
-	util "github.com/seeder-research/uMagNUS/util"
-	"math"
 )
 
 // Explicit singly diagonal implicit Rnge-Kutta (ESDIRK) solver.
@@ -100,7 +98,7 @@ func (esdirk *ESDIRK32B) Step() {
 	// difference of 3rd and 2nd order torque without explicitly storing them first
 	opencl.Madd4(Err, esdirk.k1, k2, k3, k4, (-0.138071187445015), (0.333333333281062), (-0.488155364636047), (-0.2928932188))
 
-	integralController(Err, m_, esdirk.k1, m0, t0, float64(h), rk.AdvOrder(), rk.AdvOrder()+1, true)
+	integralController(Err, m_, esdirk.k1, m0, t0, float64(h), esdirk.AdvOrder(), esdirk.AdvOrder()+1, true)
 }
 
 func (esdirk *ESDIRK32B) Free() {
@@ -108,14 +106,14 @@ func (esdirk *ESDIRK32B) Free() {
 	esdirk.k1 = nil
 }
 
-func (s *ESDIRK32B) EmType() bool {
+func (_ *ESDIRK32B) EmType() bool {
 	return true
 }
 
-func (s *ESDIRK32B) AdvOrder() int {
+func (_ *ESDIRK32B) AdvOrder() int {
 	return 2
 }
 
-func (s *ESDIRK32B) EmOrder() int {
+func (_ *ESDIRK32B) EmOrder() int {
 	return 3
 }

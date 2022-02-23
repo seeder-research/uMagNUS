@@ -8,7 +8,7 @@ import (
 )
 
 type BackwardEuler struct {
-	dy1      *data.Slice
+	dy1 *data.Slice
 }
 
 // Euler method, can be used as solver.Step.
@@ -34,7 +34,7 @@ func (s *BackwardEuler) Step() {
 	dt := float32(Dt_si * GammaLL)
 	util.AssertMsg(dt > 0, "Backward Euler solver requires fixed time step > 0")
 
-	// Fist guess
+	// First guess
 	//	Time = t0 + 0.5*Dt_si // 0.5 dt makes it implicit midpoint method
 
 	// with temperature, previous torque cannot be used as predictor
@@ -78,14 +78,14 @@ func (s *BackwardEuler) Free() {
 	s.dy1 = nil
 }
 
-func (s *BackwardEuler) EmType() bool {
+func (_ *BackwardEuler) EmType() bool {
 	return false
 }
 
-func (s *BackwardEuler) AdvOrder() int {
+func (_ *BackwardEuler) AdvOrder() int {
 	return 1
 }
 
-func (s *BackwardEuler) EmOrder() int {
+func (_ *BackwardEuler) EmOrder() int {
 	return -1
 }

@@ -7,6 +7,29 @@ import (
 	"math"
 )
 
+// Time step controller to be used with these solvers:
+//   Euler, Heun
+func simpleController(Err *data.Slice, h float64, accOrder, rejOrder int) bool {
+
+	// determine error
+	err := opencl.MaxVecNorm(Err) * h
+
+	// adjust next time step
+	if err < MaxErr || Dt_si <= MinDt || FixDt != 0 { // mindt check to avoid infinite loop
+		// step OK
+		NSteps++
+		adaptDt(math.Pow(MaxErr/err, 1./float64(accOrder)))
+		setLastErr(err)
+		return true
+	} else {
+		// undo bad step
+		util.Assert(FixDt == 0)
+		NUndone++
+		adaptDt(math.Pow(MaxErr/err, 1./float64(rejOrder)))
+		return false
+	}
+}
+
 // Time step controllers to be used with embedded solvers
 func integralController(Err, delM, k1, m0 *data.Slice, t0, h float64, accOrder, rejOrder int, FSAL bool) {
 
@@ -49,7 +72,7 @@ func integralController(Err, delM, k1, m0 *data.Slice, t0, h float64, accOrder, 
 			} else {
 				adaptDt(math.Pow(RelErr/rlerr, 1./float64(accOrder)))
 			}
-			if (FSAL && (k1 != nil) && (delM != nil)) {
+			if FSAL && (k1 != nil) && (delM != nil) {
 				data.Copy(k1, delM) // FSAL
 			}
 		} else {

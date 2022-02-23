@@ -88,14 +88,14 @@ func (rk *RK23) Free() {
 	rk.k1 = nil
 }
 
-func (s *RK23) EmType() bool {
+func (_ *RK23) EmType() bool {
 	return true
 }
 
-func (s *RK23) AdvOrder() int {
+func (_ *RK23) AdvOrder() int {
 	return 3
 }
 
-func (s *RK23) EmOrder() int {
+func (_ *RK23) EmOrder() int {
 	return 2
 }

@@ -164,14 +164,14 @@ func Minimize() {
 	pause = true
 }
 
-func (s *Minimizer) EmType() bool {
-        return false
+func (_ *Minimizer) EmType() bool {
+	return false
 }
 
-func (s *Minimizer) AdvOrder() int {
-        return -1
+func (_ *Minimizer) AdvOrder() int {
+	return -1
 }
 
-func (s *Minimizer) EmOrder() int {
-        return -1
+func (_ *Minimizer) EmOrder() int {
+	return -1
 }

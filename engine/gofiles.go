@@ -6,9 +6,9 @@ import (
 	"flag"
 	"github.com/seeder-research/uMagNUS/opencl"
 	"github.com/seeder-research/uMagNUS/util"
+	"log"
 	"os"
 	"path"
-	"log"
 )
 
 var (

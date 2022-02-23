@@ -112,14 +112,14 @@ func (rk *RK56) Free() {
 	rk.k1 = nil
 }
 
-func (s *RK56) EmType() bool {
+func (_ *RK56) EmType() bool {
 	return true
 }
 
-func (s *RK56) AdvOrder() int {
+func (_ *RK56) AdvOrder() int {
 	return 6
 }
 
-func (s *RK56) EmOrder() int {
+func (_ *RK56) EmOrder() int {
 	return 5
 }
