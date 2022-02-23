@@ -91,7 +91,8 @@ func (esdirk *ESDIRK32A) Step() {
 	_, _, _ = fixedPtIterations((0.4358665215)*h, m_, k4)
 
 	// 3rd order solution
-	opencl.Madd5(m, m0, esdirk.k1, k2, k3, k4, 1, (0.308809969973036)*h, (1.490563388254108)*h, (-1.235239879727145)*h, (0.4358665215)*h) // m = m0*1 + k1*0.308809969973036 + k2*1.490563388254108 - k3*1.235239879727145 + k4*0.4358665215
+	opencl.Madd4(m_, esdirk.k1, k2, k3, k4, (0.308809969973036), (1.490563388254108), (-1.235239879727145), (0.4358665215)) // m = m0*1 + k1*0.308809969973036 + k2*1.490563388254108 - k3*1.235239879727145 + k4*0.4358665215
+	opencl.Madd2(m, m0, m_, 1, h)
 	M.normalize()
 
 	// error estimate
@@ -111,8 +112,8 @@ func (esdirk *ESDIRK32A) Step() {
 		opencl.VecNorm(errnorm, Err)
 		ddtnorm := opencl.Buffer(1, size)
 		defer opencl.Recycle(ddtnorm)
-		opencl.VecNorm(ddtnorm, k4)
-		maxdm := opencl.MaxVecNorm(k4)
+		opencl.VecNorm(ddtnorm, m_)
+		maxdm := opencl.MaxVecNorm(ddtnorm)
 		fail := 0
 		rlerr := float64(0.0)
 		if maxdm < MinSlope { // Only step using relerr if dmdt is big enough. Overcomes equilibrium problem
@@ -125,7 +126,7 @@ func (esdirk *ESDIRK32A) Step() {
 		if fail == 0 || RelErr <= 0.0 || rlerr < RelErr || Dt_si <= MinDt || FixDt != 0 { // mindt check to avoid infinite loop
 			// step OK
 			setLastErr(err)
-			setMaxTorque(k4)
+			setMaxTorque(m_)
 			NSteps++
 			Time = t0 + Dt_si
 			if fail == 0 {
@@ -133,7 +134,7 @@ func (esdirk *ESDIRK32A) Step() {
 			} else {
 				adaptDt(math.Pow(RelErr/rlerr, 1./3.))
 			}
-			data.Copy(esdirk.k1, k4) // FSAL
+			data.Copy(esdirk.k1, m_) // FSAL
 		} else {
 			// undo bad step
 			//util.Println("Bad step at t=", t0, ", err=", err)

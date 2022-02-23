@@ -1,8 +1,8 @@
 package engine
 
 import (
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/opencl"
+	data "github.com/seeder-research/uMagNUS/data"
+	opencl "github.com/seeder-research/uMagNUS/opencl"
 	"github.com/seeder-research/uMagNUS/util"
 	"math"
 )
@@ -98,7 +98,8 @@ func (esdirk *ESDIRK43B) Step() {
 	_, _, _ = fixedPtIterations((0.4358665215)*h, m_, k5)
 
 	// 3rd order solution
-	opencl.Madd5(m, m0, esdirk.k1, k2, k3, k4, 1, (0.102399400616089)*h, (-0.376878452267324)*h, (0.838612530151233)*h, (0.4358665215)*h)
+	opencl.Madd4(m_, esdirk.k1, k2, k3, k4, (0.102399400616089), (-0.376878452267324), (0.838612530151233), (0.4358665215))
+	opencl.Madd2(m, m0, m_, 1, h)
 	M.normalize()
 
 	// error estimate
@@ -118,8 +119,8 @@ func (esdirk *ESDIRK43B) Step() {
 		opencl.VecNorm(errnorm, Err)
 		ddtnorm := opencl.Buffer(1, size)
 		defer opencl.Recycle(ddtnorm)
-		opencl.VecNorm(ddtnorm, k4)
-		maxdm := opencl.MaxVecNorm(k4)
+		opencl.VecNorm(ddtnorm, m_)
+		maxdm := opencl.MaxVecNorm(m_)
 		fail := 0
 		rlerr := float64(0.0)
 		if maxdm < MinSlope { // Only step using relerr if dmdt is big enough. Overcomes equilibrium problem
@@ -132,7 +133,7 @@ func (esdirk *ESDIRK43B) Step() {
 		if fail == 0 || RelErr <= 0.0 || rlerr < RelErr || Dt_si <= MinDt || FixDt != 0 { // mindt check to avoid infinite loop
 			// step OK
 			setLastErr(err)
-			setMaxTorque(k4)
+			setMaxTorque(m_)
 			NSteps++
 			Time = t0 + Dt_si
 			if fail == 0 {

@@ -81,13 +81,6 @@ func (esdirk *ESDIRK32B) Step() {
 	data.Copy(k3, k2)
 	_, _, _ = fixedPtIterations((0.2928932188)*h, m_, k3)
 
-	// 2nd order solution
-	opencl.Madd4(m, m0, esdirk.k1, k2, k3, 1, (0.353553390567523)*h, (0.353553390632477)*h, (0.2928932188)*h) // m = m0*1 + k1*0.353553390567523 + k2*0.353553390632477 + k3*0.2928932188
-	M.normalize()
-	mSol := opencl.Buffer(3, size)
-	defer opencl.Recycle(mSol)
-	data.Copy(mSol, m)
-
 	// stage 4 (for estimating error)
 	Time = t0 + Dt_si
 	opencl.Madd4(m, m0, esdirk.k1, k2, k3, 1, (0.215482203122508)*h, (0.686886723913539)*h, (-0.195262145836047)*h) // m = m0*1 + k1*0.215482203122508 + k2*0.686886723913539- k3*0.195262145836047
@@ -95,6 +88,11 @@ func (esdirk *ESDIRK32B) Step() {
 	data.Copy(m_, m)
 	data.Copy(k4, k3)
 	_, _, _ = fixedPtIterations((0.2928932188)*h, m_, k4)
+
+	// 2nd order solution
+	opencl.Madd3(m_, esdirk.k1, k2, k3, (0.353553390567523), (0.353553390632477), (0.2928932188)) // m = m0*1 + k1*0.353553390567523 + k2*0.353553390632477 + k3*0.2928932188
+	opencl.Madd2(m, m0, m_, 1, h)
+	M.normalize()
 
 	// error estimate
 	Time = t0 + Dt_si
@@ -113,8 +111,8 @@ func (esdirk *ESDIRK32B) Step() {
 		opencl.VecNorm(errnorm, Err)
 		ddtnorm := opencl.Buffer(1, size)
 		defer opencl.Recycle(ddtnorm)
-		opencl.VecNorm(ddtnorm, k4)
-		maxdm := opencl.MaxVecNorm(k4)
+		opencl.VecNorm(ddtnorm, m_)
+		maxdm := opencl.MaxVecNorm(m_)
 		fail := 0
 		rlerr := float64(0.0)
 		if maxdm < MinSlope { // Only step using relerr if dmdt is big enough. Overcomes equilibrium problem
@@ -127,7 +125,7 @@ func (esdirk *ESDIRK32B) Step() {
 		if fail == 0 || RelErr <= 0.0 || rlerr < RelErr || Dt_si <= MinDt || FixDt != 0 { // mindt check to avoid infinite loop
 			// step OK
 			setLastErr(err)
-			setMaxTorque(k4)
+			setMaxTorque(m_)
 			NSteps++
 			Time = t0 + Dt_si
 			if fail == 0 {
@@ -135,7 +133,7 @@ func (esdirk *ESDIRK32B) Step() {
 			} else {
 				adaptDt(math.Pow(RelErr/rlerr, 1./2.))
 			}
-			data.Copy(esdirk.k1, k4) // FSAL
+			data.Copy(esdirk.k1, m_) // FSAL
 		} else {
 			// undo bad step
 			//util.Println("Bad step at t=", t0, ", err=", err)
