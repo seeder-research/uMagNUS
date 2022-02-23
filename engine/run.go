@@ -65,6 +65,10 @@ type Stepper interface {
 
 // Arguments for SetSolver
 const (
+	ESDIRK43_B     = -5
+	ESDIRK43_A     = -4
+	ESDIRK32_B     = -3
+	ESDIRK32_A     = -2
 	BACKWARD_EULER = -1
 	EULER          = 1
 	HEUN           = 2
@@ -96,6 +100,14 @@ func SetSolver(typ int) {
 		stepper = new(RK45DP)
 	case FEHLBERG:
 		stepper = new(RK56)
+	case ESDIRK43_A:
+		stepper = new(ESDIRK43A)
+	case ESDIRK43_B:
+		stepper = new(ESDIRK43B)
+	case ESDIRK32_A:
+		stepper = new(ESDIRK32A)
+	case ESDIRK32_B:
+		stepper = new(ESDIRK32B)
 	}
 	solvertype = typ
 }

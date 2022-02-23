@@ -113,7 +113,7 @@ func (esdirk *ESDIRK32A) Step() {
 		ddtnorm := opencl.Buffer(1, size)
 		defer opencl.Recycle(ddtnorm)
 		opencl.VecNorm(ddtnorm, m_)
-		maxdm := opencl.MaxVecNorm(ddtnorm)
+		maxdm := opencl.MaxVecNorm(m_)
 		fail := 0
 		rlerr := float64(0.0)
 		if maxdm < MinSlope { // Only step using relerr if dmdt is big enough. Overcomes equilibrium problem
