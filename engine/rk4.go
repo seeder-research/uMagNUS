@@ -1,18 +1,14 @@
 package engine
 
 import (
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/opencl"
-	"github.com/seeder-research/uMagNUS/util"
+	data "github.com/seeder-research/uMagNUS/data"
+	opencl "github.com/seeder-research/uMagNUS/opencl"
+	util "github.com/seeder-research/uMagNUS/util"
 	"math"
 )
 
 // Classical 4th order RK solver.
-type RK4 struct {
-	EmType   bool
-	AdvOrder int
-	EmOrder  int
-}
+type RK4 struct {}
 
 func (rk *RK4) Step() {
 	m := M.Buffer()
@@ -80,3 +76,15 @@ func (rk *RK4) Step() {
 }
 
 func (_ *RK4) Free() {}
+
+func (s *RK4) EmType() bool {
+        return false
+}
+
+func (s *RK4) AdvOrder() int {
+        return 4
+}
+
+func (s *RK4) EmOrder() int {
+        return -1
+}

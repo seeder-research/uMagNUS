@@ -3,13 +3,12 @@ package engine64
 import (
 	data "github.com/seeder-research/uMagNUS/data64"
 	opencl "github.com/seeder-research/uMagNUS/opencl64"
-	"github.com/seeder-research/uMagNUS/util"
+	util "github.com/seeder-research/uMagNUS/util"
 	"math"
 )
 
 // Classical 4th order RK solver.
-type RK4 struct {
-}
+type RK4 struct {}
 
 func (rk *RK4) Step() {
 	m := M.Buffer()
@@ -77,3 +76,15 @@ func (rk *RK4) Step() {
 }
 
 func (_ *RK4) Free() {}
+
+func (s *RK4) EmType() bool {
+        return false
+}
+
+func (s *RK4) AdvOrder() int {
+        return 4
+}
+
+func (s *RK4) EmOrder() int {
+        return -1
+}

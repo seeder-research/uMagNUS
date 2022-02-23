@@ -2,10 +2,10 @@ package engine64
 
 import (
 	opencl "github.com/seeder-research/uMagNUS/opencl64"
-	"github.com/seeder-research/uMagNUS/util"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
-type Euler struct{}
+type Euler struct {}
 
 // Euler method, can be used as solver.Step.
 func (_ *Euler) Step() {
@@ -36,3 +36,15 @@ func (_ *Euler) Step() {
 }
 
 func (_ *Euler) Free() {}
+
+func (s *Euler) EmType() bool {
+        return false
+}
+
+func (s *Euler) AdvOrder() int {
+        return 1
+}
+
+func (s *Euler) EmOrder() int {
+        return -1
+}

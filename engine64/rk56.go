@@ -3,12 +3,12 @@ package engine64
 import (
 	data "github.com/seeder-research/uMagNUS/data64"
 	opencl "github.com/seeder-research/uMagNUS/opencl64"
-	"github.com/seeder-research/uMagNUS/util"
+	util "github.com/seeder-research/uMagNUS/util"
 	"math"
 )
 
 type RK56 struct {
-	k1 *data.Slice // torque at end of step is kept for beginning of next step
+	k1       *data.Slice // torque at end of step is kept for beginning of next step
 }
 
 func (rk *RK56) Step() {
@@ -163,4 +163,16 @@ func (rk *RK56) Step() {
 func (rk *RK56) Free() {
 	rk.k1.Free()
 	rk.k1 = nil
+}
+
+func (s *RK56) EmType() bool {
+        return true
+}
+
+func (s *RK56) AdvOrder() int {
+        return 6
+}
+
+func (s *RK56) EmOrder() int {
+        return 5
 }

@@ -1,31 +1,30 @@
-package engine
+package engine64
 
 import (
-	data "github.com/seeder-research/uMagNUS/data"
-	opencl "github.com/seeder-research/uMagNUS/opencl"
+	data "github.com/seeder-research/uMagNUS/data64"
+	opencl "github.com/seeder-research/uMagNUS/opencl64"
 	util "github.com/seeder-research/uMagNUS/util"
 	"math"
 )
 
 // Explicit singly diagonal implicit Rnge-Kutta (ESDIRK) solver.
-// ESDIRK32a
-// 3rd order, 4 stages per step, adaptive step.
+// ESDIRK32b
+// 2nd order, 4 stages per step, adaptive step.
 // Anne Kværnø, Singly diagonal implicit Runge-Kutta methods
 // with explicit first stage," BIT Numerical Mathematics vol. 44,
 // 489-502, 2004.
-//
-// Advance using z{n+1}
+// Advance using y{n+1}
 // 	k1 = f(tn, yn)
-// 	k2 = f(tn + 0.871733043 h, yn + 0.4358665215 h k1 + 0.4358665215 h k2)
-// 	k3 = f(tn + h, yn + 0.490563388419108 h k1 + 0.073570090080892 h k2 + 0.4358665215 h k3)
-// 	y{n+1}  = yn + 0.490563388419108 h k1 + 0.073570090080892 h k2 + 0.4358665215 h k3 // 2nd order
-// 	k4 = f(tn + h, yn + 0.308809969973036 h k1 + 1.490563388254108 h k2 - 1.235239879727145 h k3 + 0.4358665215 h k4)
-// 	z{n+1} = yn + 0.308809969973036 h k1 + 1.490563388254108 h k2 - 1.235239879727145 h k3 + 0.4358665215 h k4 // 3rd order
-type ESDIRK32A struct {
+// 	k2 = f(tn + 0.5857864376 h, yn + 0.2928932188 h k1 + 0.2928932188 h k2)
+// 	k3 = f(tn + h, yn + 0.353553390567523 h k1 + 0.353553390632477 h k2 + 0.2928932188 h k3)
+// 	y{n+1}  = yn + 0.353553390567523 h k1 + 0.353553390632477 h k2 + 0.2928932188 h k3 // 2nd order
+// 	k4 = f(tn + h, yn + 0.215482203122508 h k1 + 0.686886723913539 h k2 - 0.195262145836047 h k3 + 0.2928932188 h k4)
+// 	z{n+1} = yn + 0.215482203122508 h k1 + 0.686886723913539 h k2 - 0.195262145836047 h k3 + 0.2928932188 h k4 // 3rd order
+type ESDIRK32B struct {
 	k1       *data.Slice // torque at end of step is kept for beginning of next step
 }
 
-func (esdirk *ESDIRK32A) Step() {
+func (esdirk *ESDIRK32B) Step() {
 	m := M.Buffer()
 	size := m.Size()
 
@@ -60,38 +59,38 @@ func (esdirk *ESDIRK32A) Step() {
 	defer opencl.Recycle(k3)
 	defer opencl.Recycle(k4)
 
-	h := float32(Dt_si * GammaLL) // internal time step = Dt * gammaLL
+	h := float64(Dt_si * GammaLL) // internal time step = Dt * gammaLL
 
 	// there is no explicit stage 1: k1 from previous step
 
 	// stage 2
-	Time = t0 + (0.871733043)*Dt_si
-	opencl.Madd2(m, m0, esdirk.k1, 1, (0.871733043)*h) // m{try} = m*1 + 0.871733043*k1
+	Time = t0 + (0.5857864376)*Dt_si
+	opencl.Madd2(m, m0, esdirk.k1, 1, (0.2928932188)*h) // m{try} = m*1 + k1*0.2928932188
 	M.normalize()
 	m_ := opencl.Buffer(3, size)
 	defer opencl.Recycle(m_)
 	data.Copy(m_, m)
 	data.Copy(k2, esdirk.k1)
-	_, _, _ = fixedPtIterations((0.4358665215)*h, m_, k2)
+	_, _, _ = fixedPtIterations((0.2928932188)*h, m_, k2)
 
 	// stage 3
 	Time = t0 + Dt_si
-	opencl.Madd3(m, m0, esdirk.k1, k2, 1, (0.490563388419108)*h, (0.073570090080892)*h) // m = m0*1 + k1*0.490563388419108 + k2*0.073570090080892
+	opencl.Madd3(m, m0, esdirk.k1, k2, 1, (0.353553390567523)*h, (0.353553390632477)*h) // m = m0*1 + k1*0.353553390567523 + k2*0.353553390632477
 	M.normalize()
 	data.Copy(m_, m)
 	data.Copy(k3, k2)
-	_, _, _ = fixedPtIterations((0.4358665215)*h, m_, k3)
+	_, _, _ = fixedPtIterations((0.2928932188)*h, m_, k3)
 
-	// stage 4
+	// stage 4 (for estimating error)
 	Time = t0 + Dt_si
-	opencl.Madd4(m, m0, esdirk.k1, k2, k3, 1, (0.308809969973036)*h, (1.490563388254108)*h, (-1.235239879727145)*h) // m = m0*1 + k1*0.308809969973036 + k2*1.490563388254108 - k3*1.235239879727145
+	opencl.Madd4(m, m0, esdirk.k1, k2, k3, 1, (0.215482203122508)*h, (0.686886723913539)*h, (-0.195262145836047)*h) // m = m0*1 + k1*0.215482203122508 + k2*0.686886723913539- k3*0.195262145836047
 	M.normalize()
 	data.Copy(m_, m)
 	data.Copy(k4, k3)
-	_, _, _ = fixedPtIterations((0.4358665215)*h, m_, k4)
+	_, _, _ = fixedPtIterations((0.2928932188)*h, m_, k4)
 
-	// 3rd order solution
-	opencl.Madd4(m_, esdirk.k1, k2, k3, k4, (0.308809969973036), (1.490563388254108), (-1.235239879727145), (0.4358665215)) // m = m0*1 + k1*0.308809969973036 + k2*1.490563388254108 - k3*1.235239879727145 + k4*0.4358665215
+	// 2nd order solution
+	opencl.Madd3(m_, esdirk.k1, k2, k3, (0.353553390567523), (0.353553390632477), (0.2928932188)) // m = m0*1 + k1*0.353553390567523 + k2*0.353553390632477 + k3*0.2928932188
 	opencl.Madd2(m, m0, m_, 1, h)
 	M.normalize()
 
@@ -99,7 +98,7 @@ func (esdirk *ESDIRK32A) Step() {
 	Time = t0 + Dt_si
 	Err := k2 // re-use k2 as error
 	// difference of 3rd and 2nd order torque without explicitly storing them first
-	opencl.Madd4(Err, esdirk.k1, k2, k3, k4, (-0.181753418446072), (1.41699329817322), (-1.67110640122714), (0.4358665215))
+	opencl.Madd4(Err, esdirk.k1, k2, k3, k4, (-0.138071187445015), (0.333333333281062), (-0.488155364636047), (-0.2928932188))
 
 	// determine error
 	err := opencl.MaxVecNorm(Err) * float64(h)
@@ -130,9 +129,9 @@ func (esdirk *ESDIRK32A) Step() {
 			NSteps++
 			Time = t0 + Dt_si
 			if fail == 0 {
-				adaptDt(math.Pow(MaxErr/err, 1./3.))
+				adaptDt(math.Pow(MaxErr/err, 1./2.))
 			} else {
-				adaptDt(math.Pow(RelErr/rlerr, 1./3.))
+				adaptDt(math.Pow(RelErr/rlerr, 1./2.))
 			}
 			data.Copy(esdirk.k1, m_) // FSAL
 		} else {
@@ -142,7 +141,7 @@ func (esdirk *ESDIRK32A) Step() {
 			Time = t0
 			data.Copy(m, m0)
 			NUndone++
-			adaptDt(math.Pow(RelErr/rlerr, 1./4.))
+			adaptDt(math.Pow(RelErr/rlerr, 1./3.))
 		}
 	} else {
 		// undo bad step
@@ -151,23 +150,23 @@ func (esdirk *ESDIRK32A) Step() {
 		Time = t0
 		data.Copy(m, m0)
 		NUndone++
-		adaptDt(math.Pow(MaxErr/err, 1./4.))
+		adaptDt(math.Pow(MaxErr/err, 1./3.))
 	}
 }
 
-func (esdirk *ESDIRK32A) Free() {
+func (esdirk *ESDIRK32B) Free() {
 	esdirk.k1.Free()
 	esdirk.k1 = nil
 }
 
-func (s *ESDIRK32A) EmType() bool {
+func (s *ESDIRK32B) EmType() bool {
         return true
 }
 
-func (s *ESDIRK32A) AdvOrder() int {
-        return 3
+func (s *ESDIRK32B) AdvOrder() int {
+        return 2
 }
 
-func (s *ESDIRK32A) EmOrder() int {
-        return 2
+func (s *ESDIRK32B) EmOrder() int {
+        return 3
 }

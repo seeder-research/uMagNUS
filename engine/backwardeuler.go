@@ -2,16 +2,13 @@ package engine
 
 import (
 	//"fmt"
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/opencl"
-	"github.com/seeder-research/uMagNUS/util"
+	data "github.com/seeder-research/uMagNUS/data"
+	opencl "github.com/seeder-research/uMagNUS/opencl"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 type BackwardEuler struct {
 	dy1      *data.Slice
-	EmType   bool
-	AdvOrder int
-	EmOrder  int
 }
 
 // Euler method, can be used as solver.Step.
@@ -79,4 +76,16 @@ func (s *BackwardEuler) Step() {
 func (s *BackwardEuler) Free() {
 	s.dy1.Free()
 	s.dy1 = nil
+}
+
+func (s *BackwardEuler) EmType() bool {
+	return false
+}
+
+func (s *BackwardEuler) AdvOrder() int {
+	return 1
+}
+
+func (s *BackwardEuler) EmOrder() int {
+	return -1
 }

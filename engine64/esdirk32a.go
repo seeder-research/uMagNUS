@@ -1,8 +1,8 @@
-package engine
+package engine64
 
 import (
-	data "github.com/seeder-research/uMagNUS/data"
-	opencl "github.com/seeder-research/uMagNUS/opencl"
+	data "github.com/seeder-research/uMagNUS/data64"
+	opencl "github.com/seeder-research/uMagNUS/opencl64"
 	util "github.com/seeder-research/uMagNUS/util"
 	"math"
 )
@@ -60,7 +60,7 @@ func (esdirk *ESDIRK32A) Step() {
 	defer opencl.Recycle(k3)
 	defer opencl.Recycle(k4)
 
-	h := float32(Dt_si * GammaLL) // internal time step = Dt * gammaLL
+	h := float64(Dt_si * GammaLL) // internal time step = Dt * gammaLL
 
 	// there is no explicit stage 1: k1 from previous step
 

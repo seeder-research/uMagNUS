@@ -3,7 +3,7 @@ package engine
 import (
 	data "github.com/seeder-research/uMagNUS/data"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
-	"github.com/seeder-research/uMagNUS/util"
+	util "github.com/seeder-research/uMagNUS/util"
 	"math"
 )
 
@@ -20,9 +20,6 @@ import (
 // 	z{n+1} = yn + 0.15702489786032493710 h k1 + 0.11733044137043884870 h k2 + 0.61667803039212146434 h k3 + 0.10896663037711474985 h k4) // 4th order
 type ESDIRK43A struct {
 	k1       *data.Slice // torque at end of step is kept for beginning of next step
-	EmType   bool
-	AdvOrder int
-	EmOrder  int
 }
 
 func (esdirk *ESDIRK43A) Step() {
@@ -157,4 +154,16 @@ func (esdirk *ESDIRK43A) Step() {
 func (esdirk *ESDIRK43A) Free() {
 	esdirk.k1.Free()
 	esdirk.k1 = nil
+}
+
+func (s *ESDIRK43A) EmType() bool {
+        return true
+}
+
+func (s *ESDIRK43A) AdvOrder() int {
+        return 3
+}
+
+func (s *ESDIRK43A) EmOrder() int {
+        return 4
 }

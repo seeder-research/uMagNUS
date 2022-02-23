@@ -61,6 +61,9 @@ func init() {
 type Stepper interface {
 	Step() // take time step using solver globals
 	Free() // free resources, if any (e.g.: RK23 previous torque)
+	EmType() bool
+	AdvOrder() int
+	EmOrder() int
 }
 
 // Arguments for SetSolver
@@ -88,59 +91,26 @@ func SetSolver(typ int) {
 		util.Fatalf("SetSolver: unknown solver type: %v", typ)
 	case BACKWARD_EULER:
 		stepper = new(BackwardEuler)
-		stepper.EmType = false
-		stepper.AdvOrder = 1
-		stepper.EmOrder = -1
 	case EULER:
 		stepper = new(Euler)
-		stepper.EmType = false
-		stepper.AdvOrder = 1
-		stepper.EmOrder = -1
 	case HEUN:
 		stepper = new(Heun)
-		stepper.EmType = false
-		stepper.AdvOrder = 2
-		stepper.EmOrder = -1
 	case BOGAKISHAMPINE:
 		stepper = new(RK23)
-		stepper.EmType = true
-		stepper.AdvOrder = 3
-		stepper.EmOrder = 2
 	case RUNGEKUTTA:
 		stepper = new(RK4)
-		stepper.EmType = false
-		stepper.AdvOrder = 4
-		stepper.EmOrder = -1
 	case DORMANDPRINCE:
 		stepper = new(RK45DP)
-		stepper.EmType = true
-		stepper.AdvOrder = 5
-		stepper.EmOrder = 4
 	case FEHLBERG:
 		stepper = new(RK56)
-		stepper.EmType = true
-		stepper.AdvOrder = 6
-		stepper.EmOrder = 5
 	case ESDIRK43_A:
 		stepper = new(ESDIRK43A)
-		stepper.EmType = true
-		stepper.AdvOrder = 3
-		stepper.EmOrder = 4
 	case ESDIRK43_B:
 		stepper = new(ESDIRK43B)
-		stepper.EmType = true
-		stepper.AdvOrder = 3
-		stepper.EmOrder = 4
 	case ESDIRK32_A:
 		stepper = new(ESDIRK32A)
-		stepper.EmType = true
-		stepper.AdvOrder = 3
-		stepper.EmOrder = 2
 	case ESDIRK32_B:
 		stepper = new(ESDIRK32B)
-		stepper.EmType = true
-		stepper.AdvOrder = 2
-		stepper.EmOrder = 3
 	}
 	solvertype = typ
 }

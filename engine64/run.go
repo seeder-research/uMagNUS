@@ -17,7 +17,7 @@ var (
 	pause                   = true                       // set pause at any time to stop running after the current step
 	postStep                []func()                     // called on after every full time step
 	Inject                           = make(chan func()) // injects code in between time steps. Used by web interface.
-	Dt_si                   float64  = 1e-15             // time step = dt_si (seconds) *dt_mul, which should be nice float64
+	Dt_si                   float64  = 1e-15             // time step = dt_si (seconds) *dt_mul, which should be nice float32
 	MinDt, MaxDt            float64                      // minimum and maximum time step
 	MaxErr                  float64  = 1e-5              // maximum error/step
 	RelErr                  float64  = 1e-4              // maximum relative error/step
@@ -26,7 +26,8 @@ var (
 	LastErr, PeakErr        float64                      // error of last step, highest error ever
 	LastTorque              float64                      // maxTorque of last time step
 	NSteps, NUndone, NEvals int                          // number of good steps, undone steps
-	ErrConv                 float64  = 1e-6              // Error tolerance for fixed point iterations of implicit solvers
+	AbsErrConv              float64  = 1e4               // Absolute error tolerance for fixed point iterations of implicit solvers
+	RelErrConv              float64  = 1e-4              // Relative error tolerance for fixed point iterations of implicit solvers
 	NConv                   int      = 60                // Number of iterations to try for fixed point iterations of implicit solvers
 	FixDt                   float64                      // fixed time step?
 	stepper                 Stepper                      // generic step, can be EulerStep, HeunStep, etc
@@ -44,6 +45,8 @@ func init() {
 	DeclVar("MaxDt", &MaxDt, "Maximum time step the solver can take (s)")
 	DeclVar("MaxErr", &MaxErr, "Maximum error per step the solver can tolerate (default = 1e-5)")
 	DeclVar("RelErr", &RelErr, "Maximum relative error per step the solver can tolerate (default = 1e-4)")
+	DeclVar("AbsErrConv", &AbsErrConv, "Absolute error the implicit solver can tolerate for fixed point iteration (default = 1e4)")
+	DeclVar("RelErrConv", &RelErrConv, "Relative error the implicit solver can tolerate for fixed point iteration (default = 1e-4)")
 	DeclVar("Headroom", &Headroom, "Solver headroom (default = 0.8)")
 	DeclVar("FixDt", &FixDt, "Set a fixed time step, 0 disables fixed step (which is the default)")
 	DeclFunc("Exit", Exit, "Exit from the program")
@@ -58,10 +61,17 @@ func init() {
 type Stepper interface {
 	Step() // take time step using solver globals
 	Free() // free resources, if any (e.g.: RK23 previous torque)
+        EmType() bool
+        AdvOrder() int
+        EmOrder() int
 }
 
 // Arguments for SetSolver
 const (
+	ESDIRK43_B     = -5
+	ESDIRK43_A     = -4
+	ESDIRK32_B     = -3
+	ESDIRK32_A     = -2
 	BACKWARD_EULER = -1
 	EULER          = 1
 	HEUN           = 2
@@ -93,6 +103,14 @@ func SetSolver(typ int) {
 		stepper = new(RK45DP)
 	case FEHLBERG:
 		stepper = new(RK56)
+	case ESDIRK43_A:
+		stepper = new(ESDIRK43A)
+	case ESDIRK43_B:
+		stepper = new(ESDIRK43B)
+	case ESDIRK32_A:
+		stepper = new(ESDIRK32A)
+	case ESDIRK32_B:
+		stepper = new(ESDIRK32B)
 	}
 	solvertype = typ
 }

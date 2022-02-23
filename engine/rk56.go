@@ -1,17 +1,14 @@
 package engine
 
 import (
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/opencl"
-	"github.com/seeder-research/uMagNUS/util"
+	data "github.com/seeder-research/uMagNUS/data"
+	opencl "github.com/seeder-research/uMagNUS/opencl"
+	util "github.com/seeder-research/uMagNUS/util"
 	"math"
 )
 
 type RK56 struct {
 	k1       *data.Slice // torque at end of step is kept for beginning of next step
-	EmType   bool
-	AdvOrder int
-	EmOrder  int
 }
 
 func (rk *RK56) Step() {
@@ -166,4 +163,16 @@ func (rk *RK56) Step() {
 func (rk *RK56) Free() {
 	rk.k1.Free()
 	rk.k1 = nil
+}
+
+func (s *RK56) EmType() bool {
+        return true
+}
+
+func (s *RK56) AdvOrder() int {
+        return 6
+}
+
+func (s *RK56) EmOrder() int {
+        return 5
 }

@@ -1,15 +1,11 @@
 package engine
 
 import (
-	"github.com/seeder-research/uMagNUS/opencl"
-	"github.com/seeder-research/uMagNUS/util"
+	opencl "github.com/seeder-research/uMagNUS/opencl"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
-type Euler struct {
-	EmType   bool
-	AdvOrder int
-	EmOrder  int
-}
+type Euler struct {}
 
 // Euler method, can be used as solver.Step.
 func (_ *Euler) Step() {
@@ -40,3 +36,15 @@ func (_ *Euler) Step() {
 }
 
 func (_ *Euler) Free() {}
+
+func (s *Euler) EmType() bool {
+        return false
+}
+
+func (s *Euler) AdvOrder() int {
+        return 1
+}
+
+func (s *Euler) EmOrder() int {
+        return -1
+}

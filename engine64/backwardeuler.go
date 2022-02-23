@@ -4,24 +4,24 @@ import (
 	//"fmt"
 	data "github.com/seeder-research/uMagNUS/data64"
 	opencl "github.com/seeder-research/uMagNUS/opencl64"
-	"github.com/seeder-research/uMagNUS/util"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 type BackwardEuler struct {
-	dy1 *data.Slice
+	dy1      *data.Slice
 }
 
 // Euler method, can be used as solver.Step.
 func (s *BackwardEuler) Step() {
 	util.AssertMsg(MaxErr > 0, "Backward euler solver requires MaxErr > 0")
 
-	//	t0 := Time
+	t0 := Time
 
-	//	y := M.Buffer()
+	y := M.Buffer()
 
-	//	y0 := opencl.Buffer(VECTOR, y.Size())
-	//	defer opencl.Recycle(y0)
-	//	data.Copy(y0, y)
+	y0 := opencl.Buffer(VECTOR, y.Size())
+	defer opencl.Recycle(y0)
+	data.Copy(y0, y)
 
 	//	dy0 := opencl.Buffer(VECTOR, y.Size())
 	//	defer opencl.Recycle(dy0)
@@ -56,12 +56,13 @@ func (s *BackwardEuler) Step() {
 
 	//	err := opencl.MaxVecDiff(dy0, dy1) * float64(dt)
 
-	err := bwEulerFixedPtIterations(Dt_si, dt, s.dy1)
+	Time = t0 + Dt_si
+	abserr, _, _ := fixedPtIterations(dt, y0, s.dy1)
 	// adjust next time step
 	//if err < MaxErr || Dt_si <= MinDt || FixDt != 0 { // mindt check to avoid infinite loop
 	// step OK
 	NSteps++
-	setLastErr(err)
+	setLastErr(abserr)
 	setMaxTorque(s.dy1)
 	//} else {
 	// undo bad step
@@ -72,64 +73,19 @@ func (s *BackwardEuler) Step() {
 	//}
 }
 
-func bwEulerFixedPtIterations(Dt_si, dt float64, dy1 *data.Slice) float64 {
-	// For backward Euler, need to solve for
-	// y_{n+1} = y_{n} + h * f(t_{n+1}, y_{n+1})
-	// This function implements y_{n+1} = g(y_{n+1}) to find
-	// the solution to the backward Euler step using
-	// fixed point method, using the forward Euler result
-	// as the initial guess
-
-	t0 := Time
-
-	y := M.Buffer()
-
-	y0 := opencl.Buffer(VECTOR, y.Size())
-	defer opencl.Recycle(y0)
-	data.Copy(y0, y)
-
-	yprev := opencl.Buffer(VECTOR, y.Size())
-	defer opencl.Recycle(yprev)
-
-	errVector := opencl.Buffer(VECTOR, y.Size())
-	defer opencl.Recycle(errVector)
-
-	dy0 := opencl.Buffer(VECTOR, y.Size())
-	defer opencl.Recycle(dy0)
-
-	torqueFn(dy0)
-
-	// Initial guess
-	opencl.Madd2(y, y0, dy0, 1.0, dt) // y = y0 + dt * dy
-	M.normalize()
-	data.Copy(yprev, y)
-
-	Time = t0 + Dt_si
-
-	errIter := float64(100.0)
-	Niters := 0
-
-	// fixed point iterations until converence criterion reached
-	for (errIter > ErrConv) && (Niters < NConv) {
-		torqueFn(dy1)
-		opencl.Madd2(y, y0, dy1, 1.0, dt) // Backward Euler step
-		M.normalize()
-
-		// Calculate error as the difference in calculated predictions
-		// in consecutive fixed point iterations
-		errIter = opencl.MaxVecDiff(yprev, y)
-		Niters++
-
-		// Record fixed point result for next iteration
-		data.Copy(yprev, y)
-	}
-	if Niters == NConv {
-		util.Log("backward Euler fixed point iterations exceeded limit!")
-	}
-	return errIter
-}
-
 func (s *BackwardEuler) Free() {
 	s.dy1.Free()
 	s.dy1 = nil
+}
+
+func (s *BackwardEuler) EmType() bool {
+	return false
+}
+
+func (s *BackwardEuler) AdvOrder() int {
+	return 1
+}
+
+func (s *BackwardEuler) EmOrder() int {
+	return -1
 }

@@ -2,12 +2,12 @@ package engine64
 
 import (
 	opencl "github.com/seeder-research/uMagNUS/opencl64"
-	"github.com/seeder-research/uMagNUS/util"
+	util "github.com/seeder-research/uMagNUS/util"
 	"math"
 )
 
 // Adaptive Heun solver.
-type Heun struct{}
+type Heun struct {}
 
 // Adaptive Heun method, can be used as solver.Step
 func (_ *Heun) Step() {
@@ -54,3 +54,15 @@ func (_ *Heun) Step() {
 }
 
 func (_ *Heun) Free() {}
+
+func (s *Heun) EmType() bool {
+        return false
+}
+
+func (s *Heun) AdvOrder() int {
+        return 2
+}
+
+func (s *Heun) EmOrder() int {
+        return -1
+}
