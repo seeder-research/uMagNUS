@@ -3,8 +3,6 @@ package engine
 import (
 	data "github.com/seeder-research/uMagNUS/data"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
-	util "github.com/seeder-research/uMagNUS/util"
-	"math"
 )
 
 // Bogacki-Shampine solver. 3rd order, 3 evaluations per step, adaptive step.
@@ -17,7 +15,7 @@ import (
 // 	k4 = f(tn + h, y{n+1})
 // 	z{n+1} = yn + 7/24 h k1 + 1/4 h k2 + 1/3 h k3 + 1/8 h k4 // 2nd order
 type RK23 struct {
-	k1       *data.Slice // torque at end of step is kept for beginning of next step
+	k1 *data.Slice // torque at end of step is kept for beginning of next step
 }
 
 func (rk *RK23) Step() {
@@ -82,58 +80,7 @@ func (rk *RK23) Step() {
 	// difference of 3rd and 2nd order torque without explicitly storing them first
 	opencl.Madd4(Err, rk.k1, k2, k3, k4, (7./24.)-(2./9.), (1./4.)-(1./3.), (1./3.)-(4./9.), (1. / 8.))
 
-	// determine error
-	err := opencl.MaxVecNorm(Err) * float64(h)
-
-	// adjust next time step
-	if err < MaxErr || Dt_si <= MinDt || FixDt != 0 { // mindt check to avoid infinite loop
-		// Passed absolute error. Check relative error...
-		errnorm := opencl.Buffer(1, size)
-		defer opencl.Recycle(errnorm)
-		opencl.VecNorm(errnorm, Err)
-		ddtnorm := opencl.Buffer(1, size)
-		defer opencl.Recycle(ddtnorm)
-		opencl.VecNorm(ddtnorm, k4)
-		maxdm := opencl.MaxVecNorm(k4)
-		fail := 0
-		rlerr := float64(0.0)
-		if maxdm < MinSlope { // Only step using relerr if dmdt is big enough. Overcomes equilibrium problem
-			fail = 0
-		} else {
-			opencl.Div(errnorm, errnorm, ddtnorm) //re-use errnorm
-			rlerr = float64(opencl.MaxAbs(errnorm))
-			fail = 1
-		}
-		if fail == 0 || RelErr <= 0.0 || rlerr < RelErr || Dt_si <= MinDt || FixDt != 0 { // mindt check to avoid infinite loop
-			// step OK
-			setLastErr(err)
-			setMaxTorque(k4)
-			NSteps++
-			Time = t0 + Dt_si
-			if fail == 0 {
-				adaptDt(math.Pow(MaxErr/err, 1./3.))
-			} else {
-				adaptDt(math.Pow(RelErr/rlerr, 1./3.))
-			}
-			data.Copy(rk.k1, k4) // FSAL
-		} else {
-			// undo bad step
-			//util.Println("Bad step at t=", t0, ", err=", err)
-			util.Assert(FixDt == 0)
-			Time = t0
-			data.Copy(m, m0)
-			NUndone++
-			adaptDt(math.Pow(RelErr/rlerr, 1./4.))
-		}
-	} else {
-		// undo bad step
-		//util.Println("Bad step at t=", t0, ", err=", err)
-		util.Assert(FixDt == 0)
-		Time = t0
-		data.Copy(m, m0)
-		NUndone++
-		adaptDt(math.Pow(MaxErr/err, 1./4.))
-	}
+	integralController(Err, k4, rk.k1, m0, t0, float64(h), rk.AdvOrder(), rk.AdvOrder()+1, true)
 }
 
 func (rk *RK23) Free() {
@@ -142,13 +89,13 @@ func (rk *RK23) Free() {
 }
 
 func (s *RK23) EmType() bool {
-        return true
+	return true
 }
 
 func (s *RK23) AdvOrder() int {
-        return 3
+	return 3
 }
 
 func (s *RK23) EmOrder() int {
-        return 2
+	return 2
 }

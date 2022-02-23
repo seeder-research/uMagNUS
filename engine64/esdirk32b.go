@@ -21,7 +21,7 @@ import (
 // 	k4 = f(tn + h, yn + 0.215482203122508 h k1 + 0.686886723913539 h k2 - 0.195262145836047 h k3 + 0.2928932188 h k4)
 // 	z{n+1} = yn + 0.215482203122508 h k1 + 0.686886723913539 h k2 - 0.195262145836047 h k3 + 0.2928932188 h k4 // 3rd order
 type ESDIRK32B struct {
-	k1       *data.Slice // torque at end of step is kept for beginning of next step
+	k1 *data.Slice // torque at end of step is kept for beginning of next step
 }
 
 func (esdirk *ESDIRK32B) Step() {
@@ -100,58 +100,7 @@ func (esdirk *ESDIRK32B) Step() {
 	// difference of 3rd and 2nd order torque without explicitly storing them first
 	opencl.Madd4(Err, esdirk.k1, k2, k3, k4, (-0.138071187445015), (0.333333333281062), (-0.488155364636047), (-0.2928932188))
 
-	// determine error
-	err := opencl.MaxVecNorm(Err) * float64(h)
-
-	// adjust next time step
-	if err < MaxErr || Dt_si <= MinDt || FixDt != 0 { // mindt check to avoid infinite loop
-		// Passed absolute error. Check relative error...
-		errnorm := opencl.Buffer(1, size)
-		defer opencl.Recycle(errnorm)
-		opencl.VecNorm(errnorm, Err)
-		ddtnorm := opencl.Buffer(1, size)
-		defer opencl.Recycle(ddtnorm)
-		opencl.VecNorm(ddtnorm, m_)
-		maxdm := opencl.MaxVecNorm(m_)
-		fail := 0
-		rlerr := float64(0.0)
-		if maxdm < MinSlope { // Only step using relerr if dmdt is big enough. Overcomes equilibrium problem
-			fail = 0
-		} else {
-			opencl.Div(errnorm, errnorm, ddtnorm) //re-use errnorm
-			rlerr = float64(opencl.MaxAbs(errnorm))
-			fail = 1
-		}
-		if fail == 0 || RelErr <= 0.0 || rlerr < RelErr || Dt_si <= MinDt || FixDt != 0 { // mindt check to avoid infinite loop
-			// step OK
-			setLastErr(err)
-			setMaxTorque(m_)
-			NSteps++
-			Time = t0 + Dt_si
-			if fail == 0 {
-				adaptDt(math.Pow(MaxErr/err, 1./2.))
-			} else {
-				adaptDt(math.Pow(RelErr/rlerr, 1./2.))
-			}
-			data.Copy(esdirk.k1, m_) // FSAL
-		} else {
-			// undo bad step
-			//util.Println("Bad step at t=", t0, ", err=", err)
-			util.Assert(FixDt == 0)
-			Time = t0
-			data.Copy(m, m0)
-			NUndone++
-			adaptDt(math.Pow(RelErr/rlerr, 1./3.))
-		}
-	} else {
-		// undo bad step
-		//util.Println("Bad step at t=", t0, ", err=", err)
-		util.Assert(FixDt == 0)
-		Time = t0
-		data.Copy(m, m0)
-		NUndone++
-		adaptDt(math.Pow(MaxErr/err, 1./3.))
-	}
+	integralController(Err, m_, esdirk.k1, m0, t0, float64(h), rk.AdvOrder(), rk.AdvOrder()+1, true)
 }
 
 func (esdirk *ESDIRK32B) Free() {
@@ -160,13 +109,13 @@ func (esdirk *ESDIRK32B) Free() {
 }
 
 func (s *ESDIRK32B) EmType() bool {
-        return true
+	return true
 }
 
 func (s *ESDIRK32B) AdvOrder() int {
-        return 2
+	return 2
 }
 
 func (s *ESDIRK32B) EmOrder() int {
-        return 3
+	return 3
 }
