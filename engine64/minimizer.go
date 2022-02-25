@@ -163,3 +163,15 @@ func Minimize() {
 	RunWhile(cond)
 	pause = true
 }
+
+func (_ *Minimizer) EmType() bool {
+	return false
+}
+
+func (_ *Minimizer) AdvOrder() int {
+	return -1
+}
+
+func (_ *Minimizer) EmOrder() int {
+	return -1
+}

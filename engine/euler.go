@@ -1,8 +1,8 @@
 package engine
 
 import (
-	"github.com/seeder-research/uMagNUS/opencl"
-	"github.com/seeder-research/uMagNUS/util"
+	opencl "github.com/seeder-research/uMagNUS/opencl"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 type Euler struct{}
@@ -36,3 +36,15 @@ func (_ *Euler) Step() {
 }
 
 func (_ *Euler) Free() {}
+
+func (_ *Euler) EmType() bool {
+	return false
+}
+
+func (_ *Euler) AdvOrder() int {
+	return 1
+}
+
+func (_ *Euler) EmOrder() int {
+	return -1
+}

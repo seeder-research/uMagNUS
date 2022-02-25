@@ -2,7 +2,7 @@ package engine64
 
 import (
 	opencl "github.com/seeder-research/uMagNUS/opencl64"
-	"github.com/seeder-research/uMagNUS/util"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 type Euler struct{}
@@ -36,3 +36,15 @@ func (_ *Euler) Step() {
 }
 
 func (_ *Euler) Free() {}
+
+func (_ *Euler) EmType() bool {
+	return false
+}
+
+func (_ *Euler) AdvOrder() int {
+	return 1
+}
+
+func (_ *Euler) EmOrder() int {
+	return -1
+}

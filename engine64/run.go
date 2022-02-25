@@ -17,7 +17,7 @@ var (
 	pause                   = true                       // set pause at any time to stop running after the current step
 	postStep                []func()                     // called on after every full time step
 	Inject                           = make(chan func()) // injects code in between time steps. Used by web interface.
-	Dt_si                   float64  = 1e-15             // time step = dt_si (seconds) *dt_mul, which should be nice float64
+	Dt_si                   float64  = 1e-15             // time step = dt_si (seconds) *dt_mul, which should be nice float32
 	MinDt, MaxDt            float64                      // minimum and maximum time step
 	MaxErr                  float64  = 1e-5              // maximum error/step
 	RelErr                  float64  = 1e-4              // maximum relative error/step
@@ -26,8 +26,19 @@ var (
 	LastErr, PeakErr        float64                      // error of last step, highest error ever
 	LastTorque              float64                      // maxTorque of last time step
 	NSteps, NUndone, NEvals int                          // number of good steps, undone steps
+	AbsErrConv              float64  = 1e4               // Absolute error tolerance for fixed point iterations of implicit solvers
+	RelErrConv              float64  = 1e-4              // Relative error tolerance for fixed point iterations of implicit solvers
+	NConv                   int      = 60                // Number of iterations to try for fixed point iterations of implicit solvers
 	FixDt                   float64                      // fixed time step?
 	stepper                 Stepper                      // generic step, can be EulerStep, HeunStep, etc
+	rejErr                  float64  = -1.0              // error in rejected steps
+	accErr                  float64  = -1.0              // error in accepted steps
+	rejRelErr               float64  = -1.0              // relative error in rejected steps
+	accRelErr               float64  = -1.0              // relative error in accepted steps
+	rejDt                   float64  = -1.0              // size of rejected steps
+	accDt                   float64  = -1.0              // size of accepted steps
+	gustafssonk1            float64  = 1.0               // k1 parameter for Gustafsson time step controller
+	gustafssonk2            float64  = 1.0               // k2 parameter for Gustafsson time step controller
 	solvertype              int
 )
 
@@ -35,13 +46,15 @@ func init() {
 	DeclFunc("Run", Run, "Run the simulation for a time in seconds")
 	DeclFunc("Steps", Steps, "Run the simulation for a number of time steps")
 	DeclFunc("RunWhile", RunWhile, "Run while condition function is true")
-	DeclFunc("SetSolver", SetSolver, "Set solver type. 1:Euler, 2:Heun, 3:Bogaki-Shampine, 4: Runge-Kutta (RK45), 5: Dormand-Prince, 6: Fehlberg, -1: Backward Euler")
+	DeclFunc("SetSolver", SetSolver, "Set solver type. 1:Euler, 2:Heun, 3:Bogaki-Shampine, 4: Runge-Kutta (RK45), 5: Dormand-Prince, 6: Fehlberg, -1: Backward Euler, -2: ESDIRK32a, -3: ESDIRK32b, -4: ESDIRK43a, -5: ESDIRK43b")
 	DeclTVar("t", &Time, "Total simulated time (s)")
 	DeclVar("step", &NSteps, "Total number of time steps taken")
 	DeclVar("MinDt", &MinDt, "Minimum time step the solver can take (s)")
 	DeclVar("MaxDt", &MaxDt, "Maximum time step the solver can take (s)")
 	DeclVar("MaxErr", &MaxErr, "Maximum error per step the solver can tolerate (default = 1e-5)")
 	DeclVar("RelErr", &RelErr, "Maximum relative error per step the solver can tolerate (default = 1e-4)")
+	DeclVar("AbsErrConv", &AbsErrConv, "Absolute error the implicit solver can tolerate for fixed point iteration (default = 1e4)")
+	DeclVar("RelErrConv", &RelErrConv, "Relative error the implicit solver can tolerate for fixed point iteration (default = 1e-4)")
 	DeclVar("Headroom", &Headroom, "Solver headroom (default = 0.8)")
 	DeclVar("FixDt", &FixDt, "Set a fixed time step, 0 disables fixed step (which is the default)")
 	DeclFunc("Exit", Exit, "Exit from the program")
@@ -56,10 +69,17 @@ func init() {
 type Stepper interface {
 	Step() // take time step using solver globals
 	Free() // free resources, if any (e.g.: RK23 previous torque)
+	EmType() bool
+	AdvOrder() int
+	EmOrder() int
 }
 
 // Arguments for SetSolver
 const (
+	ESDIRK43_B     = -5
+	ESDIRK43_A     = -4
+	ESDIRK32_B     = -3
+	ESDIRK32_A     = -2
 	BACKWARD_EULER = -1
 	EULER          = 1
 	HEUN           = 2
@@ -91,6 +111,14 @@ func SetSolver(typ int) {
 		stepper = new(RK45DP)
 	case FEHLBERG:
 		stepper = new(RK56)
+	case ESDIRK43_A:
+		stepper = new(ESDIRK43A)
+	case ESDIRK43_B:
+		stepper = new(ESDIRK43B)
+	case ESDIRK32_A:
+		stepper = new(ESDIRK32A)
+	case ESDIRK32_B:
+		stepper = new(ESDIRK32B)
 	}
 	solvertype = typ
 }
@@ -183,6 +211,13 @@ func RunWhile(condition func() bool) {
 
 func runWhile(condition func() bool, output bool) {
 	DoOutput() // allow t=0 output
+	// reset Gustafsson controller history
+	rejErr = -1.0
+	accErr = -1.0
+	rejRelErr = -1.0
+	accRelErr = -1.0
+	rejDt = -1.0
+	accDt = -1.0
 	for condition() && !pause {
 		select {
 		default:

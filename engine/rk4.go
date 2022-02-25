@@ -1,15 +1,12 @@
 package engine
 
 import (
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/opencl"
-	"github.com/seeder-research/uMagNUS/util"
-	"math"
+	data "github.com/seeder-research/uMagNUS/data"
+	opencl "github.com/seeder-research/uMagNUS/opencl"
 )
 
 // Classical 4th order RK solver.
-type RK4 struct {
-}
+type RK4 struct{}
 
 func (rk *RK4) Step() {
 	m := M.Buffer()
@@ -54,26 +51,33 @@ func (rk *RK4) Step() {
 	M.normalize()
 	torqueFn(k4)
 
-	err := opencl.MaxVecDiff(k1, k4) * float64(h)
+	Err := opencl.Buffer(3, size)
+	defer opencl.Recycle(Err)
+	opencl.Madd2(Err, k1, k4, 1., -1.)
 
-	// adjust next time step
-	if err < MaxErr || Dt_si <= MinDt || FixDt != 0 { // mindt check to avoid infinite loop
+	if simpleController(Err, float64(h), rk.AdvOrder(), rk.AdvOrder()+1) { // mindt check to avoid infinite loop
 		// step OK
 		// 4th order solution
 		opencl.Madd5(m, m0, k1, k2, k3, k4, 1, (1./6.)*h, (1./3.)*h, (1./3.)*h, (1./6.)*h)
 		M.normalize()
-		NSteps++
-		adaptDt(math.Pow(MaxErr/err, 1./4.))
-		setLastErr(err)
 		setMaxTorque(k4)
 	} else {
 		// undo bad step
-		util.Assert(FixDt == 0)
 		Time = t0
 		data.Copy(m, m0)
-		NUndone++
-		adaptDt(math.Pow(MaxErr/err, 1./5.))
 	}
 }
 
 func (_ *RK4) Free() {}
+
+func (_ *RK4) EmType() bool {
+	return false
+}
+
+func (_ *RK4) AdvOrder() int {
+	return 4
+}
+
+func (_ *RK4) EmOrder() int {
+	return -1
+}
