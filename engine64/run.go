@@ -31,6 +31,14 @@ var (
 	NConv                   int      = 60                // Number of iterations to try for fixed point iterations of implicit solvers
 	FixDt                   float64                      // fixed time step?
 	stepper                 Stepper                      // generic step, can be EulerStep, HeunStep, etc
+	rejErr                  float64  = -1.0              // error in rejected steps
+	accErr                  float64  = -1.0              // error in accepted steps
+	rejRelErr               float64  = -1.0              // relative error in rejected steps
+	accRelErr               float64  = -1.0              // relative error in accepted steps
+	rejDt                   float64  = -1.0              // size of rejected steps
+	accDt                   float64  = -1.0              // size of accepted steps
+	gustafssonk1            float64  = 1.0               // k1 parameter for Gustafsson time step controller
+	gustafssonk2            float64  = 1.0               // k2 parameter for Gustafsson time step controller
 	solvertype              int
 )
 
@@ -203,6 +211,13 @@ func RunWhile(condition func() bool) {
 
 func runWhile(condition func() bool, output bool) {
 	DoOutput() // allow t=0 output
+	// reset Gustafsson controller history
+	rejErr = -1.0
+	accErr = -1.0
+	rejRelErr = -1.0
+	accRelErr = -1.0
+	rejDt = -1.0
+	accDt = -1.0
 	for condition() && !pause {
 		select {
 		default:

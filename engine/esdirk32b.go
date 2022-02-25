@@ -98,7 +98,7 @@ func (esdirk *ESDIRK32B) Step() {
 	// difference of 3rd and 2nd order torque without explicitly storing them first
 	opencl.Madd4(Err, esdirk.k1, k2, k3, k4, (-0.138071187445015), (0.333333333281062), (-0.488155364636047), (-0.2928932188))
 
-	integralController(Err, m_, esdirk.k1, m0, t0, float64(h), esdirk.AdvOrder(), esdirk.AdvOrder()+1, true)
+	gustafssonController(Err, m_, esdirk.k1, m0, t0, float64(h), esdirk.AdvOrder(), true)
 }
 
 func (esdirk *ESDIRK32B) Free() {
