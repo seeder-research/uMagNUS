@@ -26,9 +26,9 @@ var (
 	LastErr, PeakErr        float64                      // error of last step, highest error ever
 	LastTorque              float64                      // maxTorque of last time step
 	NSteps, NUndone, NEvals int                          // number of good steps, undone steps
-	AbsErrConv              float64  = 1e4               // Absolute error tolerance for fixed point iterations of implicit solvers
-	RelErrConv              float64  = 1e-4              // Relative error tolerance for fixed point iterations of implicit solvers
-	NConv                   int      = 60                // Number of iterations to try for fixed point iterations of implicit solvers
+	AbsErrConv              float64  = 1e4               // absolute error tolerance for fixed point iterations of implicit solvers
+	RelErrConv              float64  = 1e-4              // relative error tolerance for fixed point iterations of implicit solvers
+	NConv                   int      = 60                // number of iterations to try for fixed point iterations of implicit solvers
 	FixDt                   float64                      // fixed time step?
 	stepper                 Stepper                      // generic step, can be EulerStep, HeunStep, etc
 	rejErr                  float64  = -1.0              // error in rejected steps
