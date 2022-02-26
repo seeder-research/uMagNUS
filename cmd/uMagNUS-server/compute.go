@@ -137,7 +137,7 @@ func Kill(id string) string {
 	return "" // OK
 }
 
-// prepare exec.Cmd to run uMagNUS3 compute process
+// prepare exec.Cmd to run uMagNUS compute process
 func NewProcess(ID string, gpu int, webAddr string) *Process {
 	// prepare command
 	inputURL := "http://" + ID

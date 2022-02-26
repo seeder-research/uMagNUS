@@ -84,7 +84,7 @@ http://localhost:35360
  	 157.193.57.228:35360
 
  	Compute service
- 	 uMagNUS: uMagNUS 1.0 linux_amd64 go1.3.3 (gc)
+ 	 uMagNUS: uMagNUS 2.0.0 linux_amd64 go1.7.7 (gc)
  	 GPU0: CUDA 6 GeForce GTX 680(2047MB) cc3.0
  	 GPU1: CUDA 6 GeForce GTX 680(2047MB) cc3.0
  	 GPU2: CUDA 6 GeForce GTX 680(2047MB) cc3.0
