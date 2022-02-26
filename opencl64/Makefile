@@ -15,10 +15,8 @@ WRAPPERS64 := $(WRAPPER64FILES:.cl=_fp64_wrapper.go)
 
 
 all: ocl2go64 wrappers fp64wrappers opencl2go
-	mv RNGmtgp*_wrapper.go oclRAND/.
 	mv RNGthreefry*_wrapper.go oclRAND/.
 	mv RNGxorwow*_wrapper.go oclRAND/.
-	sed -i "s/package opencl64/package oclRAND/g" oclRAND/RNGmtgp*wrapper.go
 	sed -i "s/package opencl64/package oclRAND/g" oclRAND/RNGthreefry*wrapper.go
 	sed -i "s/package opencl64/package oclRAND/g" oclRAND/RNGxorwow*wrapper.go
 	go install -v

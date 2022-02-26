@@ -31,22 +31,8 @@ type Generator struct {
 	sup_offset int
 }
 
-const MTGP32_MEXP = oclRAND.MTGPDC_MEXP
-const MTGP32_N = oclRAND.MTGPDC_N
-const MTGP32_FLOOR_2P = oclRAND.MTGPDC_FLOOR_2P
-const MTGP32_CEIL_2P = oclRAND.MTGPDC_CEIL_2P
-const MTGP32_TN = oclRAND.MTGPDC_TN
-const MTGP32_LS = oclRAND.MTGPDC_LS
-const MTGP32_TS = oclRAND.MTGPDC_TS
-const MTGP32_PARAM_NUM = oclRAND.MTGPDC_PARAMS_NUM
-
 func NewGenerator(name string) *Generator {
 	switch name {
-	case "mtgp":
-		oclRAND.Init(ClCmdQueue, Synchronous, KernList)
-		var prng_ptr Prng_
-		prng_ptr = NewMTGPRNGParams()
-		return &Generator{Name: "mtgp", PRNG: prng_ptr}
 	case "threefry":
 		oclRAND.Init(ClCmdQueue, Synchronous, KernList)
 		var prng_ptr Prng_
@@ -65,11 +51,6 @@ func NewGenerator(name string) *Generator {
 
 func (g *Generator) CreatePNG() {
 	switch g.Name {
-	case "mtgp":
-		oclRAND.Init(ClCmdQueue, Synchronous, KernList)
-		var prng_ptr Prng_
-		prng_ptr = NewMTGPRNGParams()
-		g.PRNG = prng_ptr
 	case "threefry":
 		oclRAND.Init(ClCmdQueue, Synchronous, KernList)
 		var prng_ptr Prng_
@@ -212,39 +193,6 @@ func (g *Generator) Normal(data unsafe.Pointer, d_size int, events []*cl.Event) 
 			g.supply = 0
 		}
 	}
-}
-
-func NewMTGPRNGParams() *oclRAND.MTGP32dc_params_array_ptr {
-	var err error
-	var events_list []*cl.Event
-	var event *cl.Event
-	tmp := oclRAND.NewMTGPParams()
-	//maxNumGroups, max_size := ClCUnits, MTGP32_PARAM_NUM
-	maxNumGroups, max_size := 1, MTGP32_PARAM_NUM
-	if maxNumGroups > max_size {
-		maxNumGroups = max_size
-	}
-	tmp.SetGroupCount(maxNumGroups)
-	if ClWGSize < MTGP32_TN {
-		log.Fatalln("Unable to use PRNG on device! Insufficient resources for parallel work-items")
-	}
-	local_item := MTGP32_N
-	if local_item > ClWGSize {
-		local_item = MTGP32_TN
-	}
-	tmp.SetGroupSize(local_item)
-	tmp.GetMTGPArrays()
-	tmp.CreateParamBuffers(ClCtx)
-	events_list, err = tmp.LoadAllParamBuffersToDevice(nil)
-	if err != nil {
-		log.Fatalln("Unable to load RNG parameters to device")
-	}
-	event, err = tmp.LoadStatusBuffersToDevice(nil)
-	if err != nil {
-		log.Fatalln("Unable to load RNG status to device")
-	}
-	err = cl.WaitForEvents(append(events_list, event))
-	return tmp
 }
 
 func NewTHREEFRYRNGParams() *oclRAND.THREEFRY_status_array_ptr {

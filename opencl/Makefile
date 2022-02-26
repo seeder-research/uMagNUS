@@ -11,10 +11,8 @@ WRAPPERS := $(WRAPPERFILES:.cl=_wrapper.go)
 
 
 all: ocl2go wrappers opencl2go
-	mv RNGmtgp*_wrapper.go oclRAND/.
 	mv RNGthreefry*_wrapper.go oclRAND/.
 	mv RNGxorwow*_wrapper.go oclRAND/.
-	sed -i "s/package opencl/package oclRAND/g" oclRAND/RNGmtgp*wrapper.go
 	sed -i "s/package opencl/package oclRAND/g" oclRAND/RNGthreefry*wrapper.go
 	sed -i "s/package opencl/package oclRAND/g" oclRAND/RNGxorwow*wrapper.go
 	go install -v
