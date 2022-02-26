@@ -68,7 +68,7 @@ func (p *THREEFRY_status_array_ptr) GenerateUniform(d_data unsafe.Pointer, data_
 
 	event := k_threefry_uniform_async(unsafe.Pointer(p.Status_key), unsafe.Pointer(p.Status_counter),
 		unsafe.Pointer(p.Status_result), unsafe.Pointer(p.Status_tracker), d_data, data_size,
-		&config{[]int{p.GetStatusSize()}, []int{p.GetGroupSize()}}, events)
+		&config{[]int{p.GetStatusSize(), 1, 1}, []int{p.GetGroupSize(), 1, 1}}, events)
 
 	if Synchronous { // debug
 		ClCmdQueue.Finish()
@@ -91,7 +91,7 @@ func (p *THREEFRY_status_array_ptr) GenerateNormal(d_data unsafe.Pointer, data_s
 
 	event := k_threefry_normal_async(unsafe.Pointer(p.Status_key), unsafe.Pointer(p.Status_counter),
 		unsafe.Pointer(p.Status_result), unsafe.Pointer(p.Status_tracker), d_data, data_size,
-		&config{[]int{p.GetStatusSize()}, []int{p.GetGroupSize()}}, events)
+		&config{[]int{p.GetStatusSize(), 1, 1}, []int{p.GetGroupSize(), 1, 1}}, events)
 
 	if Synchronous { // debug
 		ClCmdQueue.Finish()

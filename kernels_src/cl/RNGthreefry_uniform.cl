@@ -50,7 +50,8 @@ typedef struct{
 **/
 
 /**
-Generates a random 32-bit unsigned integer using threefry RNG.
+Generates a random uniformly distributed 32-bit float using
+threefry RNG.
 @param state State of the RNG to use.
 **/
 __kernel void
@@ -59,8 +60,10 @@ threefry_uniform(
     __global  uint* __restrict state_counter,
     __global  uint* __restrict  state_result,
     __global  uint* __restrict state_tracker,
+    __local   uint*                    unif_,
     __global float* __restrict        output,
     int data_size) {
+    uint local_idx = get_local_id(0);
     uint gid = get_global_id(0);
     uint rng_count = get_global_size(0);
     uint tmpIdx = gid;
@@ -105,12 +108,11 @@ threefry_uniform(
     state->key[3] = state_key[tmpIdx];
 
     for (uint outIndex = gid; outIndex < data_size; outIndex += rng_count) {
-        uint num1[2];
-        uint lidx = 0;
+        uint luint;
         if (state->tracker > 3) {
             threefry_round(state);
             state->tracker = 1;
-            num1[lidx++] = state->result[0];
+            unif_[local_idx] = state->result[0];
         } else if (state->tracker == 3) {
             uint tmp = state->result[3];
             if (++state->counter[0] == 0) {
@@ -122,9 +124,9 @@ threefry_uniform(
             }
             threefry_round(state);
             state->tracker = 0;
-            num1[lidx++] = tmp;
+            unif_[local_idx] = tmp;
         } else {
-            num1[lidx++] = state->result[state->tracker++];
+            unif_[local_idx] = state->result[state->tracker++];
         }
         if (state->tracker == 3) {
             uint tmp = state->result[3];
@@ -137,11 +139,17 @@ threefry_uniform(
             }
             threefry_round(state);
             state->tracker = 0;
-            num1[lidx] = tmp;
+            luint = tmp;
         } else {
-            num1[lidx] = state->result[state->tracker++];
+            luint = state->result[state->tracker++];
         }
-        output[outIndex] = uint2float(num1[0], num1[1]);
+        barrier(CLK_LOCAL_MEM_FENCE);
+        if ((local_idx%2) > 1) {
+            output[outIndex] = uint2float(luint, unif_[local_idx - 1]);
+        } else {
+            output[outIndex] = uint2float(unif_[local_idx + 1], luint);
+        }
+        barrier(CLK_LOCAL_MEM_FENCE);
     }
     
     // For first out of four sets...
