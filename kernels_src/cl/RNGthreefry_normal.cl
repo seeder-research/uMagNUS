@@ -50,7 +50,8 @@ typedef struct{
 **/
 
 /**
-Generates a random 32-bit unsigned integer using threefry RNG.
+Generates a random normally distributed float using threefry RNG.
+
 @param state State of the RNG to use.
 **/
 __kernel void

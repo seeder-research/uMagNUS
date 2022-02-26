@@ -8,7 +8,7 @@ Implements a 64-bit xorwow* generator that returns 32-bit values.
 */
 
 /**
-Generates a random float using xorwow RNG.
+Generates a random uniformly distributed float using xorwow RNG.
 
 @param state State of the RNG to use.
 @param d_data Output.

@@ -50,7 +50,8 @@ typedef struct{
 **/
 
 /**
-Generates a random 64-bit unsigned integer using threefry RNG.
+Generates a random normally distributed double using threefry RNG.
+
 @param state State of the RNG to use.
 **/
 #if defined(__REAL_IS_DOUBLE__)
