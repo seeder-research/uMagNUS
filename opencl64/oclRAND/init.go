@@ -6,8 +6,13 @@ import (
 	"unsafe"
 )
 
-const SIZEOF_FLOAT32 int = 4
-const SIZEOF_FLOAT64 int = 8
+// Type size in bytes
+const (
+	SIZEOF_FLOAT32    = 4
+	SIZEOF_FLOAT64    = 8
+	SIZEOF_COMPLEX64  = 8
+	SIZEOF_COMPLEX128 = 16
+)
 
 type config struct {
 	Grid, Block []int
