@@ -4,14 +4,16 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/seeder-research/uMagNUS/engine"
-	"github.com/seeder-research/uMagNUS/opencl"
-	"github.com/seeder-research/uMagNUS/script"
+	engine "github.com/seeder-research/uMagNUS/engine"
+	opencl "github.com/seeder-research/uMagNUS/opencl"
+	script "github.com/seeder-research/uMagNUS/script"
 	"github.com/seeder-research/uMagNUS/util"
 	"log"
 	"os"
 	"os/exec"
 	"path"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -23,19 +25,42 @@ func main() {
 	log.SetPrefix("")
 	log.SetFlags(0)
 
-        if *engine.Flag_host {
-                if *engine.Flag_gpu < 0 {
-                        opencl.Init(*engine.Flag_gpu)
-                } else {
-                        log.Fatalln("Cannot disable GPU acceleration while requesting GPU \n")
-                }
-        } else {
-                if *engine.Flag_gpu < 0 {
-                        opencl.Init(0)
-                } else {
-                        opencl.Init(*engine.Flag_gpu)
-                }
-        }
+	// Check flag and initialize engine
+	if len(*engine.Flag_gpulist) > 0 {
+		var gpu_arr []int
+		gpuList := strings.Split(*engine.Flag_gpulist, ",")
+		if len(gpuList) == 0 {
+			engine.Flag_gpu = 0
+		} else {
+			for _, item := range gpuList {
+				if id, err := strconv.Atoi(item); err == nil {
+					if id < 0 {
+						log.Println("Invalid GPU number detected! Must be an integer >= 0!")
+					} else {
+						gpu_arr = append(gpu_arr, id)
+					}
+				}
+			}
+			if len(gpu_arr) == 0 {
+				engine.Flag_gpu = 0
+			} else {
+				engine.Flag_gpu = gpu_arr[0]
+			}
+		}
+	}
+	if *engine.Flag_host {
+		if engine.Flag_gpu < 0 {
+			opencl.Init(engine.Flag_gpu)
+		} else {
+			log.Fatalln("Cannot disable GPU acceleration while requesting GPU \n")
+		}
+	} else {
+		if engine.Flag_gpu < 0 {
+			opencl.Init(0)
+		} else {
+			opencl.Init(engine.Flag_gpu)
+		}
+	}
 
 	opencl.Synchronous = *engine.Flag_sync
 	if *engine.Flag_version {

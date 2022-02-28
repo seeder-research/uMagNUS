@@ -14,7 +14,7 @@ import (
 var (
 	// These flags are shared between cmd/uMagNUS and Go input files.
 	Flag_cachedir    = flag.String("cache", os.TempDir(), "Kernel cache directory (empty disables caching)")
-	Flag_gpu         = flag.Int("gpu", -5, "Specify GPU")
+	Flag_gpulist     = flag.String("gpu", "", "Comma separated list to specify GPUs to use")
 	Flag_host        = flag.Bool("host", false, "Disable GPU acceleration")
 	Flag_interactive = flag.Bool("i", false, "Open interactive browser session")
 	Flag_od          = flag.String("o", "", "Override output directory")
@@ -27,6 +27,7 @@ var (
 	Flag_test        = flag.Bool("test", false, "OpenCL test (internal)")
 	Flag_version     = flag.Bool("v", true, "Print version")
 	Flag_vet         = flag.Bool("vet", false, "Check input files for errors, but don't run them")
+	Flag_gpu         = int(-5) // To be set externally
 )
 
 // Usage: in every Go input file, write:
@@ -43,16 +44,16 @@ func InitAndClose() func() {
 	flag.Parse()
 
 	if *Flag_host {
-		if *Flag_gpu < 0 {
-			opencl.Init(*Flag_gpu)
+		if Flag_gpu < 0 {
+			opencl.Init(Flag_gpu)
 		} else {
 			log.Fatalln("Cannot disable GPU acceleration while requesting GPU \n")
 		}
 	} else {
-		if *Flag_gpu < 0 {
+		if Flag_gpu < 0 {
 			opencl.Init(0)
 		} else {
-			opencl.Init(*Flag_gpu)
+			opencl.Init(Flag_gpu)
 		}
 	}
 	opencl.Synchronous = *Flag_sync

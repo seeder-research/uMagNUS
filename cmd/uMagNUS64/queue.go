@@ -12,6 +12,8 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 )
@@ -80,17 +82,53 @@ func (s *stateTab) Finish(j job) {
 
 // Runs all the jobs in stateTab.
 func (s *stateTab) Run() {
-	nGPU := len(opencl.ClDevices)
+	var gpu_arr []int
+	numGPUsAvailable := len(opencl.ClDevices)
+	useAllGPUs := false
+	if len(*engine.Flag_gpulist) > 0 {
+		gpuList := strings.Split(*engine.Flag_gpulist, ",")
+		if len(gpuList) > 0 {
+			for _, item := range gpuList {
+				if id, err := strconv.Atoi(item); err == nil {
+					if id < 0 {
+						log.Println("Invalid GPU id detected. Must be an integer >= 0!")
+					} else {
+						if id < numGPUsAvailable {
+							gpu_arr = append(gpu_arr, id)
+						} else {
+							log.Printf("Invalid GPU id detected. Must be an integer < %v!\n", numGPUsAvailable)
+						}
+					}
+				}
+			}
+			if len(gpu_arr) == 0 {
+				useAllGPUs = true
+			}
+		} else {
+			log.Println("Empty GPU list given. Will use all detected GPUs instead.")
+			useAllGPUs = true
+		}
+	} else {
+		useAllGPUs = true
+	}
+	if useAllGPUs {
+		for idx := 0; idx < numGPUsAvailable; idx++ {
+			gpu_arr = append(gpu_arr, idx)
+		}
+	}
+	nGPU := len(gpu_arr)
 	idle := initGPUs(nGPU)
 	for {
+		var gpuIdx int
 		var gpu int
 		var addr string
 		if *engine.Flag_host {
 			gpu = -5
 			addr = fmt.Sprint(":", 35368)
 		} else {
-			gpu = <-idle
-			addr = fmt.Sprint(":", 35368+gpu)
+			gpuIdx = <-idle
+			gpu = gpu_arr[gpuIdx]
+			addr = fmt.Sprint(":", 35368+gpuIdx)
 		}
 		j, ok := s.StartNext(addr)
 		if !ok {
@@ -100,7 +138,7 @@ func (s *stateTab) Run() {
 			run(j.inFile, gpu, j.webAddr)
 			s.Finish(j)
 			if !(*engine.Flag_host) {
-				idle <- gpu
+				idle <- gpuIdx
 			}
 		}()
 	}
