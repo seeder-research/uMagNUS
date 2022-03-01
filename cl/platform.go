@@ -37,9 +37,9 @@ func (p *Platform) GetDevices(deviceType DeviceType) ([]*Device, error) {
 }
 
 func (p *Platform) getInfoString(param C.cl_platform_info) (string, error) {
-	var strC [2048]byte
+	var strC [65536]byte
 	var strN C.size_t
-	if err := C.clGetPlatformInfo(p.id, param, 2048, unsafe.Pointer(&strC[0]), &strN); err != C.CL_SUCCESS {
+	if err := C.clGetPlatformInfo(p.id, param, 65536, unsafe.Pointer(&strC[0]), &strN); err != C.CL_SUCCESS {
 		return "", toError(err)
 	}
 	return string(strC[:(strN - 1)]), nil

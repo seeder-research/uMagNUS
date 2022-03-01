@@ -196,9 +196,9 @@ func (d *Device) nullableId() C.cl_device_id {
 }
 
 func (d *Device) GetInfoString(param C.cl_device_info, panicOnError bool) (string, error) {
-	var strC [1024]C.char
+	var strC [65536]C.char
 	var strN C.size_t
-	if err := C.clGetDeviceInfo(d.nullableId(), param, 1024, unsafe.Pointer(&strC), &strN); err != C.CL_SUCCESS {
+	if err := C.clGetDeviceInfo(d.nullableId(), param, 65536, unsafe.Pointer(&strC), &strN); err != C.CL_SUCCESS {
 		if panicOnError {
 			panic("Should never fail")
 		}
