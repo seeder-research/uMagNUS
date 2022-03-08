@@ -2,44 +2,33 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
+	//	"bufio"
+	//	"bytes"
 	"flag"
-	//	"fmt"
+	"fmt"
 	//	"github.com/seeder-research/uMagNUS/cl"
-	"io"
-	"log"
-	"os"
+	//	"io"
+	//	"log"
+	//	"os"
 	//	"path"
 	//	"strconv"
-	"strings"
-	"text/scanner"
+	//	"strings"
+	//	"text/scanner"
 	//	"time"
 )
 
-var ()
+var (
+	Flag_defines  = flag.String("dopts", "", "-D arguments to pass to compiler")
+	Flag_includes = flag.String("iopts", "", "-I arguments to pass to compiler")
+	Flag_libpaths = flag.String("lopts", "", "-L arguments to pass to compiler")
+	Flag_libs     = flag.String("libs", "", "-l arguments to pass to compiler")
+	Flag_ClStd    = flag.String("std", "", "-std argument to pass to compiler")
+	Flag_ComArgs  = flag.String("args", "", "Other arguments to pass to compiler")
+)
 
 func main() {
 	flag.Parse()
-}
-
-func readFile(fname string) string {
-	f, err := os.Open(fname)
-	if err != nil {
-		log.Fatalf("Unable to open file: %v \n", fname)
-		return ""
-	}
-	defer f.Close()
-
-	in := bufio.NewReader(f)
-	var out bytes.Buffer
-	line, err := in.ReadBytes('\n')
-	for err != io.EOF {
-		log.Panic(err)
-		out.Write(line)
-		line, err = in.ReadBytes('\n')
-	}
-	return out.String()
+	fmt.Println(generateCompilerOpts())
 }
 
 // print version to stdout
