@@ -8,7 +8,7 @@ import (
 )
 
 func readFile(fname string) string {
-	if *Flag_verbose > 0 {
+	if *Flag_verbose > 5 {
 		fmt.Println("Attempting to open file: ", fname)
 	}
 	f, err := os.Open(fname)
