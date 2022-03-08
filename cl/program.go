@@ -288,18 +288,23 @@ func (p *Program) CompileProgram(devices []*Device, options string, program_head
 		deviceList = buildDeviceIdList(devices)
 		deviceListPtr = &deviceList[0]
 	}
-	num_headers := len(program_headers)
-	cHeaders := make([]C.cl_program, num_headers)
-	cHeader_names := make([]*C.char, num_headers)
-	for idx, ph := range program_headers {
-		chs := ph.codes
-		chn := C.CString(ph.names)
-		cHeaders[idx] = chs.clProgram
-		cHeader_names[idx] = chn
-		defer C.free(unsafe.Pointer(&chs))
-		defer C.free(unsafe.Pointer(&chn))
+	var err C.cl_int
+	if program_headers == nil {
+		err = C.clCompileProgram(p.clProgram, numDevices, deviceListPtr, cOptions, 0, nil, nil, nil, nil)
+	} else {
+		num_headers := len(program_headers)
+		cHeaders := make([]C.cl_program, num_headers)
+		cHeader_names := make([]*C.char, num_headers)
+		for idx, ph := range program_headers {
+			chs := ph.codes
+			chn := C.CString(ph.names)
+			cHeaders[idx] = chs.clProgram
+			cHeader_names[idx] = chn
+			defer C.free(unsafe.Pointer(&chs))
+			defer C.free(unsafe.Pointer(&chn))
+		}
+		err = C.clCompileProgram(p.clProgram, numDevices, deviceListPtr, cOptions, C.cl_uint(num_headers), &cHeaders[0], &cHeader_names[0], nil, nil)
 	}
-	err := C.clCompileProgram(p.clProgram, numDevices, deviceListPtr, cOptions, C.cl_uint(num_headers), &cHeaders[0], &cHeader_names[0], nil, nil)
 	if err != C.CL_SUCCESS {
 		buffer := make([]byte, 4096)
 		var bLen C.size_t

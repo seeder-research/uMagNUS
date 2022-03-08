@@ -14,7 +14,7 @@ func generateCompilerOpts() string {
 		if opts != "" {
 			opts = opts + " "
 		}
-		opts = opts + "-std=" + *Flag_ClStd
+		opts = opts + "-cl-std=" + *Flag_ClStd
 	}
 	if *Flag_includes != "" {
 		if opts != "" {
