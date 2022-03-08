@@ -24,11 +24,24 @@ var (
 	Flag_libs     = flag.String("libs", "", "-l arguments to pass to compiler")
 	Flag_ClStd    = flag.String("std", "", "-std argument to pass to compiler")
 	Flag_ComArgs  = flag.String("args", "", "Other arguments to pass to compiler")
+	Flag_verbose  = flag.Int("v", 0, "Verbosity level")
 )
 
 func main() {
 	flag.Parse()
-	fmt.Println(generateCompilerOpts())
+	fmt.Println("Compiler options: ", generateCompilerOpts())
+	fmt.Println("Linker options: ", generateLinkerOpts())
+	if len(flag.Args()) == 0 {
+		fmt.Println("No files given!")
+	} else {
+		for _, fname := range flag.Args() {
+			fmt.Println("Processing file: ", fname)
+			fcode := readFile(fname)
+			if *Flag_verbose > 0 {
+				fmt.Printf("%+v \n", fcode)
+			}
+		}
+	}
 }
 
 // print version to stdout

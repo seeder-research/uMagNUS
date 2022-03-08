@@ -2,13 +2,15 @@ package main
 
 import (
 	"bufio"
-	"bytes"
-	"io"
+	"fmt"
 	"log"
 	"os"
 )
 
 func readFile(fname string) string {
+	if *Flag_verbose > 0 {
+		fmt.Println("Attempting to open file: ", fname)
+	}
 	f, err := os.Open(fname)
 	if err != nil {
 		log.Fatalf("Unable to open file: %v \n", fname)
@@ -17,12 +19,14 @@ func readFile(fname string) string {
 	defer f.Close()
 
 	in := bufio.NewReader(f)
-	var out bytes.Buffer
-	line, err := in.ReadBytes('\n')
-	for err != io.EOF {
-		log.Panic(err)
-		out.Write(line)
-		line, err = in.ReadBytes('\n')
+	var nline string
+	line, eof := readLine(in)
+	for !eof {
+		line = line + nline + "\n"
+		nline, eof = readLine(in)
 	}
-	return out.String()
+	if nline != "" {
+		line += nline
+	}
+	return line
 }
