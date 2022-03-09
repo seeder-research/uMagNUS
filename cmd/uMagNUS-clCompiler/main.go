@@ -12,7 +12,7 @@ import (
 	//	"os"
 	//	"path"
 	//	"strconv"
-	//	"strings"
+	"strings"
 	//	"text/scanner"
 	//	"time"
 )
@@ -66,9 +66,9 @@ func main() {
 		if *Flag_verbose > 2 {
 			fmt.Println("      Create and compile program on GPU: ", gpuId)
 		}
-		tmpProgram, err := compileProgram(tmpContext, gpuArg, []string{fcode})
+		tmpProgram, err := tmpContext.CreateProgramWithSource([]string{fcode})
 		if err != nil {
-			fmt.Println("    Error creating and compiling program on GPU.")
+			fmt.Println("    Error creatinging program on GPU.")
 			tmpContext.Release()
 			log.Panic(err)
 		}
@@ -94,19 +94,25 @@ func main() {
 				fmt.Println("      Unknown binary type in program.")
 			}
 		}
-		var linkedProgram *cl.Program
-		linkedProgram, err = linkProgram(tmpContext, []*cl.Device{GPUList[gpuId].Device}, []*cl.Program{tmpProgram})
+
+		fmt.Println("    Building program...")
+		buildOpts := generateCompilerOpts()
+		if buildOpts != "" {
+			buildOpts = buildOpts + " "
+		}
+		buildOpts = buildOpts + generateLinkerOpts()
+		fmt.Println("        using options: ", buildOpts)
+		err = tmpProgram.BuildProgram([]*cl.Device{GPUList[gpuId].Device}, buildOpts)
                 if err != nil {
-                        fmt.Println("    Error linking binary for program on GPU.")
+                        fmt.Println("    Error building binary for program on GPU.")
                         tmpProgram.Release()
                         tmpContext.Release()
                         log.Panic(err)
                 }
-                ShowBuildLog(linkedProgram, GPUList[gpuId].Device)
-                binType, err = linkedProgram.GetProgramBinaryType(GPUList[gpuId].Device)
+                ShowBuildLog(tmpProgram, GPUList[gpuId].Device)
+                binType, err = tmpProgram.GetProgramBinaryType(GPUList[gpuId].Device)
                 if err != nil {
-                        fmt.Println("    Error getting binary type for program on GPU after linking.")
-                        tmpProgram.Release()
+                        fmt.Println("    Error getting binary type for program on GPU.")
                         tmpContext.Release()
                         log.Panic(err)
                 }
@@ -124,18 +130,57 @@ func main() {
                                 fmt.Println("      Unknown binary type in program.")
                         }
                 }
+
 		var kernNum int
-		kernNum, err = linkedProgram.GetKernelCounts()
+		kernNum, err = tmpProgram.GetKernelCounts()
 		if err != nil {
 			fmt.Println("    Error getting kernel count for linked program on GPU.")
 			tmpProgram.Release()
-			linkedProgram.Release()
 			tmpContext.Release()
 			log.Panic(err)
 		}
 		if *Flag_verbose > 2 {
 			fmt.Printf("    Program has %+v number of kernels\n", kernNum)
 		}
+		var kernNames string
+		kernNames, err = tmpProgram.GetKernelNames()
+                if err != nil {
+                        fmt.Println("    Error getting kernel names for linked program on GPU.")
+                        tmpProgram.Release()
+                        tmpContext.Release()
+                        log.Panic(err)
+                }
+		kernNameArray := strings.Split(kernNames, ";")
+		fmt.Println("  Kernels in program:")
+		for _, kn := range kernNameArray {
+			fmt.Println("    kernel: ", kn)
+		}
+
+		var binSizes []int
+		binSizes, err = tmpProgram.GetBinarySizes()
+                if err != nil {
+                        fmt.Println("    Error getting binary sizes program on GPU.")
+                        tmpProgram.Release()
+                        tmpContext.Release()
+                        log.Panic(err)
+                }
+
+		fmt.Println("  Number of program binaries: ", len(binSizes))
+		for idx, binSz := range binSizes {
+			fmt.Printf("    Size of program binary number %+v: %+v bytes\n", idx+1, binSz)
+		}
+
+		var bins []*uint8
+		bins, err = tmpProgram.GetBinaries()
+                if err != nil {
+                        fmt.Println("    Error getting binaries for program on GPU.")
+                        tmpProgram.Release()
+                        tmpContext.Release()
+                        log.Panic(err)
+                }
+
+		fmt.Printf("      Check of number of binaries: %+v \n", len(bins))
+
 		if *Flag_verbose > 2 {
 			fmt.Println("    Releasing program on GPU: ", gpuId)
 		}
@@ -143,8 +188,6 @@ func main() {
 		if *Flag_verbose > 2 {
 			fmt.Println("    Releasing context on GPU: ", gpuId)
 		}
-		linkedProgram.Release()
-		tmpProgram.Release()
 		tmpContext.Release()
 	}
 }

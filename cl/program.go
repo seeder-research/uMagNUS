@@ -624,6 +624,11 @@ func (p *Program) GetBinarySizes() ([]int, error) {
 		return nil, toError(err)
 	}
 
+	arr = make([]C.size_t, int(val))
+	if err := C.clGetProgramInfo(p.clProgram, C.CL_PROGRAM_BINARY_SIZES, val, (unsafe.Pointer)(&arr[0]), nil); err != C.CL_SUCCESS {
+		panic("Should never fail")
+		return nil, toError(err)
+	}
 	returnCount := make([]int, int(val))
 	for i := 0; i < int(val); i++ {
 		returnCount[i] = int(arr[i])
@@ -649,8 +654,7 @@ func (p *Program) GetBinaries() ([]*uint8, error) {
 
 func (p *Program) GetKernelCounts() (int, error) {
 	var val C.size_t
-	var val2 C.size_t
-	if err := C.CLGetProgramInfo(p.clProgram, C.CL_PROGRAM_NUM_KERNELS, C.size_t(unsafe.Sizeof(val)), (unsafe.Pointer)(&val), unsafe.Pointer(&val2)); err != C.CL_SUCCESS {
+	if err := C.CLGetProgramInfo(p.clProgram, C.CL_PROGRAM_NUM_KERNELS, C.size_t(unsafe.Sizeof(val)), (unsafe.Pointer)(&val), nil); err != C.CL_SUCCESS {
 		panic("Should never fail")
 		return -1, toError(err)
 	}
