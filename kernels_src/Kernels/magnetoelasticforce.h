@@ -1,1 +1,5 @@
+#include "clh/typedefs.clh"
+#include "clh/amul.clh"
+#include "clh/float3.clh"
+#include "clh/stencil.clh"
 #include "cl/magnetoelasticforce.cl"

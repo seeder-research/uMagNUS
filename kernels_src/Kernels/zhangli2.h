@@ -1,1 +1,5 @@
+#include "clh/typedefs.clh"
+#include "clh/constants.clh"
+#include "clh/float3.clh"
+#include "clh/stencil.clh"
 #include "cl/zhangli2.cl"
