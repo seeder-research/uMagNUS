@@ -1,3 +1,5 @@
+#ifndef __RNGXORWOW_H__
+#define __RNGXORWOW_H__
 /**
 @file
 
@@ -57,3 +59,4 @@ static inline void xorwow_discard(ulong offset, uint* xorwow_state, __global uin
 static inline void xorwow_discard_subsequence(ulong subsequence, uint* xorwow_state, __global uint* h_xorwow_sequence_jump_matrices) {
     xorwow_jump(subsequence, h_xorwow_sequence_jump_matrices, xorwow_state);
 }
+#endif // __RNGXORWOW_H__

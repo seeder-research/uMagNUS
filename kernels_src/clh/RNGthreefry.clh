@@ -1,3 +1,5 @@
+#ifndef __RNGTHREEFRY_H__
+#define __RNGTHREEFRY_H__
 #define THREEFRY_ELEMENTS_PER_BLOCK 256
 #define SKEIN_KS_PARITY64 0x1BD11BDAA9FC1A22
 #define SKEIN_KS_PARITY32 0x1BD11BDA
@@ -489,3 +491,4 @@ static inline void threefry64_round(threefry64_state* state){
     state->result[3] += 5; /* X[4-1] += r */
 
 }
+#endif // __RNGTHREEFRY_H__

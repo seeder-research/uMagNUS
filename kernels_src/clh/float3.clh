@@ -40,4 +40,4 @@ inline real_t pow4(real_t x){
 
 #define is0(m) ( dot(m, m) == 0.0f )
 
-#endif
+#endif // _FLOAT3_H_
