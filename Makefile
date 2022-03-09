@@ -10,13 +10,13 @@ CGO_CFLAGS_ALLOW='(-fno-schedule-insns|-malign-double|-ffast-math)'
 
 .PHONY: all cl-compiler clkernels clean realclean hooks go.mod
 
-all: go.mod clkernels
+all: clkernels
 	go install -v $(GO_BUILDFLAGS) github.com/seeder-research/uMagNUS/cmd/...
 
 go.mod:
 	go mod init
 
-cl-compiler: go.mod
+cl-compiler:
 	go install -v github.com/seeder-research/uMagNUS/cmd/uMagNUS-clCompiler
 
 clkernels:

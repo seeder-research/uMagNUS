@@ -71,6 +71,15 @@ static cl_device_partition_property * partitionDeviceByNextPartitionable() {
         properties[2] = CL_DEVICE_PARTITION_BY_COUNTS_LIST_END;
         return properties;
 }
+
+static cl_int CLGetDeviceInfoStringSize(cl_device_id device, cl_device_info param_name, size_t* param_value_size_ret) {
+        return clGetDeviceInfo(device, param_name, NULL, NULL, param_value_size_ret);
+}
+
+static cl_int CLGetDeviceInfoString(cl_device_id device, cl_device_info param_name, size_t param_value_size, void *param_value) {
+        return clGetDeviceInfo(device, param_name, param_value_size, param_value, NULL);
+}
+
 */
 import "C"
 
@@ -196,9 +205,16 @@ func (d *Device) nullableId() C.cl_device_id {
 }
 
 func (d *Device) GetInfoString(param C.cl_device_info, panicOnError bool) (string, error) {
-	var strC [65536]C.char
 	var strN C.size_t
-	if err := C.clGetDeviceInfo(d.nullableId(), param, 65536, unsafe.Pointer(&strC), &strN); err != C.CL_SUCCESS {
+	if err := C.CLGetDeviceInfoStringSize(d.nullableId(), param, &strN); err != C.CL_SUCCESS {
+		if panicOnError {
+			panic("Should never fail")
+		}
+		return "", toError(err)
+	}
+	strC := (*C.char)(C.calloc(strN, 1))
+	defer C.free(unsafe.Pointer(strC))
+	if err := C.CLGetDeviceInfoString(d.nullableId(), param, strN, unsafe.Pointer(strC)); err != C.CL_SUCCESS {
 		if panicOnError {
 			panic("Should never fail")
 		}
@@ -207,7 +223,7 @@ func (d *Device) GetInfoString(param C.cl_device_info, panicOnError bool) (strin
 
 	// OpenCL strings are NUL-terminated, and the terminator is included in strN
 	// Go strings aren't NUL-terminated, so subtract 1 from the length
-	return C.GoStringN((*C.char)(unsafe.Pointer(&strC)), C.int(strN-1)), nil
+	return C.GoStringN(strC, C.int(strN-1)), nil
 }
 
 func (d *Device) getInfoUint(param C.cl_device_info, panicOnError bool) (uint, error) {
