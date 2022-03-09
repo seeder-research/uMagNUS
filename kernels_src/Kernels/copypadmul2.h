@@ -1,5 +1,0 @@
-#include "clh/typedefs.clh"
-#include "clh/amul.clh"
-#include "clh/constants.clh"
-#include "clh/stencil.clh"
-#include "cl/copypadmul2.cl"
