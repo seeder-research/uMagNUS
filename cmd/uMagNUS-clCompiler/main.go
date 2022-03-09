@@ -70,7 +70,7 @@ func main() {
 			tmpContext.Release()
 			log.Panic(err)
 		}
-
+		ShowBuildLog(tmpProgram, GPUList[gpuId].Device)
 		if *Flag_verbose > 2 {
 			fmt.Println("    Releasing program on GPU: ", gpuId)
 		}

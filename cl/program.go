@@ -517,9 +517,9 @@ func (p *Program) GetBuildStatus(device *Device) (BuildStatus, error) {
 }
 
 func (p *Program) GetBuildOptions(device *Device) (string, error) {
-	var strC [1024]C.char
+	var strC [65536]C.char
 	var strN C.size_t
-	if err := C.clGetProgramBuildInfo(p.clProgram, device.id, C.CL_PROGRAM_BUILD_OPTIONS, 1024, unsafe.Pointer(&strC), &strN); err != C.CL_SUCCESS {
+	if err := C.clGetProgramBuildInfo(p.clProgram, device.id, C.CL_PROGRAM_BUILD_OPTIONS, C.size_t(len(strC)), unsafe.Pointer(&strC), &strN); err != C.CL_SUCCESS {
 		panic("Should never fail")
 		return "", toError(err)
 	}
@@ -530,9 +530,9 @@ func (p *Program) GetBuildOptions(device *Device) (string, error) {
 }
 
 func (p *Program) GetBuildLog(device *Device) (string, error) {
-	var strC [1024]C.char
+	var strC [65536]C.char
 	var strN C.size_t
-	if err := C.clGetProgramBuildInfo(p.clProgram, device.id, C.CL_PROGRAM_BUILD_LOG, 1024, unsafe.Pointer(&strC), &strN); err != C.CL_SUCCESS {
+	if err := C.clGetProgramBuildInfo(p.clProgram, device.id, C.CL_PROGRAM_BUILD_LOG, C.size_t(len(strC)), unsafe.Pointer(&strC), &strN); err != C.CL_SUCCESS {
 		panic("Should never fail")
 		return "", toError(err)
 	}

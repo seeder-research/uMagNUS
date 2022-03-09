@@ -17,3 +17,45 @@ func compileProgram(ctx *cl.Context, devices []*cl.Device, source []string) (*cl
 
 func linkProgram(programs []*cl.Program) {
 }
+
+func ShowBuildLog(p *cl.Program, d *cl.Device) {
+	status, err := p.GetBuildStatus(d)
+	if err != nil {
+		fmt.Println("  ERROR: unable to get build status of program!")
+		return
+	}
+	switch status {
+	case cl.BuildStatusSuccess:
+		if *Flag_verbose > 3 {
+			fmt.Println("  Successfully built program")
+		}
+	case cl.BuildStatusNone:
+		if *Flag_verbose > 3 {
+			fmt.Println("  Program was not built/compiled/linked")
+			fmt.Println("    Please run clBuildProgram, clCompileProgram or clLinkProgram")
+		}
+		return
+	case cl.BuildStatusError:
+		if *Flag_verbose > 3 {
+			fmt.Println("  Program is built with errors!")
+		}
+	case cl.BuildStatusInProgress:
+		if *Flag_verbose > 3 {
+			fmt.Println("  Program build is in progress")
+		}
+		return
+	default:
+		if *Flag_verbose > 3 {
+			fmt.Println("  ERROR: Unknown status returned")
+		}
+		return
+	}
+
+	var logout string
+	logout, err = p.GetBuildLog(d)
+	if err != nil {
+		fmt.Println("  ERROR: unable to get build log of program!")
+		return
+	}
+	fmt.Printf("%+v \n", logout)
+}

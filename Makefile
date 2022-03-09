@@ -8,13 +8,16 @@ GO_BUILDFLAGS=-compiler gc
 CGO_CFLAGS_ALLOW='(-fno-schedule-insns|-malign-double|-ffast-math)'
 
 
-.PHONY: all clkernels clean realclean hooks go.mod
+.PHONY: all cl-compiler clkernels clean realclean hooks go.mod
 
-all: clkernels
+all: go.mod clkernels
 	go install -v $(GO_BUILDFLAGS) github.com/seeder-research/uMagNUS/cmd/...
 
 go.mod:
 	go mod init
+
+cl-compiler: go.mod
+	go install -v github.com/seeder-research/uMagNUS/cmd/uMagNUS-clCompiler
 
 clkernels:
 	$(MAKE) -C ./opencl all
