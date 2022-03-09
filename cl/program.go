@@ -46,6 +46,15 @@ static cl_program CLLinkProgram(                           cl_context           
 							cl_int * err_ret) {
         return clLinkProgram(context, num_devices, devices, build_options, num_programs, in_programs, c_link_program_notify, user_data, err_ret);
 }
+
+static cl_int CLGetProgramInfo(                           cl_program                  program,
+                                                  const cl_program_info            param_name,
+                                                  size_t                     param_value_size,
+                                                  void *                          param_value,
+                                                  void *                 param_value_ret_size) {
+        return clGetProgramInfo(program, param_name, param_value_size, param_value, (size_t *)param_value_ret_size);
+}
+
 */
 import "C"
 
@@ -640,7 +649,8 @@ func (p *Program) GetBinaries() ([]*uint8, error) {
 
 func (p *Program) GetKernelCounts() (int, error) {
 	var val C.size_t
-	if err := C.clGetProgramInfo(p.clProgram, C.CL_PROGRAM_NUM_KERNELS, C.size_t(unsafe.Sizeof(val)), (unsafe.Pointer)(&val), nil); err != C.CL_SUCCESS {
+	var val2 C.size_t
+	if err := C.CLGetProgramInfo(p.clProgram, C.CL_PROGRAM_NUM_KERNELS, C.size_t(unsafe.Sizeof(val)), (unsafe.Pointer)(&val), unsafe.Pointer(&val2)); err != C.CL_SUCCESS {
 		panic("Should never fail")
 		return -1, toError(err)
 	}
@@ -648,9 +658,9 @@ func (p *Program) GetKernelCounts() (int, error) {
 }
 
 func (p *Program) GetKernelNames() (string, error) {
-	var strC [1024]C.char
+	var strC [65536]C.char
 	var strN C.size_t
-	if err := C.clGetProgramInfo(p.clProgram, C.CL_PROGRAM_KERNEL_NAMES, 1024, unsafe.Pointer(&strC), &strN); err != C.CL_SUCCESS {
+	if err := C.clGetProgramInfo(p.clProgram, C.CL_PROGRAM_KERNEL_NAMES, C.size_t(len(strC)), unsafe.Pointer(&strC), &strN); err != C.CL_SUCCESS {
 		panic("Should never fail")
 		return "", toError(err)
 	}

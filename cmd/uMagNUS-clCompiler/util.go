@@ -34,7 +34,13 @@ func generateCompilerOpts() string {
 func generateLinkerOpts() string {
 	var opts string
 	opts = ""
+	if *Flag_linkopts != "" {
+		opts = opts + *Flag_linkopts
+	}
 	if *Flag_libpaths != "" {
+		if opts != "" {
+			opts = opts + " "
+		}
 		opts = opts + *Flag_libpaths
 	}
 	if *Flag_libs != "" {

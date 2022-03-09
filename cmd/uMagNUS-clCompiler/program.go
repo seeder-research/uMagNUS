@@ -15,7 +15,8 @@ func compileProgram(ctx *cl.Context, devices []*cl.Device, source []string) (*cl
 	return program, err
 }
 
-func linkProgram(programs []*cl.Program) {
+func linkProgram(ctx *cl.Context, d []*cl.Device, programs []*cl.Program) (*cl.Program, error) {
+	return ctx.LinkProgram(programs, d, generateLinkerOpts())
 }
 
 func ShowBuildLog(p *cl.Program, d *cl.Device) {
