@@ -68,7 +68,7 @@ func main() {
 		}
 		tmpProgram, err := tmpContext.CreateProgramWithSource([]string{fcode})
 		if err != nil {
-			fmt.Println("    Error creatinging program on GPU.")
+			fmt.Println("    Error creating program on GPU.")
 			tmpContext.Release()
 			log.Panic(err)
 		}
@@ -170,16 +170,16 @@ func main() {
 			fmt.Printf("    Size of program binary number %+v: %+v bytes\n", idx+1, binSz)
 		}
 
-		var bins []*uint8
-		bins, err = tmpProgram.GetBinaries()
-                if err != nil {
-                        fmt.Println("    Error getting binaries for program on GPU.")
-                        tmpProgram.Release()
-                        tmpContext.Release()
-                        log.Panic(err)
-                }
+//		var bins []*uint8
+//		bins, err = tmpProgram.GetBinaries()
+//                if err != nil {
+//                        fmt.Println("    Error getting binaries for program on GPU.")
+//                        tmpProgram.Release()
+//                        tmpContext.Release()
+//                        log.Panic(err)
+//                }
 
-		fmt.Printf("      Check of number of binaries: %+v \n", len(bins))
+//		fmt.Printf("      Check of number of binaries: %+v \n", len(bins))
 
 		if *Flag_verbose > 2 {
 			fmt.Println("    Releasing program on GPU: ", gpuId)

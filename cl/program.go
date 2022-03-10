@@ -558,8 +558,6 @@ func (ctx *Context) LinkProgramWithCallback(programs []*Program, devices []*Devi
 func (p *Program) GetBuildStatus(device *Device) (BuildStatus, error) {
 	var buildStatus C.cl_build_status
 	var tmpN C.size_t
-	defer C.free(unsafe.Pointer(&tmpN))
-	defer C.free(unsafe.Pointer(&buildStatus))
 	err := C.CLGetProgramBuildInfoParamSize(p.clProgram, device.id, C.CL_PROGRAM_BUILD_STATUS, &tmpN)
 	if err != C.CL_SUCCESS {
 		return BuildStatusError, toError(err)
@@ -568,13 +566,11 @@ func (p *Program) GetBuildStatus(device *Device) (BuildStatus, error) {
 	if err != C.CL_SUCCESS {
 		return BuildStatusError, toError(err)
 	}
-	outStatus := BuildStatus(buildStatus)
-	return outStatus, toError(err)
+	return BuildStatus(buildStatus), toError(err)
 }
 
 func (p *Program) GetBuildOptions(device *Device) (string, error) {
 	var strN C.size_t
-	defer C.free(unsafe.Pointer(&strN))
 	if err := C.CLGetProgramBuildInfoParamSize(p.clProgram, device.id, C.CL_PROGRAM_BUILD_OPTIONS, &strN); err != C.CL_SUCCESS {
 		panic("Should never fail getting parameter size for program info")
 		return "", toError(err)
@@ -588,12 +584,12 @@ func (p *Program) GetBuildOptions(device *Device) (string, error) {
 
 	// OpenCL strings are NUL-terminated, and the terminator is included in strN
 	// Go strings aren't NUL-terminated, so subtract 1 from the length
-	return C.GoStringN(strC, C.int(strN-1)), nil
+	retString := C.GoStringN(strC, C.int(strN-1))
+	return retString, nil
 }
 
 func (p *Program) GetBuildLog(device *Device) (string, error) {
 	var strN C.size_t
-	defer C.free(unsafe.Pointer(&strN))
 	if err := C.CLGetProgramBuildInfoParamSize(p.clProgram, device.id, C.CL_PROGRAM_BUILD_LOG, &strN); err != C.CL_SUCCESS {
 		panic("Should never fail getting parameter size for program info")
 		return "", toError(err)
@@ -607,7 +603,8 @@ func (p *Program) GetBuildLog(device *Device) (string, error) {
 
 	// OpenCL strings are NUL-terminated, and the terminator is included in strN
 	// Go strings aren't NUL-terminated, so subtract 1 from the length
-	return C.GoStringN(strC, C.int(strN-1)), nil
+	retString := C.GoStringN(strC, C.int(strN-1))
+	return retString, nil
 }
 
 func (p *Program) GetProgramBinaryType(device *Device) (ProgramBinaryTypes, error) {
@@ -678,12 +675,12 @@ func (p *Program) GetSource() (string, error) {
 
 	// OpenCL strings are NUL-terminated, and the terminator is included in strN
 	// Go strings aren't NUL-terminated, so subtract 1 from the length
-	return C.GoStringN((*C.char)(unsafe.Pointer(&strC)), C.int(strN-1)), nil
+	retString := C.GoStringN(strC, C.int(strN-1))
+	return retString, nil
 }
 
 func (p *Program) GetBinarySizes() ([]int, error) {
 	var val C.size_t
-	defer C.free(unsafe.Pointer(&val))
 	if err := C.CLGetProgramInfoParamSize(p.clProgram, C.CL_PROGRAM_BINARY_SIZES, &val); err != C.CL_SUCCESS {
 		panic("Should never fail")
 		return nil, toError(err)
@@ -709,7 +706,7 @@ func (p *Program) GetBinaries() ([]*uint8, error) {
 		panic("Unable to get program binary sizes")
 		return nil, toError(err)
 	}
-	arr := (*C.uchar)(C.calloc((C.size_t)(len(binSizes)), (C.size_t)(C.sizeof_uchar)))
+	arr := make([]*C.uchar, len(binSizes))
 	for ii := 0; ii < len(binSizes); ii++ {
 		if binSizes[ii] > 0 {
 			arr[ii] = (*C.uchar)(C.calloc(C.size_t(binSizes[ii]), (C.size_t)(C.sizeof_uchar)))
@@ -718,7 +715,6 @@ func (p *Program) GetBinaries() ([]*uint8, error) {
 		}
 		defer C.free(unsafe.Pointer(arr[ii]))
 	}
-	defer C.free(unsafe.Pointer(arr))
 	var tmpN C.size_t
 	defer C.free(unsafe.Pointer(&tmpN))
 	if errRet := C.CLGetProgramInfoParamSize(p.clProgram, C.CL_PROGRAM_BINARIES, &tmpN); errRet != C.CL_SUCCESS {
@@ -748,16 +744,22 @@ func (p *Program) GetKernelCounts() (int, error) {
 }
 
 func (p *Program) GetKernelNames() (string, error) {
-	var strC [65536]C.char
 	var strN C.size_t
-	if err := C.clGetProgramInfo(p.clProgram, C.CL_PROGRAM_KERNEL_NAMES, C.size_t(len(strC)), unsafe.Pointer(&strC), &strN); err != C.CL_SUCCESS {
-		panic("Should never fail")
+	if err := C.CLGetProgramInfoParamSize(p.clProgram, C.CL_PROGRAM_KERNEL_NAMES, &strN); err != C.CL_SUCCESS {
+		panic("fail to get parameter size for program info")
+		return "", toError(err)
+	}
+	strC := (*C.char)(C.calloc(strN, 1))
+	defer C.free(unsafe.Pointer(strC))
+	if err := C.CLGetProgramInfoParamUnsafe(p.clProgram, C.CL_PROGRAM_KERNEL_NAMES, strN, unsafe.Pointer(strC)); err != C.CL_SUCCESS {
+		panic("fail to get parameter for program info")
 		return "", toError(err)
 	}
 
 	// OpenCL strings are NUL-terminated, and the terminator is included in strN
 	// Go strings aren't NUL-terminated, so subtract 1 from the length
-	return C.GoStringN((*C.char)(unsafe.Pointer(&strC)), C.int(strN-1)), nil
+	retString := C.GoStringN(strC, C.int(strN-1))
+	return retString, nil
 }
 
 func (ctx *Context) CreateProgramWithBinary(deviceList []*Device, program_lengths []int, program_binaries []*uint8) (*Program, error) {

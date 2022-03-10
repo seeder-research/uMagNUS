@@ -238,7 +238,8 @@ func (d *Device) GetInfoString(param C.cl_device_info, panicOnError bool) (strin
 
 	// OpenCL strings are NUL-terminated, and the terminator is included in strN
 	// Go strings aren't NUL-terminated, so subtract 1 from the length
-	return C.GoStringN(strC, C.int(strN-1)), nil
+	retString := C.GoStringN(strC, C.int(strN-1))
+	return retString, nil
 }
 
 func (d *Device) getInfoUint(param C.cl_device_info, panicOnError bool) (uint, error) {
