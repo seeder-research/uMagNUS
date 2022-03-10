@@ -72,11 +72,11 @@ static cl_device_partition_property * partitionDeviceByNextPartitionable() {
         return properties;
 }
 
-static cl_int CLGetDeviceInfoStringSize(cl_device_id device, cl_device_info param_name, size_t* param_value_size_ret) {
+static cl_int CLGetDeviceInfoParamSize(cl_device_id device, cl_device_info param_name, size_t* param_value_size_ret) {
         return clGetDeviceInfo(device, param_name, NULL, NULL, param_value_size_ret);
 }
 
-static cl_int CLGetDeviceInfoString(cl_device_id device, cl_device_info param_name, size_t param_value_size, void *param_value) {
+static cl_int CLGetDeviceInfoParamUnsafe(cl_device_id device, cl_device_info param_name, size_t param_value_size, void *param_value) {
         return clGetDeviceInfo(device, param_name, param_value_size, param_value, NULL);
 }
 
@@ -87,6 +87,10 @@ import (
 	"strings"
 	"unsafe"
 )
+
+// Unsupported device info queries:
+// CL_DEVICE_PARTITION_PROPERTIES
+// CL_DEVICE_PARTITION_TYPE
 
 //////////////// Constants ////////////////
 const maxDeviceCount = 64
@@ -112,6 +116,17 @@ const (
 	FPConfigRoundToZero    FPConfig = C.CL_FP_ROUND_TO_ZERO    // round to zero rounding mode supported
 	FPConfigRoundToInf     FPConfig = C.CL_FP_ROUND_TO_INF     // round to positive and negative infinity rounding modes supported
 	FPConfigFMA            FPConfig = C.CL_FP_FMA              // IEEE754-2008 fused multiply-add is supported
+)
+
+type DeviceAffinityDomain uint
+
+const (
+	DeviceAffinityDomainNuma              DeviceAffinityDomain = C.CL_DEVICE_AFFINITY_DOMAIN_NUMA
+	DeviceAffinityDomainL4Cache           DeviceAffinityDomain = C.CL_DEVICE_AFFINITY_DOMAIN_L4_CACHE
+	DeviceAffinityDomainL3Cache           DeviceAffinityDomain = C.CL_DEVICE_AFFINITY_DOMAIN_L3_CACHE
+	DeviceAffinityDomainL2Cache           DeviceAffinityDomain = C.CL_DEVICE_AFFINITY_DOMAIN_L2_CACHE
+	DeviceAffinityDomainL1Cache           DeviceAffinityDomain = C.CL_DEVICE_AFFINITY_DOMAIN_L1_CACHE
+	DeviceAffinityDomainNextPartitionable DeviceAffinityDomain = C.CL_DEVICE_AFFINITY_DOMAIN_NEXT_PARTITIONABLE
 )
 
 var fpConfigNameMap = map[FPConfig]string{
@@ -206,17 +221,17 @@ func (d *Device) nullableId() C.cl_device_id {
 
 func (d *Device) GetInfoString(param C.cl_device_info, panicOnError bool) (string, error) {
 	var strN C.size_t
-	if err := C.CLGetDeviceInfoStringSize(d.nullableId(), param, &strN); err != C.CL_SUCCESS {
+	if err := C.CLGetDeviceInfoParamSize(d.nullableId(), param, &strN); err != C.CL_SUCCESS {
 		if panicOnError {
-			panic("Should never fail")
+			panic("Should never fail getting size of parameter")
 		}
 		return "", toError(err)
 	}
 	strC := (*C.char)(C.calloc(strN, 1))
 	defer C.free(unsafe.Pointer(strC))
-	if err := C.CLGetDeviceInfoString(d.nullableId(), param, strN, unsafe.Pointer(strC)); err != C.CL_SUCCESS {
+	if err := C.CLGetDeviceInfoParamUnsafe(d.nullableId(), param, strN, unsafe.Pointer(strC)); err != C.CL_SUCCESS {
 		if panicOnError {
-			panic("Should never fail")
+			panic("Should never fail getting device info")
 		}
 		return "", toError(err)
 	}
@@ -318,6 +333,18 @@ func (d *Device) OpenCLCVersion() string {
 	return str
 }
 
+// Built-in kernels supported by the device
+func (d *Device) BuiltInKernels() string {
+	str, _ := d.GetInfoString(C.CL_DEVICE_BUILT_IN_KERNELS, true)
+	return str
+}
+
+// Device reference count
+func (d *Device) ReferenceCount() int {
+	val, _ := d.getInfoUint(C.CL_DEVICE_REFERENCE_COUNT, true)
+	return int(val)
+}
+
 // The default compute device address space size specified as an
 // unsigned integer value in bits. Currently supported values are 32 or 64 bits.
 func (d *Device) AddressBits() int {
@@ -348,6 +375,20 @@ func (d *Device) MaxComputeUnits() int {
 // The minimum value is 8 for devices that are not of type CL_DEVICE_TYPE_CUSTOM.
 func (d *Device) MaxConstantArgs() int {
 	val, _ := d.getInfoUint(C.CL_DEVICE_MAX_CONSTANT_ARGS, true)
+	return int(val)
+}
+
+// Max number of images in a 1D or 2D image array. The minimum value is 2048
+// if CL_DEVICE_IMAGE_SUPPORT is CL_TRUE
+func (d *Device) MaxImageArraySize() int {
+	val, _ := d.getInfoUint(C.CL_DEVICE_IMAGE_MAX_ARRAY_SIZE, true)
+	return int(val)
+}
+
+// Max number of pixels for a 1D image created from a buffer object.
+// The minimum value is 65536 if CL_DEVICE_IMAGE_SUPPORT is CL_TRUE.
+func (d *Device) MaxImageBufferSize() int {
+	val, _ := d.getInfoUint(C.CL_DEVICE_IMAGE_MAX_BUFFER_SIZE, true)
 	return int(val)
 }
 
@@ -448,6 +489,13 @@ func (d *Device) ProfilingTimerResolution() int {
 	return int(val)
 }
 
+// Maximum size of the internal buffer that holds the output of printf calls from a
+// kernel. The minimum value for the FULL profile is 1 MB.
+func (d *Device) PrintfBufferSize() int {
+	val, _ := d.getInfoSize(C.CL_DEVICE_PRINTF_BUFFER_SIZE, true)
+	return int(val)
+}
+
 // Size of local memory arena in bytes. The minimum value is 32 KB for
 // devices that are not of type CL_DEVICE_TYPE_CUSTOM.
 func (d *Device) LocalMemSize() int64 {
@@ -497,6 +545,11 @@ func (d *Device) CompilerAvailable() bool {
 	return val
 }
 
+func (d *Device) LinkerAvailable() bool {
+	val, _ := d.getInfoBool(C.CL_DEVICE_LINKER_AVAILABLE, true)
+	return val
+}
+
 func (d *Device) EndianLittle() bool {
 	val, _ := d.getInfoBool(C.CL_DEVICE_ENDIAN_LITTLE, true)
 	return val
@@ -512,6 +565,17 @@ func (d *Device) ErrorCorrectionSupport() bool {
 
 func (d *Device) ImageSupport() bool {
 	val, _ := d.getInfoBool(C.CL_DEVICE_IMAGE_SUPPORT, true)
+	return val
+}
+
+// Is CL_TRUE if the device's preference is for the user to be
+// responsible for synchronization, when sharing memory objects
+// between OpenCL and other APIs such as DirectX, CL_FALSE if the
+// device / implementation has a performant path for performing
+// synchronization of memory object shared between OpenCL and other
+// APIs such as DirectX
+func (d *Device) PreferredInteropUserSync() bool {
+	val, _ := d.getInfoBool(C.CL_DEVICE_PREFERRED_INTEROP_USER_SYNC, true)
 	return val
 }
 
@@ -886,4 +950,35 @@ func (d *Device) PartitionDeviceByNextPartitionableDomain(n []int) ([]*Device, e
 		val[idx].id = deviceList[idx]
 	}
 	return val, nil
+}
+
+func (d *Device) PartitionAffinityDomain() DeviceAffinityDomain {
+	var deviceAffinityDomain C.cl_device_affinity_domain
+	var paramSize C.size_t
+	defer C.free(unsafe.Pointer(&deviceAffinityDomain))
+	defer C.free(unsafe.Pointer(&paramSize))
+	if err := C.CLGetDeviceInfoParamSize(d.nullableId(), C.CL_DEVICE_PARTITION_AFFINITY_DOMAIN, &paramSize); err != C.CL_SUCCESS {
+		panic("Should never fail getting parameter size for device info")
+	}
+	if err := C.CLGetDeviceInfoParamUnsafe(d.nullableId(), C.CL_DEVICE_PARTITION_AFFINITY_DOMAIN, paramSize, unsafe.Pointer(&deviceAffinityDomain)); err != C.CL_SUCCESS {
+		panic("Should never fail getting device info")
+	}
+	res := DeviceAffinityDomain(deviceAffinityDomain)
+	return res
+}
+
+func (d *Device) ParentDevice() *Device {
+	var devId C.cl_device_id
+	var paramSize C.size_t
+	defer C.free(unsafe.Pointer(&devId))
+        defer C.free(unsafe.Pointer(&paramSize))
+        if err := C.CLGetDeviceInfoParamSize(d.nullableId(), C.CL_DEVICE_PARENT_DEVICE, &paramSize); err != C.CL_SUCCESS {
+                panic("Should never fail getting parameter size for device info")
+        }
+        if err := C.CLGetDeviceInfoParamUnsafe(d.nullableId(), C.CL_DEVICE_PARENT_DEVICE, paramSize, unsafe.Pointer(&devId)); err != C.CL_SUCCESS {
+                panic("Should never fail getting device info")
+        }
+        res := new(Device)
+	res.id = devId
+        return res
 }
