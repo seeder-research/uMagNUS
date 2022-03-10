@@ -55,6 +55,34 @@ static cl_int CLGetProgramInfo(                           cl_program            
         return clGetProgramInfo(program, param_name, param_value_size, param_value, (size_t *)param_value_ret_size);
 }
 
+static cl_int CLGetProgramInfoParamSize(                  cl_program                  program,
+                                                  const cl_program_info            param_name,
+                                                  size_t                *param_value_ret_size) {
+        return clGetProgramInfo(program, param_name, NULL, NULL, param_value_ret_size);
+}
+
+static cl_int CLGetProgramInfoParamUnsafe(                cl_program                  program,
+                                                  const cl_program_info            param_name,
+                                                  size_t                     param_value_size,
+                                                  void *                          param_value) {
+        return clGetProgramInfo(program, param_name, param_value_size, param_value, NULL);
+}
+
+static cl_int CLGetProgramBuildInfoParamSize(             cl_program                   program,
+                                                         cl_device_id                   device,
+                                             const cl_program_build_info            param_name,
+                                                  size_t                 *param_value_ret_size) {
+        return clGetProgramBuildInfo(program, device, param_name, NULL, NULL, param_value_ret_size);
+}
+
+static cl_int CLGetProgramBuildInfoParamUnsafe(           cl_program                   program,
+                                                         cl_device_id                   device,
+                                               const cl_program_build_info          param_name,
+                                                  size_t                      param_value_size,
+                                                  void *                          param_value) {
+        return clGetProgramBuildInfo(program, device, param_name, param_value_size, param_value, NULL);
+}
+
 */
 import "C"
 
@@ -521,45 +549,68 @@ func (ctx *Context) LinkProgramWithCallback(programs []*Program, devices []*Devi
 
 func (p *Program) GetBuildStatus(device *Device) (BuildStatus, error) {
 	var buildStatus C.cl_build_status
-	err := C.clGetProgramBuildInfo(p.clProgram, device.id, C.CL_PROGRAM_BUILD_STATUS, C.size_t(unsafe.Sizeof(buildStatus)), unsafe.Pointer(&buildStatus), nil)
-	return BuildStatus(buildStatus), toError(err)
+	var tmpN C.size_t
+	defer C.free(unsafe.Pointer(&tmpN))
+	defer C.free(unsafe.Pointer(&buildStatus))
+	err := C.CLGetProgramBuildInfoParamSize(p.clProgram, device.id, C.CL_PROGRAM_BUILD_STATUS, unsafe.Pointer(&tmpN))
+	if err != C.CL_SUCCESS {
+		return BuildStatusError, toError(err)
+	}
+	err = C.CLGetProgramBuildInfoParamUnsafe(p.clProgram, device.id, C.CL_PROGRAM_BUILD_STATUS, tmpN, unsafe.Pointer(&buildStatus))
+	if err != C.CL_SUCCESS {
+		return BuildStatusError, toError(err)
+	}
+	outStatus := BuildStatus(buildStatus)
+	return outStatus, toError(err)
 }
 
 func (p *Program) GetBuildOptions(device *Device) (string, error) {
-	var strC [65536]C.char
 	var strN C.size_t
-	if err := C.clGetProgramBuildInfo(p.clProgram, device.id, C.CL_PROGRAM_BUILD_OPTIONS, C.size_t(len(strC)), unsafe.Pointer(&strC), &strN); err != C.CL_SUCCESS {
-		panic("Should never fail")
+	defer C.free(unsafe.Pointer(&strN))
+	if err := C.CLGetProgramBuildInfoParamSize(p.clProgram, device.id, C.CL_PROGRAM_BUILD_OPTIONS, &strN); err != C.CL_SUCCESS {
+		panic("Should never fail getting parameter size for program info")
+		return "", toError(err)
+	}
+	strC := (*C.char)(C.calloc(strN, 1))
+	defer C.free(strC)
+	if err := C.CLGetProgramBuildInfoParamUnsafe(p.clProgram, device.id, C.CL_PROGRAM_BUILD_OPTIONS, strN, unsafe.Pointer(strC)); err != C.CL_SUCCESS {
+		panic("Should never fail getting build options for program")
 		return "", toError(err)
 	}
 
 	// OpenCL strings are NUL-terminated, and the terminator is included in strN
 	// Go strings aren't NUL-terminated, so subtract 1 from the length
-	return C.GoStringN((*C.char)(unsafe.Pointer(&strC)), C.int(strN-1)), nil
+	return C.GoStringN(strC, C.int(strN-1)), nil
 }
 
 func (p *Program) GetBuildLog(device *Device) (string, error) {
-	var strC [65536]C.char
 	var strN C.size_t
-	if err := C.clGetProgramBuildInfo(p.clProgram, device.id, C.CL_PROGRAM_BUILD_LOG, C.size_t(len(strC)), unsafe.Pointer(&strC), &strN); err != C.CL_SUCCESS {
-		panic("Should never fail")
+	defer C.free(unsafe.Pointer(&strN))
+	if err := C.CLGetProgramBuildInfoParamSize(p.clProgram, device.id, C.CL_PROGRAM_BUILD_LOG, &strN); err != C.CL_SUCCESS {
+		panic("Should never fail getting parameter size for program info")
+		return "", toError(err)
+	}
+	strC := (*C.char)(C.calloc(strN, 1))
+	defer C.free(strC)
+	if err := C.CLGetProgramBuildInfoParamUnsafe(p.clProgram, device.id, C.CL_PROGRAM_BUILD_LOG, strN, unsafe.Pointer(strC)); err != C.CL_SUCCESS {
+		panic("Should never fail getting build log for program")
 		return "", toError(err)
 	}
 
 	// OpenCL strings are NUL-terminated, and the terminator is included in strN
 	// Go strings aren't NUL-terminated, so subtract 1 from the length
-	return C.GoStringN((*C.char)(unsafe.Pointer(&strC)), C.int(strN-1)), nil
+	return C.GoStringN(strC, C.int(strN-1)), nil
 }
 
 func (p *Program) GetProgramBinaryType(device *Device) (ProgramBinaryTypes, error) {
 	var binType C.cl_program_binary_type
-	err := C.clGetProgramBuildInfo(p.clProgram, device.id, C.CL_PROGRAM_BINARY_TYPE, C.size_t(unsafe.Sizeof(binType)), unsafe.Pointer(&binType), nil)
+	err := C.CLGetProgramBuildInfoParamUnsafe(p.clProgram, device.id, C.CL_PROGRAM_BINARY_TYPE, C.size_t(unsafe.Sizeof(binType)), unsafe.Pointer(&binType))
 	return ProgramBinaryTypes(binType), toError(err)
 }
 
 func (p *Program) GetReferenceCount() (int, error) {
 	var val C.cl_uint
-	if err := C.clGetProgramInfo(p.clProgram, C.CL_PROGRAM_REFERENCE_COUNT, C.size_t(unsafe.Sizeof(val)), (unsafe.Pointer)(&val), nil); err != C.CL_SUCCESS {
+	if err := C.CLGetProgramInfoParamUnsafe(p.clProgram, C.CL_PROGRAM_REFERENCE_COUNT, C.size_t(unsafe.Sizeof(val)), (unsafe.Pointer)(&val)); err != C.CL_SUCCESS {
 		panic("Should never fail")
 		return -1, toError(err)
 	}
@@ -569,7 +620,7 @@ func (p *Program) GetReferenceCount() (int, error) {
 
 func (p *Program) GetContext() (*Context, error) {
 	var val C.cl_context
-	if err := C.clGetProgramInfo(p.clProgram, C.CL_PROGRAM_CONTEXT, C.size_t(unsafe.Sizeof(val)), (unsafe.Pointer)(&val), nil); err != C.CL_SUCCESS {
+	if err := C.CLGetProgramInfoParamUnsafe(p.clProgram, C.CL_PROGRAM_CONTEXT, C.size_t(unsafe.Sizeof(val)), (unsafe.Pointer)(&val)); err != C.CL_SUCCESS {
 		panic("Should never fail")
 		return nil, toError(err)
 	}
@@ -579,7 +630,7 @@ func (p *Program) GetContext() (*Context, error) {
 
 func (p *Program) GetDeviceCount() (int, error) {
 	var val C.cl_uint
-	if err := C.clGetProgramInfo(p.clProgram, C.CL_PROGRAM_NUM_DEVICES, C.size_t(unsafe.Sizeof(val)), (unsafe.Pointer)(&val), nil); err != C.CL_SUCCESS {
+	if err := C.CLGetProgramInfoParamUnsafe(p.clProgram, C.CL_PROGRAM_NUM_DEVICES, C.size_t(unsafe.Sizeof(val)), (unsafe.Pointer)(&val)); err != C.CL_SUCCESS {
 		panic("Should never fail")
 		return -1, toError(err)
 	}
@@ -588,10 +639,12 @@ func (p *Program) GetDeviceCount() (int, error) {
 }
 
 func (p *Program) GetDevices() ([]*Device, error) {
+	cnts, _ := p.GetDeviceCount()
 	var val C.cl_device_id
-	var arr []C.cl_device_id
-	var cnts C.size_t
-	if err := C.clGetProgramInfo(p.clProgram, C.CL_PROGRAM_DEVICES, C.size_t(unsafe.Sizeof(val)), (unsafe.Pointer)(&arr), &cnts); err != C.CL_SUCCESS {
+	arr := (*C.cl_device_id)(C.calloc((C.size_t)(cnts), unsafe.Sizeof(val)))
+	defer C.free(unsafe.Pointer(&val))
+	defer C.free(unsafe.Pointer(arr))
+	if err := C.CLGetProgramInfoParamUnsafe(p.clProgram, C.CL_PROGRAM_DEVICES, C.size_t(cnts), (unsafe.Pointer)(arr)); err != C.CL_SUCCESS {
 		panic("Should never fail")
 		return nil, toError(err)
 	}
@@ -604,9 +657,15 @@ func (p *Program) GetDevices() ([]*Device, error) {
 }
 
 func (p *Program) GetSource() (string, error) {
-	var strC [1024]C.char
 	var strN C.size_t
-	if err := C.clGetProgramInfo(p.clProgram, C.CL_PROGRAM_SOURCE, 1024, unsafe.Pointer(&strC), &strN); err != C.CL_SUCCESS {
+	defer C.free(unsafe.Pointer(&strN))
+	if err := C.CLGetProgramInfoParamSize(p.clProgram, C.CL_PROGRAM_SOURCE, &strN); err != C.CL_SUCCESS {
+		panic("Should never fail")
+		return "", toError(err)
+	}
+	strC := (*C.char)(C.calloc(strN, 1))
+	defer C.free(unsafe.Pointer(strC))
+	if err := C.CLGetProgramInfoParamUnsafe(p.clProgram, C.CL_PROGRAM_SOURCE, strN, strC); err != C.CL_SUCCESS {
 		panic("Should never fail")
 		return "", toError(err)
 	}
@@ -618,19 +677,22 @@ func (p *Program) GetSource() (string, error) {
 
 func (p *Program) GetBinarySizes() ([]int, error) {
 	var val C.size_t
-	var arr []C.size_t
-	if err := C.clGetProgramInfo(p.clProgram, C.CL_PROGRAM_BINARY_SIZES, C.size_t(unsafe.Sizeof(val)), (unsafe.Pointer)(&arr), &val); err != C.CL_SUCCESS {
+	defer C.free(unsafe.Pointer(&val))
+	if err := C.CLGetProgramInfoParamSize(p.clProgram, C.CL_PROGRAM_BINARY_SIZES, &val); err != C.CL_SUCCESS {
 		panic("Should never fail")
 		return nil, toError(err)
 	}
 
-	arr = make([]C.size_t, int(val))
-	if err := C.clGetProgramInfo(p.clProgram, C.CL_PROGRAM_BINARY_SIZES, val, (unsafe.Pointer)(&arr[0]), nil); err != C.CL_SUCCESS {
+	valSize := unsafe.Sizeof(val)
+	numEntries := val / valSize
+	arr := (*C.size_t)(C.calloc(numEntries, valSize))
+	defer C.free(unsafe.Pointer(arr))
+	if err := C.CLGetProgramInfoParamUnsafe(p.clProgram, C.CL_PROGRAM_BINARY_SIZES, val, (unsafe.Pointer)(arr)); err != C.CL_SUCCESS {
 		panic("Should never fail")
 		return nil, toError(err)
 	}
-	returnCount := make([]int, int(val))
-	for i := 0; i < int(val); i++ {
+	returnCount := make([]int, int(numEntries))
+	for i := 0; i < int(numEntries); i++ {
 		returnCount[i] = int(arr[i])
 	}
 	return returnCount, nil
