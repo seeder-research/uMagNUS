@@ -222,10 +222,10 @@ func NewVkFFTPlan(ctx *Context) *VkfftPlan {
 }
 
 func NewVkFFTPlanDouble(ctx *Context) *VkfftPlan {
-        var outPlan *C.interfaceFFTPlan
-        outPlan = C.vkfftCreateR2CFFTPlan(ctx.clContext)
+	var outPlan *C.interfaceFFTPlan
+	outPlan = C.vkfftCreateR2CFFTPlan(ctx.clContext)
 	C.vkfftSetFFTPlanDataType(outPlan, 1)
-        return &VkfftPlan{*outPlan}
+	return &VkfftPlan{*outPlan}
 }
 
 func (p *VkfftPlan) VkFFTSetFFTPlanSize(lengths []int) {

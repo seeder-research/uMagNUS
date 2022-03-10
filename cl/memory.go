@@ -21,6 +21,19 @@ static cl_mem CLcreateSubBuffer(	cl_mem		memobj,
 	buffer_info->size = bSize;
 	return clCreateSubBuffer(memobj, flags, CL_BUFFER_CREATE_TYPE_REGION, &buffer_info, err);
 }
+
+static cl_int CLGetMemObjectInfoParamSize(cl_mem                      memobj,
+                                          cl_mem_info             param_name,
+                                          size_t       *param_value_size_ret) {
+	return clGetMemObjInfo(memobj, param_name, NULL, NULL, param_value_size_ret);
+}
+
+static cl_int CLGetMemObjectInfoParamUnsafe(cl_mem                 memobj,
+                                            cl_mem_info        param_name,
+                                            size_t       param_value_size,
+                                            void             *param_value) {
+	return clGetMemObjInfo(memobj, param_name, param_value_size, param_value, NULL);
+}
 */
 import "C"
 

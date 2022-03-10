@@ -13,7 +13,7 @@ static cl_int CLGetPlatformInfoParamUnsafe(cl_platform_id            platform,
                                            cl_platform_info        param_name,
                                            size_t            param_value_size,
                                            void                  *param_value) {
-    return clGetPlatformInfo(platform, param_name, param_value_size, param_size, NULL);
+    return clGetPlatformInfo(platform, param_name, param_value_size, param_value, NULL);
 }
 */
 import "C"
