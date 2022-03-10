@@ -971,14 +971,14 @@ func (d *Device) ParentDevice() *Device {
 	var devId C.cl_device_id
 	var paramSize C.size_t
 	defer C.free(unsafe.Pointer(&devId))
-        defer C.free(unsafe.Pointer(&paramSize))
-        if err := C.CLGetDeviceInfoParamSize(d.nullableId(), C.CL_DEVICE_PARENT_DEVICE, &paramSize); err != C.CL_SUCCESS {
-                panic("Should never fail getting parameter size for device info")
-        }
-        if err := C.CLGetDeviceInfoParamUnsafe(d.nullableId(), C.CL_DEVICE_PARENT_DEVICE, paramSize, unsafe.Pointer(&devId)); err != C.CL_SUCCESS {
-                panic("Should never fail getting device info")
-        }
-        res := new(Device)
+	defer C.free(unsafe.Pointer(&paramSize))
+	if err := C.CLGetDeviceInfoParamSize(d.nullableId(), C.CL_DEVICE_PARENT_DEVICE, &paramSize); err != C.CL_SUCCESS {
+		panic("Should never fail getting parameter size for device info")
+	}
+	if err := C.CLGetDeviceInfoParamUnsafe(d.nullableId(), C.CL_DEVICE_PARENT_DEVICE, paramSize, unsafe.Pointer(&devId)); err != C.CL_SUCCESS {
+		panic("Should never fail getting device info")
+	}
+	res := new(Device)
 	res.id = devId
-        return res
+	return res
 }

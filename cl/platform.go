@@ -2,6 +2,19 @@ package cl
 
 /*
 #include "./opencl.h"
+
+static cl_int CLGetPlatformInfoParamSize(cl_platform_id                  platform,
+                                         cl_platform_info              param_name,
+                                         size_t             *param_value_size_ret) {
+    return clGetPlatformInfo(platform, param_name, NULL, NULL, param_value_size_ret);
+}
+
+static cl_int CLGetPlatformInfoParamUnsafe(cl_platform_id            platform,
+                                           cl_platform_info        param_name,
+                                           size_t            param_value_size,
+                                           void                  *param_value) {
+    return clGetPlatformInfo(platform, param_name, param_value_size, param_size, NULL);
+}
 */
 import "C"
 
@@ -37,12 +50,16 @@ func (p *Platform) GetDevices(deviceType DeviceType) ([]*Device, error) {
 }
 
 func (p *Platform) getInfoString(param C.cl_platform_info) (string, error) {
-	var strC [65536]byte
 	var strN C.size_t
-	if err := C.clGetPlatformInfo(p.id, param, 65536, unsafe.Pointer(&strC[0]), &strN); err != C.CL_SUCCESS {
+	if err := C.CLGetPlatformInfoParamSize(p.id, param, &strN); err != C.CL_SUCCESS {
 		return "", toError(err)
 	}
-	return string(strC[:(strN - 1)]), nil
+	strC := (*C.char)(C.calloc(strN, 1))
+	defer C.free(unsafe.Pointer(strC))
+	if err := C.CLGetPlatformInfoParamUnsafe(p.id, param, strN, unsafe.Pointer(strC)); err != C.CL_SUCCESS {
+		return "", toError(err)
+	}
+	return C.GoStringN(strC, C.int(strN-1)), nil
 }
 
 func (p *Platform) Name() string {
