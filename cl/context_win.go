@@ -1,5 +1,5 @@
-//go:build !windows
-// +build !windows
+//go:build windows
+// +build windows
 
 package cl
 
@@ -52,10 +52,12 @@ import (
 type ContextInfo int
 
 const (
-	ContextReferenceCount ContextInfo = C.CL_CONTEXT_REFERENCE_COUNT
-	ContextDevices        ContextInfo = C.CL_CONTEXT_DEVICES
-	ContextNumDevices     ContextInfo = C.CL_CONTEXT_NUM_DEVICES
-	ContextProperties     ContextInfo = C.CL_CONTEXT_PROPERTIES
+	ContextReferenceCount             ContextInfo = C.CL_CONTEXT_REFERENCE_COUNT
+	ContextDevices                    ContextInfo = C.CL_CONTEXT_DEVICES
+	ContextNumDevices                 ContextInfo = C.CL_CONTEXT_NUM_DEVICES
+	ContextProperties                 ContextInfo = C.CL_CONTEXT_PROPERTIES
+	ContextD3D10PreferSharedResources ContextInfo = C.CL_CONTEXT_D3D10_PREFER_SHARED_RESOURCES_KHR
+	ContextD3D11PreferSharedResources ContextInfo = C.CL_CONTEXT_D3D11_PREFER_SHARED_RESOURCES_KHR
 )
 
 type ContextPropertiesId int
@@ -234,6 +236,34 @@ func (ctx *Context) GetProperties() ([]CLContextProperties, error) {
 		return []CLContextProperties{}, toError(err)
 	}
 	return []CLContextProperties{}, toError(C.CL_INVALID_CONTEXT)
+}
+
+func (ctx *Context) D3D10SharingExtension() (bool, error) {
+	if ctx.clContext != nil {
+		var tmpRes C.cl_bool
+		var tmpCount C.size_t
+		defer C.free(unsafe.Pointer(&tmpRes))
+		defer C.free(unsafe.Pointer(&tmpCount))
+		if err := C.clGetContextInfo(ctx.clContext, C.cl_context_info(ContextD3D10PreferSharedResources), C.size_t(unsafe.Sizeof(tmpRes)), unsafe.Pointer(&tmpRes), &tmpCount); err != C.CL_SUCCESS {
+			return false, toError(err)
+		}
+		res := bool(tmpRes)
+		return res, nil
+	}
+}
+
+func (ctx *Context) D3D11SharingExtension() (bool, error) {
+	if ctx.clContext != nil {
+		var tmpRes C.cl_bool
+		var tmpCount C.size_t
+		defer C.free(unsafe.Pointer(&tmpRes))
+		defer C.free(unsafe.Pointer(&tmpCount))
+		if err := C.clGetContextInfo(ctx.clContext, C.cl_context_info(ContextD3D11PreferSharedResources), C.size_t(unsafe.Sizeof(tmpRes)), unsafe.Pointer(&tmpRes), &tmpCount); err != C.CL_SUCCESS {
+			return false, toError(err)
+		}
+		res := bool(tmpRes)
+		return res, nil
+	}
 }
 
 func (p *Platform) CreateContext(devList []*Device) (*Context, error) {
