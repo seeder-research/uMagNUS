@@ -5,6 +5,8 @@ package cl
 
 /*
 #include "./opencl.h"
+#include "CL/cl_d3d10.h"
+#include "CL/cl_d3d11.h"
 
 extern void go_ctx_notify(char *errinfo, void *private_info, int cb, void *user_data);
 static void CL_CALLBACK c_ctx_notify(const char *errinfo, const void *private_info, size_t cb, void *user_data) {
@@ -240,30 +242,26 @@ func (ctx *Context) GetProperties() ([]CLContextProperties, error) {
 
 func (ctx *Context) D3D10SharingExtension() (bool, error) {
 	if ctx.clContext != nil {
-		var tmpRes C.cl_bool
+		var tmpRes bool
 		var tmpCount C.size_t
-		defer C.free(unsafe.Pointer(&tmpRes))
-		defer C.free(unsafe.Pointer(&tmpCount))
 		if err := C.clGetContextInfo(ctx.clContext, C.cl_context_info(ContextD3D10PreferSharedResources), C.size_t(unsafe.Sizeof(tmpRes)), unsafe.Pointer(&tmpRes), &tmpCount); err != C.CL_SUCCESS {
 			return false, toError(err)
 		}
-		res := bool(tmpRes)
-		return res, nil
+		return tmpRes, nil
 	}
+	return false, toError(C.CL_INVALID_CONTEXT)
 }
 
 func (ctx *Context) D3D11SharingExtension() (bool, error) {
 	if ctx.clContext != nil {
-		var tmpRes C.cl_bool
+		var tmpRes bool
 		var tmpCount C.size_t
-		defer C.free(unsafe.Pointer(&tmpRes))
-		defer C.free(unsafe.Pointer(&tmpCount))
 		if err := C.clGetContextInfo(ctx.clContext, C.cl_context_info(ContextD3D11PreferSharedResources), C.size_t(unsafe.Sizeof(tmpRes)), unsafe.Pointer(&tmpRes), &tmpCount); err != C.CL_SUCCESS {
 			return false, toError(err)
 		}
-		res := bool(tmpRes)
-		return res, nil
+		return tmpRes, nil
 	}
+	return false, toError(C.CL_INVALID_CONTEXT)
 }
 
 func (p *Platform) CreateContext(devList []*Device) (*Context, error) {

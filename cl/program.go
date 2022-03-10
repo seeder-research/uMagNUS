@@ -83,11 +83,11 @@ static cl_int CLGetProgramBuildInfoParamUnsafe(           cl_program            
         return clGetProgramBuildInfo(program, device, param_name, param_value_size, param_value, NULL);
 }
 
-static cl_device_id GetCLDeviceFromArray(cl_device_id *arr, ulong idx) {
+static cl_device_id GetCLDeviceFromArray(cl_device_id *arr, unsigned long idx) {
 	return arr[idx];
 }
 
-static size_t GetSizeFromArray(size_t *arr, ulong idx) {
+static size_t GetSizeFromArray(size_t *arr, unsigned long idx) {
 	return arr[idx];
 }
 
@@ -138,11 +138,17 @@ func (e BuildError) Error() string {
 type Program struct {
 	clProgram C.cl_program
 	devices   []*Device
+	binaries  ProgramBinaries
 }
 
 type ProgramHeaders struct {
 	codes Program
 	names string
+}
+
+type ProgramBinaries struct {
+	binaryArray [][]byte
+	binaryPtrs  []*byte
 }
 
 ////////////////// Supporting Types ////////////////
@@ -700,38 +706,34 @@ func (p *Program) GetBinarySizes() ([]int, error) {
 	return returnCount, nil
 }
 
-func (p *Program) GetBinaries() ([]*uint8, error) {
+func (p *Program) GetBinaries() (*ProgramBinaries, error) {
 	binSizes, err := p.GetBinarySizes()
 	if err != nil {
 		panic("Unable to get program binary sizes")
 		return nil, toError(err)
 	}
-	arr := make([]*C.uchar, len(binSizes))
+	arr := make([][]byte, len(binSizes))
+	arrPtrs := make([]*byte, len(binSizes))
 	for ii := 0; ii < len(binSizes); ii++ {
 		if binSizes[ii] > 0 {
-			arr[ii] = (*C.uchar)(C.calloc(C.size_t(binSizes[ii]), (C.size_t)(C.sizeof_uchar)))
+			arr[ii] = make([]byte, binSizes[ii])
+			arrPtrs[ii] = &arr[ii][0]
 		} else {
-			arr[ii] = (*C.uchar)(C.calloc(1, 4))
+			arr[ii] = make([]byte, 1)
+			arrPtrs[ii] = nil
 		}
-		defer C.free(unsafe.Pointer(arr[ii]))
 	}
 	var tmpN C.size_t
-	defer C.free(unsafe.Pointer(&tmpN))
 	if errRet := C.CLGetProgramInfoParamSize(p.clProgram, C.CL_PROGRAM_BINARIES, &tmpN); errRet != C.CL_SUCCESS {
 		panic("fail to get full program binary size")
 		return nil, toError(errRet)
 	}
-	if errRet := C.CLGetProgramInfoParamUnsafe(p.clProgram, C.CL_PROGRAM_BINARIES, tmpN, (unsafe.Pointer)(&arr)); errRet != C.CL_SUCCESS {
+	if errRet := C.CLGetProgramInfoParamUnsafe(p.clProgram, C.CL_PROGRAM_BINARIES, tmpN, (unsafe.Pointer)(&arrPtrs)); errRet != C.CL_SUCCESS {
 		panic("fail to get program binaries")
 		return nil, toError(err)
 	}
 
-	//	returnBinaries := make([]*uint8, int(tmpN))
-	//	for i := 0; i < int(val); i++ {
-	//		returnBinaries[i] = arr[i]
-	//	}
-	//	return returnBinaries, nil
-	return nil, nil
+	return &ProgramBinaries{binaryArray: arr, binaryPtrs: arrPtrs}, nil
 }
 
 func (p *Program) GetKernelCounts() (int, error) {
@@ -805,4 +807,12 @@ func (ctx *Context) CreateProgramWithBinary(deviceList []*Device, program_length
 
 func (pf *Platform) UnloadCompiler() error {
 	return toError(C.clUnloadPlatformCompiler(pf.id))
+}
+
+func (pb *ProgramBinaries) GetBinaryArray() [][]byte {
+	return pb.binaryArray
+}
+
+func (pb *ProgramBinaries) GetBinaryArrayPointers() []*byte {
+	return pb.binaryPtrs
 }

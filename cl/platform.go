@@ -59,7 +59,8 @@ func (p *Platform) getInfoString(param C.cl_platform_info) (string, error) {
 	if err := C.CLGetPlatformInfoParamUnsafe(p.id, param, strN, unsafe.Pointer(strC)); err != C.CL_SUCCESS {
 		return "", toError(err)
 	}
-	return C.GoStringN(strC, C.int(strN-1)), nil
+	retString := C.GoStringN(strC, C.int(strN-1))
+	return retString, nil
 }
 
 func (p *Platform) Name() string {
