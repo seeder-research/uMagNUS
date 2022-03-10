@@ -25,14 +25,14 @@ static cl_mem CLcreateSubBuffer(	cl_mem		memobj,
 static cl_int CLGetMemObjectInfoParamSize(cl_mem                      memobj,
                                           cl_mem_info             param_name,
                                           size_t       *param_value_size_ret) {
-	return clGetMemObjInfo(memobj, param_name, NULL, NULL, param_value_size_ret);
+	return clGetMemObjectInfo(memobj, param_name, NULL, NULL, param_value_size_ret);
 }
 
 static cl_int CLGetMemObjectInfoParamUnsafe(cl_mem                 memobj,
                                             cl_mem_info        param_name,
                                             size_t       param_value_size,
                                             void             *param_value) {
-	return clGetMemObjInfo(memobj, param_name, param_value_size, param_value, NULL);
+	return clGetMemObjectInfo(memobj, param_name, param_value_size, param_value, NULL);
 }
 */
 import "C"
@@ -210,7 +210,7 @@ func (b *MemObject) GetType() (string, error) {
 		var tmp C.cl_mem_object_type
 		var tmpN C.size_t
 		defer C.free(unsafe.Pointer(&tmpN))
-		err := C.CLGetMemObjectInfoParamSize(b.clMem, C.CL_MEM_TYPE, unsafe.Pointer(&tmpN))
+		err := C.CLGetMemObjectInfoParamSize(b.clMem, C.CL_MEM_TYPE, &tmpN)
 		if toError(err) != nil {
 			return "Unknown", toError(err)
 		}
@@ -233,7 +233,7 @@ func (b *MemObject) GetContext() (*Context, error) {
 		var tmp C.cl_context
 		var tmpN C.size_t
 		defer C.free(unsafe.Pointer(&tmpN))
-		err := C.CLGetMemObjectInfoParamSize(b.clMem, C.CL_MEM_CONTEXT, unsafe.Pointer(&tmpN))
+		err := C.CLGetMemObjectInfoParamSize(b.clMem, C.CL_MEM_CONTEXT, &tmpN)
 		if toError(err) != nil {
 			return nil, nil
 		}
@@ -251,7 +251,7 @@ func (b *MemObject) GetSize() (int, error) {
 		var tmp C.size_t
 		var tmpN C.size_t
 		defer C.free(unsafe.Pointer(&tmpN))
-		err := C.CLGetMemObjectInfoParamSize(b.clMem, C.CL_MEM_SIZE, unsafe.Pointer(&tmpN))
+		err := C.CLGetMemObjectInfoParamSize(b.clMem, C.CL_MEM_SIZE, &tmpN)
 		if toError(err) != nil {
 			return int(-1), toError(err)
 		}
@@ -269,7 +269,7 @@ func (b *MemObject) GetRefenceCount() (int, error) {
 		var tmp C.cl_uint
 		var tmpN C.size_t
 		defer C.free(unsafe.Pointer(&tmpN))
-		err := C.CLGetMemObjectInfoParamSize(b.clMem, C.CL_MEM_REFERENCE_COUNT, unsafe.Pointer(&tmpN))
+		err := C.CLGetMemObjectInfoParamSize(b.clMem, C.CL_MEM_REFERENCE_COUNT, &tmpN)
 		if toError(err) != nil {
 			return 0, toError(err)
 		}
@@ -287,7 +287,7 @@ func (b *MemObject) GetMapCount() (int, error) {
 		var tmp C.cl_uint
 		var tmpN C.size_t
 		defer C.free(unsafe.Pointer(&tmpN))
-		err := C.CLGetMemObjectInfoParamSize(b.clMem, C.CL_MEM_MAP_COUNT, unsafe.Pointer(&tmpN))
+		err := C.CLGetMemObjectInfoParamSize(b.clMem, C.CL_MEM_MAP_COUNT, &tmpN)
 		if toError(err) != nil {
 			return 0, toError(err)
 		}
@@ -305,7 +305,7 @@ func (b *MemObject) GetHostPtr() (unsafe.Pointer, error) {
 		var tmp unsafe.Pointer
 		var tmpN C.size_t
 		defer C.free(unsafe.Pointer(&tmpN))
-		err := C.CLGetMemObjectInfoParamSize(b.clMem, C.CL_MEM_HOST_PTR, unsafe.Pointer(&tmpN))
+		err := C.CLGetMemObjectInfoParamSize(b.clMem, C.CL_MEM_HOST_PTR, &tmpN)
 		if toError(err) != nil {
 			return nil, toError(err)
 		}
@@ -323,7 +323,7 @@ func (b *MemObject) GetFlags() (MemFlag, error) {
 		var tmp C.cl_mem_flags
 		var tmpN C.size_t
 		defer C.free(unsafe.Pointer(&tmpN))
-		err := C.CLGetMemObjectInfoParamSize(b.clMem, C.CL_MEM_FLAGS, unsafe.Pointer(&tmpN))
+		err := C.CLGetMemObjectInfoParamSize(b.clMem, C.CL_MEM_FLAGS, &tmpN)
 		if toError(err) != nil {
 			return -1, toError(err)
 		}
@@ -356,7 +356,7 @@ func (b *MemObject) IsWriteable() (bool, error) {
 		var tmp C.cl_mem_flags
 		var tmpN C.size_t
 		defer C.free(unsafe.Pointer(&tmpN))
-		err := C.CLGetMemObjectInfoParamSize(b.clMem, C.CL_MEM_FLAGS, unsafe.Pointer(&tmpN))
+		err := C.CLGetMemObjectInfoParamSize(b.clMem, C.CL_MEM_FLAGS, &tmpN)
 		if toError(err) != nil {
 			return false, toError(err)
 		}
@@ -381,7 +381,7 @@ func (b *MemObject) GetOffset() (int, error) {
 		var tmp C.size_t
 		var tmpN C.size_t
 		defer C.free(unsafe.Pointer(&tmpN))
-		err := C.CLGetMemObjectInfoParamSize(b.clMem, C.CL_MEM_OFFSET, unsafe.Pointer(&tmpN))
+		err := C.CLGetMemObjectInfoParamSize(b.clMem, C.CL_MEM_OFFSET, &tmpN)
 		if toError(err) != nil {
 			return int(-1), toError(err)
 		}
@@ -399,7 +399,7 @@ func (b *MemObject) GetAssociatedMemObject() (*MemObject, error) {
 		var tmp C.cl_mem
 		var tmpN C.size_t
 		defer C.free(unsafe.Pointer(&tmpN))
-		err := C.CLGetMemObjectInfoParamSize(b.clMem, C.CL_MEM_ASSOCIATED_MEMOBJECT, unsafe.Pointer(&tmpN))
+		err := C.CLGetMemObjectInfoParamSize(b.clMem, C.CL_MEM_ASSOCIATED_MEMOBJECT, &tmpN)
 		if toError(err) != nil {
 			return nil, toError(err)
 		}

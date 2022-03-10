@@ -107,11 +107,11 @@ func (q *CommandQueue) GetQueueContext() (*Context, error) {
 		var outContext C.cl_context
 		var tmpN C.size_t
 		defer C.free(unsafe.Pointer(&tmpN))
-		err := C.CLGetCommandQueueInfoParamSize(q.clQueue, C.CL_QUEUE_CONTEXT, unsafe.Pointer(&tmpN))
+		err := C.CLGetCommandQueueInfoParamSize(q.clQueue, C.CL_QUEUE_CONTEXT, &tmpN)
 		if toError(err) != nil {
 			return nil, toError(err)
 		}
-		err = C.CLGetCommandQueueInfoParamSize(q.clQueue, C.CL_QUEUE_CONTEXT, tmpN, unsafe.Pointer(&outContext))
+		err = C.CLGetCommandQueueInfoParamUnsafe(q.clQueue, C.CL_QUEUE_CONTEXT, tmpN, unsafe.Pointer(&outContext))
 		if toError(err) != nil {
 			return nil, toError(err)
 		}
@@ -125,11 +125,11 @@ func (q *CommandQueue) GetQueueDevice() (*Device, error) {
 		var outDevice C.cl_device_id
 		var tmpN C.size_t
 		defer C.free(unsafe.Pointer(&tmpN))
-		err := C.CLGetCommandQueueInfoParamSize(q.clQueue, C.CL_QUEUE_DEVICE, unsafe.Pointer(&tmpN))
+		err := C.CLGetCommandQueueInfoParamSize(q.clQueue, C.CL_QUEUE_DEVICE, &tmpN)
 		if toError(err) != nil {
 			return nil, toError(err)
 		}
-		err = C.CLGetCommandQueueInfoParamSize(q.clQueue, C.CL_QUEUE_DEVICE, tmpN, unsafe.Pointer(&outDevice))
+		err = C.CLGetCommandQueueInfoParamUnsafe(q.clQueue, C.CL_QUEUE_DEVICE, tmpN, unsafe.Pointer(&outDevice))
 		if toError(err) != nil {
 			return nil, toError(err)
 		}
@@ -143,11 +143,11 @@ func (q *CommandQueue) GetQueueReferenceCount() (CLUint, error) {
 		var outCount C.cl_uint
 		var tmpN C.size_t
 		defer C.free(unsafe.Pointer(&tmpN))
-		err := C.CLGetCommandQueueInfoParamSize(q.clQueue, C.CL_QUEUE_REFERENCE_COUNT, unsafe.Pointer(&tmpN))
+		err := C.CLGetCommandQueueInfoParamSize(q.clQueue, C.CL_QUEUE_REFERENCE_COUNT, &tmpN)
 		if toError(err) != nil {
 			return 0, toError(err)
 		}
-		err = C.CLGetCommandQueueInfoParamSize(q.clQueue, C.CL_QUEUE_REFERENCE_COUNT, tmpN, unsafe.Pointer(&outCount))
+		err = C.CLGetCommandQueueInfoParamUnsafe(q.clQueue, C.CL_QUEUE_REFERENCE_COUNT, tmpN, unsafe.Pointer(&outCount))
 		if toError(err) != nil {
 			return 0, toError(err)
 		}
@@ -161,11 +161,11 @@ func (q *CommandQueue) GetQueueProperties() (CommandQueueProperty, error) {
 		var outVar CommandQueueProperty
 		var tmpN C.size_t
 		defer C.free(unsafe.Pointer(&tmpN))
-		err := C.CLGetCommandQueueInfoParamSize(q.clQueue, C.CL_QUEUE_PROPERTIES, unsafe.Pointer(&tmpN))
+		err := C.CLGetCommandQueueInfoParamSize(q.clQueue, C.CL_QUEUE_PROPERTIES, &tmpN)
 		if toError(err) != nil {
 			return 0, toError(err)
 		}
-		err = C.CLGetCommandQueueInfoParamSize(q.clQueue, C.CL_QUEUE_PROPERTIES, tmpN, unsafe.Pointer(&outVar))
+		err = C.CLGetCommandQueueInfoParamUnsafe(q.clQueue, C.CL_QUEUE_PROPERTIES, tmpN, unsafe.Pointer(&outVar))
 		if toError(err) != nil {
 			return 0, toError(err)
 		}

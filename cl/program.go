@@ -83,6 +83,14 @@ static cl_int CLGetProgramBuildInfoParamUnsafe(           cl_program            
         return clGetProgramBuildInfo(program, device, param_name, param_value_size, param_value, NULL);
 }
 
+static cl_device_id GetCLDeviceFromArray(cl_device_id *arr, ulong idx) {
+	return arr[idx];
+}
+
+static size_t GetSizeFromArray(size_t *arr, ulong idx) {
+	return arr[idx];
+}
+
 */
 import "C"
 
@@ -552,7 +560,7 @@ func (p *Program) GetBuildStatus(device *Device) (BuildStatus, error) {
 	var tmpN C.size_t
 	defer C.free(unsafe.Pointer(&tmpN))
 	defer C.free(unsafe.Pointer(&buildStatus))
-	err := C.CLGetProgramBuildInfoParamSize(p.clProgram, device.id, C.CL_PROGRAM_BUILD_STATUS, unsafe.Pointer(&tmpN))
+	err := C.CLGetProgramBuildInfoParamSize(p.clProgram, device.id, C.CL_PROGRAM_BUILD_STATUS, &tmpN)
 	if err != C.CL_SUCCESS {
 		return BuildStatusError, toError(err)
 	}
@@ -572,7 +580,7 @@ func (p *Program) GetBuildOptions(device *Device) (string, error) {
 		return "", toError(err)
 	}
 	strC := (*C.char)(C.calloc(strN, 1))
-	defer C.free(strC)
+	defer C.free(unsafe.Pointer(strC))
 	if err := C.CLGetProgramBuildInfoParamUnsafe(p.clProgram, device.id, C.CL_PROGRAM_BUILD_OPTIONS, strN, unsafe.Pointer(strC)); err != C.CL_SUCCESS {
 		panic("Should never fail getting build options for program")
 		return "", toError(err)
@@ -591,7 +599,7 @@ func (p *Program) GetBuildLog(device *Device) (string, error) {
 		return "", toError(err)
 	}
 	strC := (*C.char)(C.calloc(strN, 1))
-	defer C.free(strC)
+	defer C.free(unsafe.Pointer(strC))
 	if err := C.CLGetProgramBuildInfoParamUnsafe(p.clProgram, device.id, C.CL_PROGRAM_BUILD_LOG, strN, unsafe.Pointer(strC)); err != C.CL_SUCCESS {
 		panic("Should never fail getting build log for program")
 		return "", toError(err)
@@ -640,9 +648,7 @@ func (p *Program) GetDeviceCount() (int, error) {
 
 func (p *Program) GetDevices() ([]*Device, error) {
 	cnts, _ := p.GetDeviceCount()
-	var val C.cl_device_id
-	arr := (*C.cl_device_id)(C.calloc((C.size_t)(cnts), unsafe.Sizeof(val)))
-	defer C.free(unsafe.Pointer(&val))
+	arr := (*C.cl_device_id)(C.calloc((C.size_t)(cnts), C.sizeof_cl_device_id))
 	defer C.free(unsafe.Pointer(arr))
 	if err := C.CLGetProgramInfoParamUnsafe(p.clProgram, C.CL_PROGRAM_DEVICES, C.size_t(cnts), (unsafe.Pointer)(arr)); err != C.CL_SUCCESS {
 		panic("Should never fail")
@@ -651,7 +657,7 @@ func (p *Program) GetDevices() ([]*Device, error) {
 
 	returnDevices := make([]*Device, int(cnts))
 	for i := 0; i < int(cnts); i++ {
-		returnDevices[i] = &Device{id: arr[i]}
+		returnDevices[i] = &Device{id: C.GetCLDeviceFromArray(arr, (C.ulong)(i))}
 	}
 	return returnDevices, nil
 }
@@ -665,7 +671,7 @@ func (p *Program) GetSource() (string, error) {
 	}
 	strC := (*C.char)(C.calloc(strN, 1))
 	defer C.free(unsafe.Pointer(strC))
-	if err := C.CLGetProgramInfoParamUnsafe(p.clProgram, C.CL_PROGRAM_SOURCE, strN, strC); err != C.CL_SUCCESS {
+	if err := C.CLGetProgramInfoParamUnsafe(p.clProgram, C.CL_PROGRAM_SOURCE, strN, unsafe.Pointer(strC)); err != C.CL_SUCCESS {
 		panic("Should never fail")
 		return "", toError(err)
 	}
@@ -683,9 +689,8 @@ func (p *Program) GetBinarySizes() ([]int, error) {
 		return nil, toError(err)
 	}
 
-	valSize := unsafe.Sizeof(val)
-	numEntries := val / valSize
-	arr := (*C.size_t)(C.calloc(numEntries, valSize))
+	numEntries := val / (C.size_t)(C.sizeof_size_t)
+	arr := (*C.size_t)(C.calloc(numEntries, (C.size_t)(C.sizeof_size_t)))
 	defer C.free(unsafe.Pointer(arr))
 	if err := C.CLGetProgramInfoParamUnsafe(p.clProgram, C.CL_PROGRAM_BINARY_SIZES, val, (unsafe.Pointer)(arr)); err != C.CL_SUCCESS {
 		panic("Should never fail")
@@ -693,25 +698,44 @@ func (p *Program) GetBinarySizes() ([]int, error) {
 	}
 	returnCount := make([]int, int(numEntries))
 	for i := 0; i < int(numEntries); i++ {
-		returnCount[i] = int(arr[i])
+		returnCount[i] = int(C.GetSizeFromArray(arr, (C.ulong)(i)))
 	}
 	return returnCount, nil
 }
 
 func (p *Program) GetBinaries() ([]*uint8, error) {
-	var item *uint8
-	var val C.size_t
-	var arr []*uint8
-	if err := C.clGetProgramInfo(p.clProgram, C.CL_PROGRAM_BINARIES, C.size_t(unsafe.Sizeof(item)), (unsafe.Pointer)(&arr), &val); err != C.CL_SUCCESS {
-		panic("Should never fail")
+	binSizes, err := p.GetBinarySizes()
+	if err != nil {
+		panic("Unable to get program binary sizes")
+		return nil, toError(err)
+	}
+	arr := (*C.uchar)(C.calloc((C.size_t)(len(binSizes)), (C.size_t)(C.sizeof_uchar)))
+	for ii := 0; ii < len(binSizes); ii++ {
+		if binSizes[ii] > 0 {
+			arr[ii] = (*C.uchar)(C.calloc(C.size_t(binSizes[ii]), (C.size_t)(C.sizeof_uchar)))
+		} else {
+			arr[ii] = (*C.uchar)(C.calloc(1, 4))
+		}
+		defer C.free(unsafe.Pointer(arr[ii]))
+	}
+	defer C.free(unsafe.Pointer(arr))
+	var tmpN C.size_t
+	defer C.free(unsafe.Pointer(&tmpN))
+	if errRet := C.CLGetProgramInfoParamSize(p.clProgram, C.CL_PROGRAM_BINARIES, &tmpN); errRet != C.CL_SUCCESS {
+		panic("fail to get full program binary size")
+		return nil, toError(errRet)
+	}
+	if errRet := C.CLGetProgramInfoParamUnsafe(p.clProgram, C.CL_PROGRAM_BINARIES, tmpN, (unsafe.Pointer)(&arr)); errRet != C.CL_SUCCESS {
+		panic("fail to get program binaries")
 		return nil, toError(err)
 	}
 
-	returnBinaries := make([]*uint8, int(val))
-	for i := 0; i < int(val); i++ {
-		returnBinaries[i] = arr[i]
-	}
-	return returnBinaries, nil
+	//	returnBinaries := make([]*uint8, int(tmpN))
+	//	for i := 0; i < int(val); i++ {
+	//		returnBinaries[i] = arr[i]
+	//	}
+	//	return returnBinaries, nil
+	return nil, nil
 }
 
 func (p *Program) GetKernelCounts() (int, error) {
