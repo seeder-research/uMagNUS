@@ -178,21 +178,18 @@ func main() {
 			tmpContext.Release()
 			log.Panic(err)
 		}
-		if bins == nil {
-			fmt.Println("        Great!!")
-		}
 
-//		binsArrays := bins.GetBinaryArray()
-//		binsArraysPtrs := bins.GetBinaryArrayPointers()
-//		fmt.Printf("      Check of number of binaries: %+v ; Expected %+v \n", len(binsArraysPtrs), len(binSizes))
-//		if len(binsArraysPtrs) == len(binSizes) {
-//			for idx, binSz := range binSizes {
-//				fmt.Printf("        Check binary size: %+v \n", len(binsArrays[idx]))
-//				fmt.Printf("              Expect size: %+v \n", binSz)
-//			}
-//		} else {
-//			fmt.Println("   Expected binary sizes do not match!")
-//		}
+		binsArrays := bins.GetBinaryArray()
+		binsArraysPtrs := bins.GetBinaryArrayPointers()
+		fmt.Printf("      Check of number of binaries: %+v ; Expected %+v \n", len(binsArraysPtrs), len(binSizes))
+		if len(binsArraysPtrs) == len(binSizes) {
+			for idx, binSz := range binSizes {
+				fmt.Printf("        Check binary size: %+v \n", len(binsArrays[idx]))
+				fmt.Printf("              Expect size: %+v \n", binSz)
+			}
+		} else {
+			fmt.Println("   Expected binary sizes do not match!")
+		}
 
 		if *Flag_verbose > 2 {
 			fmt.Println("    Releasing program on GPU: ", gpuId)

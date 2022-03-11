@@ -2,6 +2,7 @@ package cl
 
 /*
 #include "./opencl.h"
+#include <stdio.h>
 extern void go_program_notify(cl_program alt_program, void *user_data);
 extern void go_compile_program_notify(cl_program alt_program, void *user_data);
 extern void go_link_program_notify(cl_program alt_program, void *user_data);
@@ -94,7 +95,7 @@ static cl_int CLGetProgramBinary(  cl_program                        program,
 	}
 	size_t numBinaries = param_value_size_ret / sizeof(size_t);
 	size_t* binSizesPtr;
-	binSizesPtr = (size_t *) malloc(param_value_size_ret);
+	binSizesPtr = (size_t *) calloc(param_value_size_ret, 1);
 	if (binSizesPtr == NULL) {
 		return -1;
 	}
@@ -118,21 +119,28 @@ static cl_int CLGetProgramBinary(  cl_program                        program,
 		return -4;
 	}
 	cl_int err1 = -1;
-	for (size_t ii = 0; ii < param_value_size_ret; ii++) {
-		binaryArrayPtrs[ii] = (unsigned char *) malloc(binSizesPtr[ii]);
-		if (binaryArrayPtrs[ii] == NULL) {
-			err1 = ii;
-			break;
+	for (size_t ii = 0; ii < numBinaries; ii++) {
+		size_t lBinSize = binSizesPtr[ii];
+		if (lBinSize > 0) {
+			binaryArrayPtrs[ii] = (unsigned char *) malloc(lBinSize);
+			if (binaryArrayPtrs[ii] == NULL) {
+				err1 = ii;
+				break;
+			}
+		} else {
+			binaryArrayPtrs[ii] = NULL;
 		}
 	}
 	if (err1 != -1) {
 		for (size_t ii = 0; ii < (size_t)(err1); ii++) {
-			free(binaryArrayPtrs[ii]);
+			if (binaryArrayPtrs[ii] != NULL) {
+				free(binaryArrayPtrs[ii]);
+			}
 		}
 		free(binSizesPtr);
 		return -5;
 	}
-	err0 = clGetProgramInfo(program, CL_PROGRAM_BINARIES, param_value_size_ret, (void *)binaryArrayPtrs, NULL);
+	err0 = clGetProgramInfo(program, CL_PROGRAM_BINARIES, sizeof(unsigned char *) * numBinaries, (void *)binaryArrayPtrs, NULL);
 	if (err0 != CL_SUCCESS) {
 		return err0;
 	}
