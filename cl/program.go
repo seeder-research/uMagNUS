@@ -83,43 +83,66 @@ static cl_int CLGetProgramBuildInfoParamUnsafe(           cl_program            
         return clGetProgramBuildInfo(program, device, param_name, param_value_size, param_value, NULL);
 }
 
-static cl_int CLGetProgramBinary(                  cl_program                  program,
-                                           const cl_program_info            param_name,
-						 unsigned int                deviceIdx,
-                                                  size_t              param_value_size,
-                                                   void                   *param_value)
-) {
+static cl_int CLGetProgramBinary(  cl_program                        program,
+				   unsigned int                    deviceIdx,
+                                     size_t                 param_value_size,
+                                      void                      *param_value) {
 	size_t param_value_size_ret;
 	cl_int err0 = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES, NULL, NULL, &param_value_size_ret);
-	if (err0 != 0) {
+	if (err0 != CL_SUCCESS) {
 		return err0;
 	}
+	size_t numBinaries = param_value_size_ret / sizeof(size_t);
 	size_t* binSizesPtr;
-	binSizesPtr = (size_t *) malloc(param_value_size_ret * sizeof(size_t));
-	if (binSizesPtrr == NULL) {
+	binSizesPtr = (size_t *) malloc(param_value_size_ret);
+	if (binSizesPtr == NULL) {
 		return -1;
 	}
 	err0 = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES, param_value_size_ret, (void *)(binSizesPtr), NULL);
-	if (err0 != 0) {
+	if (err0 != CL_SUCCESS) {
+		free(binSizesPtr);
 		return err0;
 	}
-	unsigned char ** binaryArrayPtrs;
-	binaryArrayPtrs = (unsigned char *) malloc(param_value_size_ret * sizeof(unsigned char *));
-	if (binaryArrayPtrs == NULL) {
-		return -1;
+	if ((size_t)(deviceIdx) >= numBinaries) {
+		free(binSizesPtr);
+		return -2;
 	}
-	cl_int err1 = 0;
+	if (binSizesPtr[deviceIdx] > param_value_size) {
+		free(binSizesPtr);
+		return -3;
+	}
+	unsigned char ** binaryArrayPtrs;
+	binaryArrayPtrs = (unsigned char **) malloc(numBinaries * sizeof(unsigned char *));
+	if (binaryArrayPtrs == NULL) {
+		free(binSizesPtr);
+		return -4;
+	}
+	cl_int err1 = -1;
 	for (size_t ii = 0; ii < param_value_size_ret; ii++) {
-		binaryArrayPtrs[ii] = (unsigned char *) malloc(binSizesPtr[ii] * sizeof(unsigned char));
+		binaryArrayPtrs[ii] = (unsigned char *) malloc(binSizesPtr[ii]);
 		if (binaryArrayPtrs[ii] == NULL) {
-			err1 = -1;
+			err1 = ii;
 			break;
 		}
 	}
-	if (err1 != 0) {
-		return -1;
+	if (err1 != -1) {
+		for (size_t ii = 0; ii < (size_t)(err1); ii++) {
+			free(binaryArrayPtrs[ii]);
+		}
+		free(binSizesPtr);
+		return -5;
 	}
-	return 0;
+	err0 = clGetProgramInfo(program, CL_PROGRAM_BINARIES, param_value_size_ret, (void *)binaryArrayPtrs, NULL);
+	if (err0 != CL_SUCCESS) {
+		return err0;
+	}
+	memcpy(param_value, binaryArrayPtrs[deviceIdx], binSizesPtr[deviceIdx]);
+	for (size_t ii = 0; ii < numBinaries; ii++) {
+		free(binaryArrayPtrs[ii]);
+	}
+	free(binaryArrayPtrs);
+	free(binSizesPtr);
+	return CL_SUCCESS;
 }
 
 static cl_device_id GetCLDeviceFromArray(cl_device_id *arr, unsigned long idx) {
@@ -187,7 +210,7 @@ type ProgramHeaders struct {
 
 type ProgramBinaries struct {
 	binaryArray [][]byte
-	binaryPtrs  []unsafe.Pointer
+	binaryPtrs  []*byte
 }
 
 ////////////////// Supporting Types ////////////////
@@ -752,28 +775,22 @@ func (p *Program) GetBinaries() (*ProgramBinaries, error) {
 		return nil, toError(err)
 	}
 	arr := make([][]byte, len(binSizes))
-	arrPtrs := make([]unsafe.Pointer, len(binSizes))
+	arrPtrs := make([]*byte, len(binSizes))
 	for ii := 0; ii < len(binSizes); ii++ {
 		if binSizes[ii] > 0 {
 			arr[ii] = make([]byte, binSizes[ii])
-			arrPtrs[ii] = (unsafe.Pointer)(C.calloc((C.ulong)(binSizes[ii]), 1))
+			arrPtrs[ii] = &arr[ii][0]
+			errRet := C.CLGetProgramBinary(p.clProgram, (C.uint)(ii), (C.size_t)(binSizes[ii]), (unsafe.Pointer)(arrPtrs[ii]))
+			if errRet != C.CL_SUCCESS {
+				return nil, toError(errRet)
+			}
 		} else {
 			arr[ii] = make([]byte, 1)
 			arrPtrs[ii] = nil
 		}
 	}
-	var tmpN C.size_t
-	if errRet := C.CLGetProgramInfoParamSize(p.clProgram, C.CL_PROGRAM_BINARIES, &tmpN); errRet != C.CL_SUCCESS {
-		panic("fail to get full program binary size")
-		return nil, toError(errRet)
-	}
-	if errRet := C.CLGetProgramInfoParamUnsafe(p.clProgram, C.CL_PROGRAM_BINARIES, tmpN, (unsafe.Pointer)(&arrPtrs)); errRet != C.CL_SUCCESS {
-		panic("fail to get program binaries")
-		return nil, toError(err)
-	}
 
-//	return &ProgramBinaries{binaryArray: arr, binaryPtrs: arrPtrs}, nil
-	return nil, nil
+	return &ProgramBinaries{binaryArray: arr, binaryPtrs: arrPtrs}, nil
 }
 
 func (p *Program) GetKernelCounts() (int, error) {
@@ -853,6 +870,6 @@ func (pb *ProgramBinaries) GetBinaryArray() [][]byte {
 	return pb.binaryArray
 }
 
-func (pb *ProgramBinaries) GetBinaryArrayPointers() []unsafe.Pointer {
+func (pb *ProgramBinaries) GetBinaryArrayPointers() []*byte {
 	return pb.binaryPtrs
 }
