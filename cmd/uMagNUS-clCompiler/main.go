@@ -103,33 +103,33 @@ func main() {
 		buildOpts = buildOpts + generateLinkerOpts()
 		fmt.Println("        using options: ", buildOpts)
 		err = tmpProgram.BuildProgram([]*cl.Device{GPUList[gpuId].Device}, buildOpts)
-                if err != nil {
-                        fmt.Println("    Error building binary for program on GPU.")
-                        tmpProgram.Release()
-                        tmpContext.Release()
-                        log.Panic(err)
-                }
-                ShowBuildLog(tmpProgram, GPUList[gpuId].Device)
-                binType, err = tmpProgram.GetProgramBinaryType(GPUList[gpuId].Device)
-                if err != nil {
-                        fmt.Println("    Error getting binary type for program on GPU.")
-                        tmpContext.Release()
-                        log.Panic(err)
-                }
-                if *Flag_verbose > 2 {
-                        switch binType {
-                        case cl.ProgramBinaryTypeNone:
-                                fmt.Println("      No compiled binaries available in program.")
-                        case cl.ProgramBinaryTypeCompiledObject:
-                                fmt.Println("      Compiled object available in program.")
-                        case cl.ProgramBinaryTypeLibrary:
-                                fmt.Println("      Compiled library available in program.")
-                        case cl.ProgramBinaryTypeExecutable:
-                                fmt.Println("      Compiled executable available in program.")
-                        default:
-                                fmt.Println("      Unknown binary type in program.")
-                        }
-                }
+		if err != nil {
+			fmt.Println("    Error building binary for program on GPU.")
+			tmpProgram.Release()
+			tmpContext.Release()
+			log.Panic(err)
+		}
+		ShowBuildLog(tmpProgram, GPUList[gpuId].Device)
+		binType, err = tmpProgram.GetProgramBinaryType(GPUList[gpuId].Device)
+		if err != nil {
+			fmt.Println("    Error getting binary type for program on GPU.")
+			tmpContext.Release()
+			log.Panic(err)
+		}
+		if *Flag_verbose > 2 {
+			switch binType {
+			case cl.ProgramBinaryTypeNone:
+				fmt.Println("      No compiled binaries available in program.")
+			case cl.ProgramBinaryTypeCompiledObject:
+				fmt.Println("      Compiled object available in program.")
+			case cl.ProgramBinaryTypeLibrary:
+				fmt.Println("      Compiled library available in program.")
+			case cl.ProgramBinaryTypeExecutable:
+				fmt.Println("      Compiled executable available in program.")
+			default:
+				fmt.Println("      Unknown binary type in program.")
+			}
+		}
 
 		var kernNum int
 		kernNum, err = tmpProgram.GetKernelCounts()
@@ -144,12 +144,12 @@ func main() {
 		}
 		var kernNames string
 		kernNames, err = tmpProgram.GetKernelNames()
-                if err != nil {
-                        fmt.Println("    Error getting kernel names for linked program on GPU.")
-                        tmpProgram.Release()
-                        tmpContext.Release()
-                        log.Panic(err)
-                }
+		if err != nil {
+			fmt.Println("    Error getting kernel names for linked program on GPU.")
+			tmpProgram.Release()
+			tmpContext.Release()
+			log.Panic(err)
+		}
 		kernNameArray := strings.Split(kernNames, ";")
 		fmt.Println("  Kernels in program:")
 		for _, kn := range kernNameArray {
@@ -158,28 +158,41 @@ func main() {
 
 		var binSizes []int
 		binSizes, err = tmpProgram.GetBinarySizes()
-                if err != nil {
-                        fmt.Println("    Error getting binary sizes program on GPU.")
-                        tmpProgram.Release()
-                        tmpContext.Release()
-                        log.Panic(err)
-                }
+		if err != nil {
+			fmt.Println("    Error getting binary sizes program on GPU.")
+			tmpProgram.Release()
+			tmpContext.Release()
+			log.Panic(err)
+		}
 
 		fmt.Println("  Number of program binaries: ", len(binSizes))
 		for idx, binSz := range binSizes {
 			fmt.Printf("    Size of program binary number %+v: %+v bytes\n", idx+1, binSz)
 		}
 
-//		var bins []*uint8
-//		bins, err = tmpProgram.GetBinaries()
-//                if err != nil {
-//                        fmt.Println("    Error getting binaries for program on GPU.")
-//                        tmpProgram.Release()
-//                        tmpContext.Release()
-//                        log.Panic(err)
-//                }
+		var bins *cl.ProgramBinaries
+		bins, err = tmpProgram.GetBinaries()
+		if err != nil {
+			fmt.Println("    Error getting binaries for program on GPU.")
+			tmpProgram.Release()
+			tmpContext.Release()
+			log.Panic(err)
+		}
+		if bins == nil {
+			fmt.Println("        Great!!")
+		}
 
-//		fmt.Printf("      Check of number of binaries: %+v \n", len(bins))
+//		binsArrays := bins.GetBinaryArray()
+//		binsArraysPtrs := bins.GetBinaryArrayPointers()
+//		fmt.Printf("      Check of number of binaries: %+v ; Expected %+v \n", len(binsArraysPtrs), len(binSizes))
+//		if len(binsArraysPtrs) == len(binSizes) {
+//			for idx, binSz := range binSizes {
+//				fmt.Printf("        Check binary size: %+v \n", len(binsArrays[idx]))
+//				fmt.Printf("              Expect size: %+v \n", binSz)
+//			}
+//		} else {
+//			fmt.Println("   Expected binary sizes do not match!")
+//		}
 
 		if *Flag_verbose > 2 {
 			fmt.Println("    Releasing program on GPU: ", gpuId)
@@ -190,8 +203,4 @@ func main() {
 		}
 		tmpContext.Release()
 	}
-}
-
-// print version to stdout
-func printVersion() {
 }

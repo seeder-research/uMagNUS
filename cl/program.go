@@ -83,6 +83,45 @@ static cl_int CLGetProgramBuildInfoParamUnsafe(           cl_program            
         return clGetProgramBuildInfo(program, device, param_name, param_value_size, param_value, NULL);
 }
 
+static cl_int CLGetProgramBinary(                  cl_program                  program,
+                                           const cl_program_info            param_name,
+						 unsigned int                deviceIdx,
+                                                  size_t              param_value_size,
+                                                   void                   *param_value)
+) {
+	size_t param_value_size_ret;
+	cl_int err0 = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES, NULL, NULL, &param_value_size_ret);
+	if (err0 != 0) {
+		return err0;
+	}
+	size_t* binSizesPtr;
+	binSizesPtr = (size_t *) malloc(param_value_size_ret * sizeof(size_t));
+	if (binSizesPtrr == NULL) {
+		return -1;
+	}
+	err0 = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES, param_value_size_ret, (void *)(binSizesPtr), NULL);
+	if (err0 != 0) {
+		return err0;
+	}
+	unsigned char ** binaryArrayPtrs;
+	binaryArrayPtrs = (unsigned char *) malloc(param_value_size_ret * sizeof(unsigned char *));
+	if (binaryArrayPtrs == NULL) {
+		return -1;
+	}
+	cl_int err1 = 0;
+	for (size_t ii = 0; ii < param_value_size_ret; ii++) {
+		binaryArrayPtrs[ii] = (unsigned char *) malloc(binSizesPtr[ii] * sizeof(unsigned char));
+		if (binaryArrayPtrs[ii] == NULL) {
+			err1 = -1;
+			break;
+		}
+	}
+	if (err1 != 0) {
+		return -1;
+	}
+	return 0;
+}
+
 static cl_device_id GetCLDeviceFromArray(cl_device_id *arr, unsigned long idx) {
 	return arr[idx];
 }
@@ -148,7 +187,7 @@ type ProgramHeaders struct {
 
 type ProgramBinaries struct {
 	binaryArray [][]byte
-	binaryPtrs  []*byte
+	binaryPtrs  []unsafe.Pointer
 }
 
 ////////////////// Supporting Types ////////////////
@@ -713,11 +752,11 @@ func (p *Program) GetBinaries() (*ProgramBinaries, error) {
 		return nil, toError(err)
 	}
 	arr := make([][]byte, len(binSizes))
-	arrPtrs := make([]*byte, len(binSizes))
+	arrPtrs := make([]unsafe.Pointer, len(binSizes))
 	for ii := 0; ii < len(binSizes); ii++ {
 		if binSizes[ii] > 0 {
 			arr[ii] = make([]byte, binSizes[ii])
-			arrPtrs[ii] = &arr[ii][0]
+			arrPtrs[ii] = (unsafe.Pointer)(C.calloc((C.ulong)(binSizes[ii]), 1))
 		} else {
 			arr[ii] = make([]byte, 1)
 			arrPtrs[ii] = nil
@@ -733,7 +772,8 @@ func (p *Program) GetBinaries() (*ProgramBinaries, error) {
 		return nil, toError(err)
 	}
 
-	return &ProgramBinaries{binaryArray: arr, binaryPtrs: arrPtrs}, nil
+//	return &ProgramBinaries{binaryArray: arr, binaryPtrs: arrPtrs}, nil
+	return nil, nil
 }
 
 func (p *Program) GetKernelCounts() (int, error) {
@@ -813,6 +853,6 @@ func (pb *ProgramBinaries) GetBinaryArray() [][]byte {
 	return pb.binaryArray
 }
 
-func (pb *ProgramBinaries) GetBinaryArrayPointers() []*byte {
+func (pb *ProgramBinaries) GetBinaryArrayPointers() []unsafe.Pointer {
 	return pb.binaryPtrs
 }
