@@ -871,6 +871,52 @@ func (ctx *Context) CreateProgramWithBinary(deviceList []*Device, program_length
 	return program, nil
 }
 
+func (ctx *Context) CreateProgramWithBinaryAlt(deviceList []*Device, program_lengths []int, program_binaries [][]byte) (*Program, error) {
+	var binary_in []*C.uchar
+	device_list_in := make([]C.cl_device_id, len(deviceList))
+	binary_lengths := make([]C.size_t, len(program_lengths))
+	defer C.free(unsafe.Pointer(&binary_in))
+	defer C.free(unsafe.Pointer(&binary_lengths))
+	defer C.free(unsafe.Pointer(&device_list_in))
+	var binErr []C.cl_int
+	var err C.cl_int
+	for i, bin_len := range program_lengths {
+		binary_lengths[i] = C.size_t(bin_len)
+	}
+	for i, devItem := range deviceList {
+		device_list_in[i] = devItem.id
+	}
+	for i, program_bin := range program_binaries {
+		tempBin := (*C.uchar)(C.calloc(1, binary_lengths[i]))
+		defer C.free(unsafe.Pointer(tempBin))
+		C.memcpy((unsafe.Pointer)(tempBin), (unsafe.Pointer)(&program_bin[0]), binary_lengths[i])
+		binary_in = append(binary_in, tempBin)
+	}
+	clProgram := C.clCreateProgramWithBinary(ctx.clContext, C.cl_uint(len(deviceList)), &device_list_in[0], &binary_lengths[0], &binary_in[0], &binErr[0], &err)
+	for i := range binary_lengths {
+		if binErr[i] != C.CL_SUCCESS {
+			errMsg := int(binErr[i])
+			switch errMsg {
+			default:
+				fmt.Printf("Unknown error when loading binary %d \n", i)
+			case C.CL_INVALID_VALUE:
+				fmt.Printf("Loading empty binary %d \n", i)
+			case C.CL_INVALID_BINARY:
+				fmt.Printf("Loading an invalid binary %d \n", i)
+			}
+		}
+	}
+	if err != C.CL_SUCCESS {
+		return nil, toError(err)
+	}
+	if clProgram == nil {
+		return nil, ErrUnknown
+	}
+	program := &Program{clProgram: clProgram, devices: ctx.devices}
+	runtime.SetFinalizer(program, releaseProgram)
+	return program, nil
+}
+
 func (pf *Platform) UnloadCompiler() error {
 	return toError(C.clUnloadPlatformCompiler(pf.id))
 }
