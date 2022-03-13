@@ -219,6 +219,7 @@ type ProgramHeaders struct {
 type ProgramBinaries struct {
 	binaryArray [][]byte
 	binaryPtrs  []*byte
+	binarySizes []int
 }
 
 ////////////////// Supporting Types ////////////////
@@ -798,7 +799,7 @@ func (p *Program) GetBinaries() (*ProgramBinaries, error) {
 		}
 	}
 
-	return &ProgramBinaries{binaryArray: arr, binaryPtrs: arrPtrs}, nil
+	return &ProgramBinaries{binaryArray: arr, binaryPtrs: arrPtrs, binarySizes: binSizes}, nil
 }
 
 func (p *Program) GetKernelCounts() (int, error) {
@@ -876,6 +877,10 @@ func (pf *Platform) UnloadCompiler() error {
 
 func (pb *ProgramBinaries) GetBinaryArray() [][]byte {
 	return pb.binaryArray
+}
+
+func (pb *ProgramBinaries) GetBinarySizes() []int {
+	return pb.binarySizes
 }
 
 func (pb *ProgramBinaries) GetBinaryArrayPointers() []*byte {
