@@ -97,7 +97,7 @@ static cl_int CLGetProgramBinary(  cl_program                        program,
 	size_t* binSizesPtr;
 	binSizesPtr = (size_t *) calloc(param_value_size_ret, 1);
 	if (binSizesPtr == NULL) {
-		return -1;
+		return CL_OUT_OF_HOST_MEMORY;
 	}
 	err0 = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES, param_value_size_ret, (void *)(binSizesPtr), NULL);
 	if (err0 != CL_SUCCESS) {
@@ -116,7 +116,7 @@ static cl_int CLGetProgramBinary(  cl_program                        program,
 	binaryArrayPtrs = (unsigned char **) malloc(numBinaries * sizeof(unsigned char *));
 	if (binaryArrayPtrs == NULL) {
 		free(binSizesPtr);
-		return -4;
+		return CL_OUT_OF_HOST_MEMORY;
 	}
 	cl_int err1 = -1;
 	for (size_t ii = 0; ii < numBinaries; ii++) {
@@ -138,7 +138,7 @@ static cl_int CLGetProgramBinary(  cl_program                        program,
 			}
 		}
 		free(binSizesPtr);
-		return -5;
+		return CL_OUT_OF_HOST_MEMORY;
 	}
 	err0 = clGetProgramInfo(program, CL_PROGRAM_BINARIES, sizeof(unsigned char *) * numBinaries, (void *)binaryArrayPtrs, NULL);
 	if (err0 != CL_SUCCESS) {
