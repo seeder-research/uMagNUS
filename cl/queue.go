@@ -3,13 +3,13 @@ package cl
 /*
 #include "./opencl.h"
 
-static CLGetCommandQueueInfoParamSize(cl_command_queue              command_queue,
+static cl_int CLGetCommandQueueInfoParamSize(cl_command_queue              command_queue,
                                       cl_command_queue_info            param_name,
                                       size_t                *param_value_size_ret) {
 	return clGetCommandQueueInfo(command_queue, param_name, NULL, NULL, param_value_size_ret);
 }
 
-static CLGetCommandQueueInfoParamUnsafe(cl_command_queue          command_queue,
+static cl_int CLGetCommandQueueInfoParamUnsafe(cl_command_queue          command_queue,
                                         cl_command_queue_info        param_name,
                                         size_t                 param_value_size,
                                         void                       *param_value) {
