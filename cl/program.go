@@ -153,6 +153,72 @@ static cl_int CLGetProgramBinary(  cl_program                        program,
 	return CL_SUCCESS;
 }
 
+static cl_int CLGetProgramBinaryAlt(  cl_program                        program,
+                                     size_t                 param_value_size,
+                                      void                      *param_value,
+                                     size_t            *param_value_size_ret) {
+	size_t tmpVal;
+	size_t* tmpPtr = &tmpVal;
+	if (param_value_size_ret != NULL) {
+		tmpPtr = param_value_size_ret;
+	}
+	cl_int err0 = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES, NULL, NULL, tmpPtr);
+	if (err0 != CL_SUCCESS) {
+		return err0;
+	}
+	if ((param_value == NULL) && (param_value_size == NULL)) {
+		if (param_value_size_ret == NULL) {
+			return CL_INVALID_VALUE;
+		} else {
+			return clGetProgramInfo(program, CL_PROGRAM_BINARIES, NULL, NULL, param_value_size_ret);
+		}
+	}
+	if (param_value == NULL) {
+		return CL_INVALID_VALUE;
+	}
+	size_t numBinaries = (*tmpPtr) / sizeof(size_t);
+	size_t* binSizes;
+	binSizes = (size_t *) calloc((*tmpPtr), 1);
+	if (binSizes == NULL) {
+		return CL_OUT_OF_HOST_MEMORY;
+	}
+	err0 = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES, (*tmpPtr), (void *)(binSizes), NULL);
+	if (err0 != CL_SUCCESS) {
+		free(binSizes);
+		return err0;
+	}
+	size_t totalSize = 0;
+	for (size_t ii = 0; ii < (*tmpPtr); ii++) {
+		totalSize += binSizes[ii];
+	}
+	if (totalSize > param_value_size) {
+		free(binSizes);
+		return CL_INVALID_VALUE;
+	}
+	unsigned char ** binaryArrayPtrs;
+	binaryArrayPtrs = (unsigned char **) malloc(numBinaries * sizeof(unsigned char *));
+	if (binaryArrayPtrs == NULL) {
+		free(binSizes);
+		return CL_OUT_OF_HOST_MEMORY;
+	}
+	size_t ptrIdx = 0;
+	for (size_t ii = 0; ii < numBinaries; ii++) {
+		if (binSizes[ii] != 0) {
+			binaryArrayPtrs[ii] = &param_value[ptrIdx];
+			ptrIdx += binSizes[ii];
+		} else {
+			binaryArrayPtrs[ii] = NULL;
+		}
+	}
+	err0 = clGetProgramInfo(program, CL_PROGRAM_BINARIES, sizeof(unsigned char *) * numBinaries, (void *)binaryArrayPtrs, NULL);
+	if (err0 != CL_SUCCESS) {
+		return err0;
+	}
+	free(binaryArrayPtrs);
+	free(binSizes);
+	return CL_SUCCESS;
+}
+
 static cl_device_id GetCLDeviceFromArray(cl_device_id *arr, unsigned long idx) {
 	return arr[idx];
 }
