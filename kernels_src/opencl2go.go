@@ -74,23 +74,23 @@ func main() {
 	}
 
 	if *Flag_fp64 {
-	        // find .cl files
-	        if ls_dircl64 == nil {
-        	        dircl64, errd := os.Open("./cl64")
-                	defer dircl64.Close()
-	                util.PanicErr(errd)
-        	        var errls error
-                	ls_dircl64, errls = dircl64.Readdirnames(-1)
-	                util.PanicErr(errls)
-        	}
-	        // get names of kernels available in .cl files
-        	for _, f := range ls_dircl64 {
-	                match, e := regexp.MatchString("..cl$", f)
-        	        util.PanicErr(e)
-                	if match {
-	                        kname := getKernelName("./cl64/" + f)
-        	                opencl_codes.Code[kname] = getFile("./cl64/" + f)
-                	}
+		// find .cl files
+		if ls_dircl64 == nil {
+			dircl64, errd := os.Open("./cl64")
+			defer dircl64.Close()
+			util.PanicErr(errd)
+			var errls error
+			ls_dircl64, errls = dircl64.Readdirnames(-1)
+			util.PanicErr(errls)
+		}
+		// get names of kernels available in .cl files
+		for _, f := range ls_dircl64 {
+			match, e := regexp.MatchString("..cl$", f)
+			util.PanicErr(e)
+			if match {
+				kname := getKernelName("./cl64/" + f)
+				opencl_codes.Code[kname] = getFile("./cl64/" + f)
+			}
 		}
 	}
 
@@ -128,40 +128,40 @@ func main() {
 	wrapout.WriteString(tmpBuffer.String())
 	wrapout.Close()
 
-	tmpBuffer = new(bytes.Buffer)
-	if *Flag_fp64 {
-		tmpBuffer.WriteString("package opencl64\n\n")
-	} else {
-		tmpBuffer.WriteString("package opencl\n\n")
-	}
-	tmpBuffer.WriteString("var KernelNames = []string{\n")
-	for idx, keynames := range kernels_src.OCLKernelsList {
-		if idx == len(kernels_src.OCLKernelsList)-1 {
-			if *Flag_fp64 {
-				tmpBuffer.WriteString("\t\"" + keynames + "\",\n")
-				for idx1, keynames1 := range kernels_src.OCL64KernelsList {
-					if idx1 == len(kernels_src.OCL64KernelsList)-1 {
-						tmpBuffer.WriteString("\t\"" + keynames1 + "\"}\n")
-					} else {
-						tmpBuffer.WriteString("\t\"" + keynames1 + "\",\n")
-					}
-				}
-			} else {
-				tmpBuffer.WriteString("\t\"" + keynames + "\"}\n")
-			}
-		} else {
-			tmpBuffer.WriteString("\t\"" + keynames + "\",\n")
-		}
-	}
-	if *Flag_fp64 {
-		wrapfname = "../opencl64/opencl_kernels_wrapper.go"
-	} else {
-		wrapfname = "../opencl/opencl_kernels_wrapper.go"
-	}
-	wrapout, err = os.OpenFile(wrapfname, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
-	util.PanicErr(err)
-	wrapout.WriteString(tmpBuffer.String())
-	wrapout.Close()
+	//	tmpBuffer = new(bytes.Buffer)
+	//	if *Flag_fp64 {
+	//		tmpBuffer.WriteString("package opencl64\n\n")
+	//	} else {
+	//		tmpBuffer.WriteString("package opencl\n\n")
+	//	}
+	//	tmpBuffer.WriteString("var KernelNames = []string{\n")
+	//	for idx, keynames := range kernels_src.OCLKernelsList {
+	//		if idx == len(kernels_src.OCLKernelsList)-1 {
+	//			if *Flag_fp64 {
+	//				tmpBuffer.WriteString("\t\"" + keynames + "\",\n")
+	//				for idx1, keynames1 := range kernels_src.OCL64KernelsList {
+	//					if idx1 == len(kernels_src.OCL64KernelsList)-1 {
+	//						tmpBuffer.WriteString("\t\"" + keynames1 + "\"}\n")
+	//					} else {
+	//						tmpBuffer.WriteString("\t\"" + keynames1 + "\",\n")
+	//					}
+	//				}
+	//			} else {
+	//				tmpBuffer.WriteString("\t\"" + keynames + "\"}\n")
+	//			}
+	//		} else {
+	//			tmpBuffer.WriteString("\t\"" + keynames + "\",\n")
+	//		}
+	//	}
+	//	if *Flag_fp64 {
+	//		wrapfname = "../opencl64/opencl_kernels_wrapper.go"
+	//	} else {
+	//		wrapfname = "../opencl/opencl_kernels_wrapper.go"
+	//	}
+	//	wrapout, err = os.OpenFile(wrapfname, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
+	//	util.PanicErr(err)
+	//	wrapout.WriteString(tmpBuffer.String())
+	//	wrapout.Close()
 }
 
 func getKernelName(fname string) string {
