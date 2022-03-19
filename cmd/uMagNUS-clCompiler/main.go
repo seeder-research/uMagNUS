@@ -151,9 +151,9 @@ func main() {
 			log.Panic(err)
 		}
 		kernNameArray := strings.Split(kernNames, ";")
-		fmt.Println("  Kernels in program:")
+		fmt.Println("()  Kernels in program:")
 		for _, kn := range kernNameArray {
-			fmt.Println("    kernel: ", kn)
+			fmt.Println("()    kernel: ", kn)
 		}
 
 		var binSizes []int
@@ -189,6 +189,76 @@ func main() {
 			}
 		} else {
 			fmt.Println("   Expected binary sizes do not match!")
+		}
+
+		if *Flag_verbose > 2 {
+			fmt.Println("****  Attempting to create program by loading binary...")
+		}
+
+		tmpProgram.Release()
+		tmpProgram, err = tmpContext.CreateProgramWithBinary([]*cl.Device{GPUList[gpuId].Device}, bins.GetBinarySizes(), binsArrays)
+		if err != nil {
+			if *Flag_verbose > 2 {
+				fmt.Printf("**** CreateProgramWithBinary(): failed to create program with binary: %+v \n", err)
+			}
+			tmpContext.Release()
+		} else {
+			if *Flag_verbose > 3 {
+				fmt.Println("****    Successfully created program with binary")
+			}
+		}
+
+		ShowBuildLog(tmpProgram, GPUList[gpuId].Device)
+		binType, err = tmpProgram.GetProgramBinaryType(GPUList[gpuId].Device)
+		if err != nil {
+			fmt.Println("    Error getting binary type for program on GPU.")
+			tmpContext.Release()
+			log.Panic(err)
+		} else {
+			if *Flag_verbose > 3 {
+				fmt.Println("****    Attempted to show build log")
+			}
+		}
+		if *Flag_verbose > 2 {
+			switch binType {
+			case cl.ProgramBinaryTypeNone:
+				fmt.Println("      No compiled binaries available in program.")
+			case cl.ProgramBinaryTypeCompiledObject:
+				fmt.Println("      Compiled object available in program.")
+			case cl.ProgramBinaryTypeLibrary:
+				fmt.Println("      Compiled library available in program.")
+			case cl.ProgramBinaryTypeExecutable:
+				fmt.Println("      Compiled executable available in program.")
+			default:
+				fmt.Println("      Unknown binary type in program.")
+			}
+		}
+
+		kernNum = int(0)
+		kernNum, err = tmpProgram.GetKernelCounts()
+		if err != nil {
+			fmt.Println("    Error getting kernel count for linked program on GPU.")
+			tmpProgram.Release()
+			tmpContext.Release()
+			log.Panic(err)
+		}
+		if *Flag_verbose > 2 {
+			fmt.Printf("    Program has %+v number of kernels\n", kernNum)
+		}
+		kernNames = string("")
+		kernNames, err = tmpProgram.GetKernelNames()
+		if err != nil {
+			fmt.Println("    Error getting kernel names for linked program on GPU.")
+			tmpProgram.Release()
+			tmpContext.Release()
+			log.Panic(err)
+		}
+		kernNameArray = strings.Split(kernNames, ";")
+		if *Flag_verbose > 1 {
+			fmt.Println("**  Kernels in program:")
+			for _, kn := range kernNameArray {
+				fmt.Println("**    kernel: ", kn)
+			}
 		}
 
 		if *Flag_verbose > 2 {

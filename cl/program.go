@@ -161,6 +161,28 @@ static size_t GetSizeFromArray(size_t *arr, unsigned long idx) {
 	return arr[idx];
 }
 
+static void * bytecpy(void *dst, const void *src, const size_t dstOffset, size_t srcOffset, size_t count) {
+	void *dstPtr = dst + dstOffset;
+	void *srcPtr = src + srcOffset;
+	return memcpy(dstPtr, srcPtr, count);
+}
+
+static void setPtrs(unsigned char **dst, const unsigned char  *src, const size_t *sizes, const size_t count) {
+	if ((dst == NULL) || (src == NULL) || (sizes == NULL) || (count <= 0)) {
+		return;
+	}
+	size_t srcOffset = 0;
+	for (size_t idx = 0; idx < count; idx++) {
+		size_t binSize = sizes[idx];
+		if (binSize > 0) {
+			dst[idx] = &src[srcOffset];
+			srcOffset += binSize;
+		} else {
+			dst[idx] = NULL;
+		}
+	}
+}
+
 */
 import "C"
 
@@ -830,26 +852,56 @@ func (p *Program) GetKernelNames() (string, error) {
 	return retString, nil
 }
 
-func (ctx *Context) CreateProgramWithBinary(deviceList []*Device, program_lengths []int, program_binaries []*uint8) (*Program, error) {
-	var binary_in []*C.uchar
+func (ctx *Context) CreateProgramWithBinary(deviceList []*Device, program_lengths []int, program_binaries [][]byte) (*Program, error) {
 	device_list_in := make([]C.cl_device_id, len(deviceList))
 	binary_lengths := make([]C.size_t, len(program_lengths))
-	defer C.free(unsafe.Pointer(&binary_in))
-	defer C.free(unsafe.Pointer(&binary_lengths))
-	defer C.free(unsafe.Pointer(&device_list_in))
-	var binErr []C.cl_int
+
+	binErr := (*C.cl_int)(C.calloc((C.size_t)(len(deviceList)), C.sizeof_int))
+	defer C.free(unsafe.Pointer(binErr))
+
+	binErrGo := make([]int, len(deviceList))
 	var err C.cl_int
-	for i, bin_val := range program_binaries {
-		binary_lengths[i] = C.size_t(program_lengths[i])
-		binary_in[i] = (*C.uchar)(bin_val)
-	}
+
 	for i, devItem := range deviceList {
 		device_list_in[i] = devItem.id
+		binary_lengths[i] = (C.size_t)(program_lengths[i])
 	}
-	clProgram := C.clCreateProgramWithBinary(ctx.clContext, C.cl_uint(len(deviceList)), &device_list_in[0], &binary_lengths[0], &binary_in[0], &binErr[0], &err)
+
+	totalSize := int(0)
+	for _, binSz := range program_lengths {
+		if binSz > 0 {
+			totalSize += binSz
+		}
+	}
+
+	binary_in_bytes := (*C.uchar)(C.calloc((C.size_t)(totalSize), 1))
+	defer C.free((unsafe.Pointer)(binary_in_bytes))
+
+	goBytes := make([]byte, totalSize)
+	goBytesIdx := int(0)
+	for _, bin := range program_binaries {
+		for _, binByte := range bin {
+			if goBytesIdx > totalSize {
+				fmt.Println("CreateProgramWithBinary (WARNING): total bytes exceeded!")
+			}
+			goBytes[goBytesIdx] = binByte
+			goBytesIdx++
+		}
+	}
+
+	C.memcpy((unsafe.Pointer)(binary_in_bytes), (unsafe.Pointer)(&goBytes[0]), (C.size_t)(totalSize))
+
+	binary_in := (**C.uchar)(C.calloc((C.size_t)(len(program_lengths)), C.sizeof_uchar))
+	defer C.free((unsafe.Pointer)(binary_in))
+
+	C.setPtrs(binary_in, binary_in_bytes, &binary_lengths[0], (C.size_t)(len(program_lengths)))
+
+	clProgram := C.clCreateProgramWithBinary(ctx.clContext, C.cl_uint(len(deviceList)), &device_list_in[0], &binary_lengths[0], binary_in, binErr, &err)
+	C.memcpy((unsafe.Pointer)(&binErrGo[0]), (unsafe.Pointer)(binErr), (C.size_t)(len(binErrGo))*C.sizeof_int)
+
 	for i := range binary_lengths {
-		if binErr[i] != C.CL_SUCCESS {
-			errMsg := int(binErr[i])
+		if binErrGo[i] != C.CL_SUCCESS {
+			errMsg := int(binErrGo[i])
 			switch errMsg {
 			default:
 				fmt.Printf("Unknown error when loading binary %d \n", i)
@@ -860,12 +912,19 @@ func (ctx *Context) CreateProgramWithBinary(deviceList []*Device, program_length
 			}
 		}
 	}
+
 	if err != C.CL_SUCCESS {
 		return nil, toError(err)
 	}
 	if clProgram == nil {
 		return nil, ErrUnknown
 	}
+
+	err = C.clBuildProgram(clProgram, 0, nil, nil, nil, nil)
+	if err != C.CL_SUCCESS {
+		return nil, toError(err)
+	}
+
 	program := &Program{clProgram: clProgram, devices: ctx.devices}
 	runtime.SetFinalizer(program, releaseProgram)
 	return program, nil
