@@ -7,9 +7,9 @@ GO_BUILDFLAGS=-compiler gc
 
 CGO_LDFLAGS:=''
 ifeq ($(OS),Windows_NT)
-	CGO_LDFLAGS += '-L$(CUDAROOT)\\lib64\\x86_64'
+	CGO_LDFLAGS += '-L$(CUDAROOT)\\lib64\\x86_64 -L$(GOPATH)\\lib'
 else
-	CGO_LDFLAGS += '-L$(CUDAROOT)/lib'
+	CGO_LDFLAGS += '-L$(CUDAROOT)/lib -L$(GOPATH)/lib'
 endif
 
 CGO_CFLAGS_ALLOW='(-fno-schedule-insns|-malign-double|-ffast-math)'
