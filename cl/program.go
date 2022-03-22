@@ -3,6 +3,7 @@ package cl
 /*
 #include "./opencl.h"
 #include <stdio.h>
+#include <string.h>
 extern void go_program_notify(cl_program alt_program, void *user_data);
 extern void go_compile_program_notify(cl_program alt_program, void *user_data);
 extern void go_link_program_notify(cl_program alt_program, void *user_data);
