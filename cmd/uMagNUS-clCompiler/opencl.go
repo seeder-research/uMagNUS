@@ -22,6 +22,7 @@ var (
 	ClDevices    []*cl.Device   // list of devices global OpenCL context may be associated with
 	ClDevice     *cl.Device     // device associated with global OpenCL context
 	ClCtx        *cl.Context    // global OpenCL context
+	gpuIdMap     map[string]int // map of first instances of GPU as defined by the name
 )
 
 func InitGPUs() {
@@ -63,6 +64,8 @@ func InitGPUs() {
 	}
 
 	GPUList = tmpGpuList
+	gpuIdMap = make(map[string]int)
+	GenGPUMap()
 }
 
 func InitCPUs() {
@@ -104,4 +107,12 @@ func InitCPUs() {
 	}
 
 	GPUList = tmpGpuList
+}
+
+func GenGPUMap() {
+	for idx, gpuDev := range GPUList {
+		if _, ok := gpuIdMap[gpuDev.Device.Name()]; ok == false {
+			gpuIdMap[gpuDev.Device.Name()] = idx
+		}
+	}
 }
