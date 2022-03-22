@@ -335,11 +335,21 @@ func main() {
 		binIdx++
 	}
 	outcode += "const char deviceNames[] = \"" + gpuNameList + "\";\n"
+	outcode += "const size_t deviceNameLen = " + strconv.Itoa(len(gpuNameList)) + ";\n"
 	outcode += "const int NumDevices = " + strconv.Itoa(len(gpuIdMap)) + ";\n"
 	outcode += "const size_t binIdx[] = { " + outBinIdx + "};\n"
 	outcode += "const size_t binSizes[] = { " + binSizeList + "};\n"
 	outcode += "\n" + mergedHexString + "\n"
-	outcode += "const char * hexPtrs[] = { " + hexPtrsString + "};\n"
+	outcode += "const char * hexPtrs[] = { " + hexPtrsString + "};\n\n"
+	outcode += "char * sendStringPtr(size_t idx) {\n"
+	outcode += "\treturn hexPtrs[idx];\n"
+	outcode += "}\n\n"
+	outcode += "size_t sendBinSize(size_t idx) {\n"
+	outcode += "\treturn binSizes[idx];\n"
+	outcode += "}\n\n"
+	outcode += "size_t sendBinIdx(size_t idx) {\n"
+	outcode += "\treturn binIdx[idx];\n"
+	outcode += "}\n"
 	if *Flag_dump {
 		fmt.Printf("%+v\n", outcode)
 	}
