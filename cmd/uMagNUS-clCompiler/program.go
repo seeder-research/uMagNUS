@@ -5,6 +5,8 @@ import (
 	"github.com/seeder-research/uMagNUS/cl"
 )
 
+var binariesMap map[string]*cl.ProgramBinaries
+
 func compileProgram(ctx *cl.Context, devices []*cl.Device, source []string) (*cl.Program, error) {
 	program, err := ctx.CreateProgramWithSource(source)
 	if err != nil {
