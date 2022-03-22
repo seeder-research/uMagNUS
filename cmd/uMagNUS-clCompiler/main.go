@@ -65,22 +65,23 @@ func main() {
 	outcode += "// This file contains code that needs to be compiled by a C compiler\n"
 	outcode += "// into a library for loading uMagNUS GPU binaries\n"
 	outcode += "////////////////////////////////////////////////////////////\n\n"
+	outcode += "#include <stdlib.h>\n\n"
+
+	if len(gpuIdMap) > 0 {
+		binariesMap = make(map[string]*cl.ProgramBinaries)
+	} else {
+		fmt.Println("No GPUs available...exiting")
+		return
+	}
 
 	gpuNameList := string("")
-	for gpuName, _ := range gpuIdMap {
+	binSizeList := string("")
+
+	for gpuName, gpuId := range gpuIdMap {
 		if len(gpuNameList) > 0 {
 			gpuNameList += ";"
 		}
 		gpuNameList += gpuName
-	}
-	outcode += "const char deviceNames[] = \"" + gpuNameList + "\";\n"
-	outcode += "const int NumDevices = " + strconv.Itoa(len(gpuIdMap)) + ";\n"
-
-	if len(gpuIdMap) > 0 {
-		binariesMap = make(map[string]*cl.ProgramBinaries)
-	}
-
-	for gpuName, gpuId := range gpuIdMap {
 		var gpuArg []*cl.Device
 		gpuArg = append(gpuArg, GPUList[gpuId].Device)
 		if *Flag_verbose > 2 {
@@ -317,7 +318,16 @@ func main() {
 			fmt.Println("    Releasing context on GPU: ", gpuId)
 		}
 		tmpContext.Release()
+		for _, val := range bins.GetBinarySizes() {
+			if len(binSizeList) > 0 {
+				binSizeList += ", "
+			}
+			binSizeList += strconv.Itoa(val)
+		}
 	}
+	outcode += "const char deviceNames[] = \"" + gpuNameList + "\";\n"
+	outcode += "const int NumDevices = " + strconv.Itoa(len(gpuIdMap)) + ";\n"
+	outcode += "const size_t binSizes[] = { " + binSizeList + "};\n"
 	if *Flag_dump {
 		fmt.Printf("%+v\n", outcode)
 	}
