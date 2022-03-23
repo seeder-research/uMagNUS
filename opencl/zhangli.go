@@ -3,8 +3,8 @@ package opencl
 import (
 	"fmt"
 
-	"github.com/seeder-research/uMagNUS/data"
 	"github.com/seeder-research/uMagNUS/cl"
+	"github.com/seeder-research/uMagNUS/data"
 )
 
 // Add Zhang-Li ST torque (Tesla) to torque.

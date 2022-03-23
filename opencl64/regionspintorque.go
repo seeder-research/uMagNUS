@@ -7,8 +7,8 @@ import (
 	"math"
 	"unsafe"
 
-	data "github.com/seeder-research/uMagNUS/data64"
 	"github.com/seeder-research/uMagNUS/cl"
+	data "github.com/seeder-research/uMagNUS/data64"
 )
 
 func AddRegionSpinTorque(torque, m *data.Slice, Msat MSlice, regions *Bytes, regionA, regionB uint8, sX, sY, sZ int, J, alpha, pfix, pfree, λfix, λfree, ε_prime float64, mesh *data.Mesh) {

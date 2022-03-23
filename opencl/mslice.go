@@ -1,8 +1,8 @@
 package opencl
 
 import (
-	"github.com/seeder-research/uMagNUS/data"
 	"github.com/seeder-research/uMagNUS/cl"
+	"github.com/seeder-research/uMagNUS/data"
 	"unsafe"
 )
 

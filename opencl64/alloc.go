@@ -4,8 +4,8 @@ import (
 	"log"
 	//	"unsafe"
 
-	data "github.com/seeder-research/uMagNUS/data64"
 	"github.com/seeder-research/uMagNUS/cl"
+	data "github.com/seeder-research/uMagNUS/data64"
 )
 
 // Wrapper for cu.MemAlloc, fatal exit on out of memory.
