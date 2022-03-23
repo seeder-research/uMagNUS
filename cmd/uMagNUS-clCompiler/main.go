@@ -2,19 +2,12 @@
 package main
 
 import (
-	//	"bufio"
-	//	"bytes"
 	"flag"
 	"fmt"
 	"github.com/seeder-research/uMagNUS/cl"
-	//	"io"
 	"log"
-	//	"os"
-	//	"path"
 	"strconv"
 	"strings"
-	//	"text/scanner"
-	//	"time"
 )
 
 var (
