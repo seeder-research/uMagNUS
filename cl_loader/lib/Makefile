@@ -12,6 +12,7 @@ all: lib
 	ln -sf libumagnus.so.2.1.0 libumagnus.so.2.1
 	ln -sf libumagnus.so.2.1 libumagnus.so.2
 	ln -sf libumagnus.so.2 libumagnus.so
+	ln -sf libumagnus.so.2 libumagnus64.so
 
 
 obj:
