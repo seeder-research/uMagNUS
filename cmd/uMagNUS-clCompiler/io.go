@@ -54,7 +54,7 @@ func printHex(b []byte) string {
 		if byteLen <= (idx + 50) {
 			tmpByte = b[idx:]
 		} else {
-			tmpByte = b[idx : idx+49]
+			tmpByte = b[idx : idx+50]
 		}
 		hexString += "\n\t\"" + e.EncodeToString(tmpByte) + "\""
 	}
