@@ -15,7 +15,7 @@ endif
 CGO_CFLAGS_ALLOW='(-fno-schedule-insns|-malign-double|-ffast-math)'
 
 
-.PHONY: all cl-binds cl-compiler clkernels clean data data64 draw draw64 dump dump64 engine engine64 freetype gui realclean hooks httpfs mag mag64 oommf oommf64 script script64 timer uMagNUS uMagNUS64 util loader
+.PHONY: all cl-binds cl-compiler clkernels clean data data64 draw draw64 dump dump64 engine engine64 freetype gui realclean hooks httpfs mag mag64 oommf oommf64 script script64 timer uMagNUS uMagNUS64 util loader kernloader libumagnus
 
 
 all: cl-compiler uMagNUS uMagNUS64
@@ -76,6 +76,14 @@ cl-compiler: cl-binds
 loader: cl-binds
 	$(MAKE) -C ./cl_loader all
 	$(MAKE) -C ./loader all
+
+
+kernloader: loader
+	$(MAKE) -C ./cmd/uMagNUS-kernelLoader all
+
+
+libumagnus: cl-compiler
+	uMagNUS-clCompiler -args="-cl-finite-math-only -cl-no-signed-zeros -cl-fp32-correctly-rounded-divide-sqrt -cl-kernel-arg-info" -std="CL1.2" -iopts="-I$(PWD)/kernels_src" -dump $(PWD)/kernels_src/Kernels/merged_kernels.h >> libumagnus/libumagnus.cc
 
 
 data: cl-binds util
@@ -148,9 +156,11 @@ clean:
 	$(MAKE) -C ./cl_loader clean
 	$(MAKE) -C ./opencl clean
 	$(MAKE) -C ./opencl64 clean
+	$(MAKE) -C ./libumagnus clean
 
 
 realclean: clean
 	${MAKE} -C ./cl_loader realclean
 	${MAKE} -C ./opencl realclean
 	${MAKE} -C ./opencl64 realclean
+	$(MAKE) -C ./libumagnus realclean
