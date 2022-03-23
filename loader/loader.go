@@ -1,33 +1,55 @@
 package loader
+
 /*
-#include clCompiler.h
+#include "clCompiler.h"
 
-static size_t returnStringLength() {
-	return deviceNameLen;
+const char * returnDeviceNamePtr() {
+        return &deviceNames[0];
 }
 
-static int returnNumDevices() {
-	return NumDevices;
+size_t returnDeviceNameLen() {
+        return deviceNameLen;
 }
 
-static char * returnStringPointer() {
-	return &deviceNames[0];
+int returnNumDevices() {
+        return NumDevices;
+}
+
+char * sendStringPtr(size_t idx) {
+        return NULL;
+}
+
+size_t sendBinSize(size_t idx) {
+        return 0;
+}
+
+size_t sendBinIdx(size_t idx) {
+        return 0;
 }
 */
 import "C"
 
 import (
+	"fmt"
+	e "encoding/hex"
 	"strings"
 
 	"github.com/seeder-research/uMagNUS/cl"
 )
 
 func checkDevice(d *cl.Device) int {
-	// Get the string names in the library
-	stringPtr := C.returnStringPointer()
-	stringLen := (C.int)(C.returnStringLength())
 
-	// Error check if library is empty
+	// First error check if library is empty
+	numDevices := C.returnNumDevices()
+	if numDevices <= 0 {
+		return -1
+	}
+
+	// Get the string names in the library
+	stringPtr := C.returnDeviceNamePtr()
+	stringLen := (C.int)(C.returnDeviceNameLen())
+
+	// Second error check if library is empty
 	if (stringPtr == nil) || (stringLen <= 0) {
 		return -1
 	}
@@ -50,7 +72,7 @@ func checkDevice(d *cl.Device) int {
 	return -2
 }
 
-func GetClDeviceBinary(d cl*Device) []byte {
+func GetClDeviceBinary(d *cl.Device) []byte {
 	// Check library for index of OpenCL device
 	// if it is available
 	idx := checkDevice(d)

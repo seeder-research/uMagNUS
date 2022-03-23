@@ -9,9 +9,9 @@ lib: obj
 
 
 all: lib
-	ln -s libumagnus.so.2.1.0 libumagnus.so.2.1
-	ln -s libumagnus.so.2.1 libumagnus.so.2
-	ln -s libumagnus.so.2 libumagnus.so
+	ln -sf libumagnus.so.2.1.0 libumagnus.so.2.1
+	ln -sf libumagnus.so.2.1 libumagnus.so.2
+	ln -sf libumagnus.so.2 libumagnus.so
 
 
 obj:

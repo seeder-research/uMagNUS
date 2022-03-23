@@ -6,8 +6,8 @@ package loader
 //#cgo !darwin LDFLAGS: -lumagnus
 //
 ////default location:
-//#cgo LDFLAGS:-L${SRCDIR}/cl_loader/lib
-//#cgo LDFLAGS:-L${SRCDIR}/cl_loader/lib64
-//#cgo CFLAGS: -I${SRCDIR}/cl_loader/include
+//#cgo LDFLAGS:-L${SRCDIR}/../cl_loader/lib
+//#cgo LDFLAGS:-L${SRCDIR}/../cl_loader/lib64
+//#cgo CFLAGS: -I${SRCDIR}/../cl_loader/include
 //
 import "C"

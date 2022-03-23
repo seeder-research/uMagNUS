@@ -15,7 +15,7 @@ endif
 CGO_CFLAGS_ALLOW='(-fno-schedule-insns|-malign-double|-ffast-math)'
 
 
-.PHONY: all cl-binds cl-compiler clkernels clean data data64 draw draw64 dump dump64 engine engine64 freetype gui realclean hooks httpfs mag mag64 oommf oommf64 script script64 timer uMagNUS uMagNUS64 util
+.PHONY: all cl-binds cl-compiler clkernels clean data data64 draw draw64 dump dump64 engine engine64 freetype gui realclean hooks httpfs mag mag64 oommf oommf64 script script64 timer uMagNUS uMagNUS64 util loader
 
 
 all: cl-compiler uMagNUS uMagNUS64
@@ -71,6 +71,11 @@ util: go.mod
 
 cl-compiler: cl-binds
 	$(MAKE) -C ./cmd/uMagNUS-clCompiler all
+
+
+loader: cl-binds
+	$(MAKE) -C ./cl_loader all
+	$(MAKE) -C ./loader all
 
 
 data: cl-binds util
@@ -140,10 +145,12 @@ uMagNUS64: engine64
 clean:
 	rm -frv $(GOPATH)/pkg/*/github.com/seeder-research/uMagNUS/*
 	rm -frv $(GOPATH)/bin/mumax3* $(GOPATH)/bin/uMagNUS* go.mod
+	$(MAKE) -C ./cl_loader clean
 	$(MAKE) -C ./opencl clean
 	$(MAKE) -C ./opencl64 clean
 
 
 realclean: clean
+	${MAKE} -C ./cl_loader realclean
 	${MAKE} -C ./opencl realclean
 	${MAKE} -C ./opencl64 realclean
