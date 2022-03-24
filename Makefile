@@ -1,4 +1,3 @@
-
 # Use the default go compiler
 GO_BUILDFLAGS=-compiler gc
 # Or uncomment the line below to use the gccgo compiler, which may
@@ -84,6 +83,7 @@ kernloader: loader
 
 libumagnus: cl-compiler
 	uMagNUS-clCompiler -args="-cl-finite-math-only -cl-no-signed-zeros -cl-fp32-correctly-rounded-divide-sqrt -cl-kernel-arg-info" -std="CL1.2" -iopts="-I$(PWD)/kernels_src" -dump $(PWD)/kernels_src/Kernels/merged_kernels.h >> libumagnus/libumagnus.cc
+	$(MAKE) -C ./libumagnus all
 
 
 data: cl-binds util
@@ -134,11 +134,11 @@ mag64: oommf64 timer
 	$(MAKE) -C ./mag64 all
 
 
-engine: clkernels gui httpfs mag script
+engine: clkernels gui httpfs mag script loader
 	$(MAKE) -C ./engine all
 
 
-engine64: clkernels64 gui httpfs mag64 script64
+engine64: clkernels64 gui httpfs mag64 script64 loader64
 	$(MAKE) -C ./engine64 all
 
 
