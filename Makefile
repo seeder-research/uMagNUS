@@ -14,10 +14,10 @@ endif
 CGO_CFLAGS_ALLOW='(-fno-schedule-insns|-malign-double|-ffast-math)'
 
 
-.PHONY: all cl-binds cl-compiler clkernels clean data data64 draw draw64 dump dump64 engine engine64 freetype gui realclean hooks httpfs mag mag64 oommf oommf64 script script64 timer uMagNUS uMagNUS64 util loader kernloader libumagnus
+.PHONY: all cl-binds cl-compiler clkernels clean data data64 draw draw64 dump dump64 engine engine64 freetype gui realclean hooks httpfs mag mag64 oommf oommf64 script script64 timer uMagNUS uMagNUS64 util loader loader64 kernloader kernloader64 libumagnus libumagnus64
 
 
-all: cl-compiler uMagNUS uMagNUS64
+all: cl-compiler kernloader kernloader64 libumagnus libumagnus64 uMagNUS uMagNUS64
 	go install -v $(GO_BUILDFLAGS) github.com/seeder-research/uMagNUS/cmd/...
 
 
@@ -77,13 +77,27 @@ loader: cl-binds
 	$(MAKE) -C ./loader all
 
 
+loader64: cl-binds
+	$(MAKE) -C ./cl_loader all
+	$(MAKE) -C ./loader64 all
+
+
 kernloader: loader
 	$(MAKE) -C ./cmd/uMagNUS-kernelLoader all
 
 
+kernloader64: loader
+	$(MAKE) -C ./cmd/uMagNUS-kernelLoader64 all
+
+
 libumagnus: cl-compiler
-	uMagNUS-clCompiler -args="-cl-finite-math-only -cl-no-signed-zeros -cl-fp32-correctly-rounded-divide-sqrt -cl-kernel-arg-info" -std="CL1.2" -iopts="-I$(PWD)/kernels_src" -dump $(PWD)/kernels_src/Kernels/merged_kernels.h >> libumagnus/libumagnus.cc
-	$(MAKE) -C ./libumagnus all
+	uMagNUS-clCompiler -args="-cl-finite-math-only -cl-no-signed-zeros -cl-fp32-correctly-rounded-divide-sqrt -cl-kernel-arg-info" -std="CL1.2" -iopts="-I$(PWD)/kernels_src" -dump $(PWD)/kernels_src/Kernels/kernels32.h >> libumagnus/libumagnus.cc
+	$(MAKE) -C ./libumagnus lib
+
+
+libumagnus64: cl-compiler
+	uMagNUS-clCompiler -args="-cl-finite-math-only -cl-no-signed-zeros -cl-fp32-correctly-rounded-divide-sqrt -cl-kernel-arg-info -D__REAL_IS_DOUBLE__" -std="CL1.2" -iopts="-I$(PWD)/kernels_src" -dump $(PWD)/kernels_src/Kernels/kernels64.h >> libumagnus/libumagnus64.cc
+	$(MAKE) -C ./libumagnus lib64
 
 
 data: cl-binds util

@@ -144,19 +144,19 @@ func Init(gpu int) {
 	nobinary := bool(false)
 
 	// Attempt to obtain binary from library. Compile from source if unable to...
-        programBytes := ld.GetClDeviceBinary(ClDevice)
-        if programBytes == nil {
-                fmt.Println("Unable to get program binary!")
-                nobinary = true
-        } else {
-	        if program, err = ClCtx.CreateProgramWithBinary([]*cl.Device{ClDevice}, []int{len(programBytes)}, [][]byte{programBytes}); err != nil {
+	programBytes := ld.GetClDeviceBinary(ClDevice)
+	if programBytes == nil {
+		fmt.Println("Unable to get program binary!")
+		nobinary = true
+	} else {
+		if program, err = context.CreateProgramWithBinary([]*cl.Device{ClDevice}, []int{len(programBytes)}, [][]byte{programBytes}); err != nil {
 			fmt.Printf("Unable to load binary from library...continuing to compile code \n")
 			nobinary = true
-	        }
+		}
 	}
 
 	// Unable to load kernel from binary. Compile kernel source code instead
-	if (nobinary) {
+	if nobinary {
 		if program, err = context.CreateProgramWithSource([]string{GenMergedKernelSource()}); err != nil {
 			fmt.Printf("CreateProgramWithSource failed: %+v \n", err)
 			return

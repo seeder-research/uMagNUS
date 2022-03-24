@@ -8,6 +8,7 @@ import (
 
 	"github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data64"
+	ld "github.com/seeder-research/uMagNUS/loader64"
 )
 
 type GPU struct {
@@ -143,16 +144,32 @@ func Init(gpu int) {
 
 	// Create opencl program on selected opencl device
 	var program *cl.Program
-	program, err = context.CreateProgramWithSource([]string{GenMergedKernelSource()})
-	if err != nil {
-		fmt.Printf("CreateProgramWithSource failed: %+v \n", err)
-		return
+	nobinary := bool(false)
+
+	// Attempt to obtain binary from library. Compile from source if unable to...
+	programBytes := ld.GetClDeviceBinary(ClDevice)
+	if programBytes == nil {
+		fmt.Println("Unable to get program binary!")
+		nobinary = true
+	} else {
+		if program, err = context.CreateProgramWithBinary([]*cl.Device{ClDevice}, []int{len(programBytes)}, [][]byte{programBytes}); err != nil {
+			fmt.Printf("Unable to load binary from library...continuing to compile code \n")
+			nobinary = true
+		}
 	}
 
-	// Attempt to build binary from opencl program
-	if err = program.BuildProgram([]*cl.Device{ClDevice}, "-cl-std=CL1.2 -cl-fp32-correctly-rounded-divide-sqrt -cl-kernel-arg-info -D__REAL_IS_DOUBLE__"); err != nil {
-		fmt.Printf("BuildProgram failed: %+v \n", err)
-		return
+	// Unable to load kernel from binary. Compile kernel source code instead
+	if nobinary {
+		if program, err = context.CreateProgramWithSource([]string{GenMergedKernelSource()}); err != nil {
+			fmt.Printf("CreateProgramWithSource failed: %+v \n", err)
+			return
+		}
+
+		// Attempt to build binary from opencl program
+		if err = program.BuildProgram([]*cl.Device{ClDevice}, "-cl-std=CL1.2 -cl-finite-math-only -cl-no-signed-zeros -cl-fp32-correctly-rounded-divide-sqrt -cl-kernel-arg-info -D__REAL_IS_DOUBLE__"); err != nil {
+			fmt.Printf("BuildProgram failed: %+v \n", err)
+			return
+		}
 	}
 
 	// Attempt to build list of kernels in opencl program
