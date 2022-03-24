@@ -4,13 +4,6 @@ GO_BUILDFLAGS=-compiler gc
 # or may not be faster than gc and which may or may not compile...
 # GO_BUILDFLAGS=-compiler gccgo -gccgoflags '-static-libgcc -O4 -Ofast -march=native'
 
-CGO_LDFLAGS := ''
-ifeq ($(OS),Windows_NT)
-	CGO_LDFLAGS += '-L$(CUDAROOT)\\lib64\\x86_64 -L$(GOPATH)\\lib'
-else
-	CGO_LDFLAGS += '-L$(CUDAROOT)/lib -L$(GOPATH)/lib'
-endif
-
 CGO_CFLAGS_ALLOW='(-fno-schedule-insns|-malign-double|-ffast-math)'
 
 
