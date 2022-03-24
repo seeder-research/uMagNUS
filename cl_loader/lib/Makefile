@@ -5,19 +5,22 @@ LDFLAGS := -shared
 LIBPREFIX := 
 LIBSUFFIX := 
 LINKLIBS := 
+LIBFILES := 
 ifeq ($(OS), WINDOWS_NT)
-	LIBSUFFIX = lib
+	LIBSUFFIX = dll
+	LIBFILES = *.o *.dll
 else
 	LIBPREFIX = lib
 	LIBSUFFIX = so.2.1.0
+	LIBFILES = *.o lib*.so lib*.so*
 	LINKLIBS = ln -sf libumagnus.so.2.1.0 libumagnus.so.2.1 && ln -sf libumagnus.so.2.1 libumagnus.so.2 && ln -sf libumagnus.so.2 libumagnus.so && ln -sf libumagnus.so.2 libumagnus64.so
 endif
 
 .PHONY = all obj lib clean realclean
 
 lib: obj
-	$(CC) $(LDFLAGS) -o libumagnus.so.2.1.0 clCompiler.o
-	$(CC) $(LDFLAGS) -o libumagnus64.so.2.1.0 clCompiler.o
+	$(CC) $(LDFLAGS) -o $(LIBPREFIX)umagnus.$(LIBSUFFIX) clCompiler.o
+	$(CC) $(LDFLAGS) -o $(LIBPREFIX)umagnus64.$(LIBSUFFIX) clCompiler.o
 
 
 all: lib
@@ -29,7 +32,7 @@ obj:
 
 
 clean:
-	rm -f *.o lib*.so lib*.so.*
+	rm -f $(LIBFILES)
 
 
 realclean: clean
