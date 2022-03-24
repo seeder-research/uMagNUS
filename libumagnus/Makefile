@@ -1,21 +1,29 @@
 CC := gcc
 CFLAGS := -fPIC -Wall -O4
 LDFLAGS := -shared
+LIBPREFIX := 
+LIBSUFFIX := 
+LIBLINKS := 
+LIB64LINKS := 
+ifeq ($(OS),Windows_NT)
+        LIBSUFFIX = dll
+else
+        LIBPREFIX = lib
+        LIBSUFFIX = so.2.1.0
+        LIBLINKS = ln -sf libumagnus.so.2.1.0 libumagnus.so.2.1 && ln -sf libumagnus.so.2.1 libumagnus.so.2 && ln -sf libumagnus.so.2 libumagnus.so
+        LIB64LINKS = ln -sf libumagnus64.so.2.1.0 libumagnus64.so.2.1 && ln -sf libumagnus64.so.2.1 libumagnus64.so.2 && ln -sf libumagnus64.so.2 libumagnus64.so
+endif
 
 .PHONY = all obj obj64 lib lib64 clean realclean
 
 lib: obj
-	$(CC) $(LDFLAGS) -o libumagnus.so.2.1.0 libumagnus.o
-	ln -sf libumagnus.so.2.1.0 libumagnus.so.2.1
-	ln -sf libumagnus.so.2.1 libumagnus.so.2
-	ln -sf libumagnus.so.2 libumagnus.so
+	$(CC) $(LDFLAGS) -o $(LIBPREFIX)umagnus.$(LIBSUFFIX) libumagnus.o
+	$(LIBLINKS)
 
 
 lib64: obj64
-	$(CC) $(LDFLAGS) -o libumagnus64.so.2.1.0 libumagnus64.o
-	ln -sf libumagnus64.so.2.1.0 libumagnus64.so.2.1
-	ln -sf libumagnus64.so.2.1 libumagnus64.so.2
-	ln -sf libumagnus64.so.2 libumagnus64.so
+	$(CC) $(LDFLAGS) -o $(LIBPREFIX)umagnus64.$(LIBSUFFIX) libumagnus64.o
+	$(LIB64LINKS)
 
 
 all: lib lib64
