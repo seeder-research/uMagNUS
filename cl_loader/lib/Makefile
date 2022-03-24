@@ -6,7 +6,7 @@ LIBPREFIX :=
 LIBSUFFIX := 
 LINKLIBS := 
 LIBFILES := 
-ifeq ($(OS), WINDOWS_NT)
+ifeq ($(OS),Windows_NT)
 	LIBSUFFIX = dll
 	LIBFILES = *.o *.dll
 else

@@ -24,10 +24,10 @@ gccgo:
 
 test: 6gtest gccgotest
 
-6gtest: 
+6gtest:
 	go test
 
-gccgotest: 
+gccgotest:
 	go test -compiler $(GCCGO)
 
 bench: 6gbench gccgobench
