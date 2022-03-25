@@ -62,7 +62,7 @@ util: go.mod
 
 
 ocl2go: go.mod
-	$(MAKE) -C ./cmd/ocl2go all
+	$(MAKE) -C ./ocl2go all
 
 cl-compiler: cl-binds
 	$(MAKE) -C ./cmd/uMagNUS-clCompiler all
@@ -167,6 +167,7 @@ clean:
 	$(MAKE) -C ./opencl clean
 	$(MAKE) -C ./opencl64 clean
 	$(MAKE) -C ./libumagnus clean
+	$(MAKE) -C ./ocl2go realclean
 
 
 realclean: clean
@@ -174,3 +175,4 @@ realclean: clean
 	${MAKE} -C ./opencl realclean
 	${MAKE} -C ./opencl64 realclean
 	$(MAKE) -C ./libumagnus realclean
+	$(MAKE) -C ./ocl2go realclean

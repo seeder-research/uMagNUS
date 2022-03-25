@@ -80,7 +80,7 @@ func GetClDeviceBinary(d *cl.Device) []byte {
 
 	// Error check for invalid device
 	if idx < 0 {
-		return []byte{}
+		return nil
 	}
 
 	// OpenCL device is available
