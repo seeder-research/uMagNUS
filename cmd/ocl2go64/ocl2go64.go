@@ -17,7 +17,11 @@ import (
 	"github.com/seeder-research/uMagNUS/util"
 )
 
-var Flag_fp64 = flag.Bool("double", false, "compile for fp64 kernels")
+var (
+Flag_indir = flag.String("indir", ".", )
+Flag_outdir = flag.String("outdir", "..", )
+Flag_fp64 = flag.Bool("double", false, "compile for fp64 kernels")
+)
 
 func main() {
 	flag.Parse()

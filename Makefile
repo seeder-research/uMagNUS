@@ -61,6 +61,9 @@ util: go.mod
 	$(MAKE) -C ./util all
 
 
+ocl2go: go.mod
+	$(MAKE) -C ./cmd/ocl2go all
+
 cl-compiler: cl-binds
 	$(MAKE) -C ./cmd/uMagNUS-clCompiler all
 

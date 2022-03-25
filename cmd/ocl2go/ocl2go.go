@@ -17,6 +17,8 @@ import (
 	"github.com/seeder-research/uMagNUS/util"
 )
 
+var Flag_outdir = flag.String("outdir", ".", "directory to output kernel wrappers to")
+
 func main() {
 	flag.Parse()
 	for _, fname := range flag.Args() {
@@ -168,7 +170,7 @@ var ls []string
 func wrapgen(filename, funcname string, argt, argn, setn []string) {
 	kernel := &Kernel{funcname, argt, argn, setn}
 	basename := util.NoExt(filename)
-	wrapfname := basename + "_wrapper.go"
+	wrapfname := *Flag_outdir + "/" + basename + "_wrapper.go"
 	wrapout, err := os.OpenFile(wrapfname, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 	util.PanicErr(err)
 	defer wrapout.Close()
