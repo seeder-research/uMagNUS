@@ -82,7 +82,7 @@ kernloader: loader
 	$(MAKE) -C ./cmd/uMagNUS-kernelLoader all
 
 
-kernloader64: loader
+kernloader64: loader64
 	$(MAKE) -C ./cmd/uMagNUS-kernelLoader64 all
 
 
