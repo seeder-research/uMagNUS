@@ -5,4 +5,4 @@ inline real_t sum(real_t a, real_t b){
 	return a + b;
 }
 
-#endif
+#endif // _SUM_H_

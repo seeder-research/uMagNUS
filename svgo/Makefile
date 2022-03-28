@@ -1,2 +1,2 @@
 all:
-	go install
+	go install -v

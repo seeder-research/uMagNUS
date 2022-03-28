@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"unsafe"
 
-	data "github.com/seeder-research/uMagNUS/data64"
 	"github.com/seeder-research/uMagNUS/cl"
+	data "github.com/seeder-research/uMagNUS/data64"
 )
 
 // SetMaxAngle sets dst to the maximum angle of each cells magnetization with all of its neighbors,

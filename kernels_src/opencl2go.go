@@ -28,13 +28,17 @@ type Kernel_stuff struct {
 var ls_dirclh []string
 var ls_dircl []string
 var ls_dircl64 []string
-var Flag_fp64 = flag.Bool("double", false, "generating for double-precision")
+var (
+	Flag_indir  = flag.String("indir", ".", "directory containing clh, cl and cl64 directories to search for kernel files")
+	Flag_outdir = flag.String("outdir", "..", "directory containing kernels and kernels64 directories to output program_wrapper.go")
+	Flag_fp64   = flag.Bool("double", false, "generating for double-precision")
+)
 
 func main() {
 	flag.Parse()
 	// find .clh files
 	if ls_dirclh == nil {
-		dirclh, errd := os.Open("./clh")
+		dirclh, errd := os.Open(*Flag_indir + "/clh")
 		defer dirclh.Close()
 		util.PanicErr(errd)
 		var errls error
@@ -44,7 +48,7 @@ func main() {
 
 	// find .cl files
 	if ls_dircl == nil {
-		dircl, errd := os.Open("./cl")
+		dircl, errd := os.Open(*Flag_indir + "/cl")
 		defer dircl.Close()
 		util.PanicErr(errd)
 		var errls error
@@ -59,7 +63,7 @@ func main() {
 		util.PanicErr(e)
 		if match {
 			fkey := f[:len(f)-len(".clh")]
-			opencl_codes.OCL[fkey] = getFile("./clh/" + f)
+			opencl_codes.OCL[fkey] = getFile(*Flag_indir + "/clh/" + f)
 		}
 	}
 
@@ -68,29 +72,29 @@ func main() {
 		match, e := regexp.MatchString("..cl$", f)
 		util.PanicErr(e)
 		if match {
-			kname := getKernelName("./cl/" + f)
-			opencl_codes.Code[kname] = getFile("./cl/" + f)
+			kname := getKernelName(*Flag_indir + "/cl/" + f)
+			opencl_codes.Code[kname] = getFile(*Flag_indir + "/cl/" + f)
 		}
 	}
 
 	if *Flag_fp64 {
-	        // find .cl files
-	        if ls_dircl64 == nil {
-        	        dircl64, errd := os.Open("./cl64")
-                	defer dircl64.Close()
-	                util.PanicErr(errd)
-        	        var errls error
-                	ls_dircl64, errls = dircl64.Readdirnames(-1)
-	                util.PanicErr(errls)
-        	}
-	        // get names of kernels available in .cl files
-        	for _, f := range ls_dircl64 {
-	                match, e := regexp.MatchString("..cl$", f)
-        	        util.PanicErr(e)
-                	if match {
-	                        kname := getKernelName("./cl64/" + f)
-        	                opencl_codes.Code[kname] = getFile("./cl64/" + f)
-                	}
+		// find .cl files
+		if ls_dircl64 == nil {
+			dircl64, errd := os.Open(*Flag_indir + "/cl64")
+			defer dircl64.Close()
+			util.PanicErr(errd)
+			var errls error
+			ls_dircl64, errls = dircl64.Readdirnames(-1)
+			util.PanicErr(errls)
+		}
+		// get names of kernels available in .cl files
+		for _, f := range ls_dircl64 {
+			match, e := regexp.MatchString("..cl$", f)
+			util.PanicErr(e)
+			if match {
+				kname := getKernelName(*Flag_indir + "/cl64/" + f)
+				opencl_codes.Code[kname] = getFile(*Flag_indir + "/cl64/" + f)
+			}
 		}
 	}
 
@@ -117,48 +121,13 @@ func main() {
 	}
 	tmpBuffer.WriteString("\n`\n\n	return opencl_codes\n}\n")
 
-	wrapfname := "../kernels"
+	wrapfname := string("")
 	if *Flag_fp64 {
-		wrapfname = "../kernels64/program_wrapper.go"
+		wrapfname = *Flag_outdir + "/kernels64/program_wrapper.go"
 	} else {
-		wrapfname = "../kernels/program_wrapper.go"
+		wrapfname = *Flag_outdir + "/kernels/program_wrapper.go"
 	}
 	wrapout, err := os.OpenFile(wrapfname, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
-	util.PanicErr(err)
-	wrapout.WriteString(tmpBuffer.String())
-	wrapout.Close()
-
-	tmpBuffer = new(bytes.Buffer)
-	if *Flag_fp64 {
-		tmpBuffer.WriteString("package opencl64\n\n")
-	} else {
-		tmpBuffer.WriteString("package opencl\n\n")
-	}
-	tmpBuffer.WriteString("var KernelNames = []string{\n")
-	for idx, keynames := range kernels_src.OCLKernelsList {
-		if idx == len(kernels_src.OCLKernelsList)-1 {
-			if *Flag_fp64 {
-				tmpBuffer.WriteString("\t\"" + keynames + "\",\n")
-				for idx1, keynames1 := range kernels_src.OCL64KernelsList {
-					if idx1 == len(kernels_src.OCL64KernelsList)-1 {
-						tmpBuffer.WriteString("\t\"" + keynames1 + "\"}\n")
-					} else {
-						tmpBuffer.WriteString("\t\"" + keynames1 + "\",\n")
-					}
-				}
-			} else {
-				tmpBuffer.WriteString("\t\"" + keynames + "\"}\n")
-			}
-		} else {
-			tmpBuffer.WriteString("\t\"" + keynames + "\",\n")
-		}
-	}
-	if *Flag_fp64 {
-		wrapfname = "../opencl64/opencl_kernels_wrapper.go"
-	} else {
-		wrapfname = "../opencl/opencl_kernels_wrapper.go"
-	}
-	wrapout, err = os.OpenFile(wrapfname, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 	util.PanicErr(err)
 	wrapout.WriteString(tmpBuffer.String())
 	wrapout.Close()

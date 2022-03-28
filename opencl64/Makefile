@@ -11,10 +11,10 @@ WRAPPER64FILES := $(notdir $(OPENCL64FILES))
 WRAPPERS64 := $(WRAPPER64FILES:.cl=_fp64_wrapper.go)
 
 
-.PHONY: all ocl2go64 wrappers fp64wrappers clean realclean
+.PHONY: all ocl2go wrappers fp64wrappers clean realclean
 
 
-all: ocl2go64 wrappers fp64wrappers opencl2go
+all: ocl2go wrappers fp64wrappers opencl2go
 	mv RNGthreefry*_wrapper.go oclRAND/.
 	mv RNGxorwow*_wrapper.go oclRAND/.
 	sed -i "s/package opencl64/package oclRAND/g" oclRAND/RNGthreefry*wrapper.go
@@ -28,33 +28,31 @@ wrappers: $(WRAPPERS)
 fp64wrappers: $(WRAPPERS64)
 
 
-ocl2go64: ocl2go64.go
-	go build $<
+ocl2go:
+	$(MAKE) -C ../ocl2go all
 
 
-opencl2go: ocl2go64
+opencl2go: ocl2go
 	$(MAKE) -C ../kernels_src clean
 	$(MAKE) -C ../kernels_src double
 
 
 %_wrapper.go: ../kernels_src/cl/%.cl
-	./ocl2go64 $< > /dev/null
-	gofmt -w -s -l ../kernels_src/cl/$@ > /dev/null
-	mv ../kernels_src/cl/$@ ./$@
+	../ocl2go/ocl2go -outdir="$(GOPATH)/src/github.com/seeder-research/uMagNUS/opencl64" -lib64 $< > /dev/null
+	gofmt -w -s -l ./$@ > /dev/null
 
 
 %_fp64_wrapper.go: ../kernels_src/cl64/%.cl
-	./ocl2go64 -double $< > /dev/null
-	gofmt -w -s -l ../kernels_src/cl64/$@ > /dev/null
-	mv ../kernels_src/cl64/$@ ./$@
+	../ocl2go/ocl2go -outdir="$(GOPATH)/src/github.com/seeder-research/uMagNUS/opencl64" -lib64 -double $< > /dev/null
+	gofmt -w -s -l ./$@ > /dev/null
 
 
 clean:
 	$(MAKE) -C ../kernels_src clean
 	$(MAKE) -C ./oclRAND clean
-	rm -vf *_wrapper.go ocl2go64 ../kernels64/program_wrapper.go
+	rm -vf *_wrapper.go ../kernels64/program_wrapper.go
 
 
 realclean:
 	$(MAKE) -C ../kernels_src realclean
-	rm -vf *_wrapper.go ocl2go64 ../kernels64/program_wrapper.go
+	rm -vf *_wrapper.go ../kernels64/program_wrapper.go

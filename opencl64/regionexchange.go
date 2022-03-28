@@ -7,8 +7,8 @@ import (
 	"math"
 	"unsafe"
 
-	data "github.com/seeder-research/uMagNUS/data64"
 	"github.com/seeder-research/uMagNUS/cl"
+	data "github.com/seeder-research/uMagNUS/data64"
 )
 
 // Add exchange field to Beff.

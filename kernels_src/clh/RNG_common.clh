@@ -1,3 +1,5 @@
+#ifndef __RNG_COMMON_H__
+#define __RNG_COMMON_H__
 // Taken from PhD thesis of Thomas Luu (Department of Mathematics
 // at University College of London)
 static inline float normcdfinv_(float u) {
@@ -129,3 +131,5 @@ static inline void boxMuller64(double* in, double* out, uint offset) {
 #if defined(__REAL_IS_DOUBLE__)
 #define XORWOW_NORM_double 2.328306549295727688e-10
 #endif // __REAL_IS_DOUBLE__
+
+#endif // __RNG_COMMON_H__

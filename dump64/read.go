@@ -214,31 +214,31 @@ func (r *reader) readSlice32() (s *data.Slice, info data.Meta, err error) {
 
 // reads in dump files storing single-precision floats as double-precision
 func (r *reader) readPrecision() (uint64, error) {
-        r.err = nil // clear previous error, if any
-        magic := r.readString()
-        if r.err != nil {
-                return 0, r.err
-        }
-        if magic != MAGIC {
-                r.err = fmt.Errorf("dump: bad magic number:%v", magic)
-                return 0, r.err
-        }
-        _ = r.readInt()
-        _ = r.readInt() // backwards compatible coordinates!
-        _ = r.readInt()
-        _ = r.readInt()
-        _ = r.readFloat64()
-        _ = r.readFloat64()
-        _ = r.readFloat64()
+	r.err = nil // clear previous error, if any
+	magic := r.readString()
+	if r.err != nil {
+		return 0, r.err
+	}
+	if magic != MAGIC {
+		r.err = fmt.Errorf("dump: bad magic number:%v", magic)
+		return 0, r.err
+	}
+	_ = r.readInt()
+	_ = r.readInt() // backwards compatible coordinates!
+	_ = r.readInt()
+	_ = r.readInt()
+	_ = r.readFloat64()
+	_ = r.readFloat64()
+	_ = r.readFloat64()
 
-        _ = r.readString()
-        _ = r.readFloat64()
-        _ = r.readString() // time unit
+	_ = r.readString()
+	_ = r.readFloat64()
+	_ = r.readString() // time unit
 
-        _ = r.readString()
-        _ = r.readString()
+	_ = r.readString()
+	_ = r.readString()
 	precision := r.readUint64()
-        return precision, r.err
+	return precision, r.err
 }
 
 func (r *reader) readInt() int {

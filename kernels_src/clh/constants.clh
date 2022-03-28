@@ -8,9 +8,8 @@
 #define GAMMA0 1.7595e11          // Gyromagnetic ratio of electron, in rad/Ts
 #define HBAR   1.05457173E-34
 
-#endif
+#endif // _CONSTANTS_H_
 
 #ifndef NULL
 #define NULL ((void*)0)
-#endif
-
+#endif // NULL

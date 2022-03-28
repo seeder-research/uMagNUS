@@ -3,8 +3,8 @@ package opencl64
 import (
 	"fmt"
 
-	data "github.com/seeder-research/uMagNUS/data64"
 	"github.com/seeder-research/uMagNUS/cl"
+	data "github.com/seeder-research/uMagNUS/data64"
 )
 
 // m = 1 / (4 + τ²(m x H)²) [{4 - τ²(m x H)²} m - 4τ(m x m x H)]

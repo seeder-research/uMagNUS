@@ -23,4 +23,4 @@ inline real_t inv_Msat(__global real_t* Ms_, real_t Ms_mul, int i) {
         return 1.0f / ms;
     }
 }
-#endif
+#endif // _AMUL_H_

@@ -2,6 +2,19 @@ package cl
 
 /*
 #include "./opencl.h"
+
+static cl_int CLGetCommandQueueInfoParamSize(cl_command_queue              command_queue,
+                                      cl_command_queue_info            param_name,
+                                      size_t                *param_value_size_ret) {
+	return clGetCommandQueueInfo(command_queue, param_name, NULL, NULL, param_value_size_ret);
+}
+
+static cl_int CLGetCommandQueueInfoParamUnsafe(cl_command_queue          command_queue,
+                                        cl_command_queue_info        param_name,
+                                        size_t                 param_value_size,
+                                        void                       *param_value) {
+	return clGetCommandQueueInfo(command_queue, param_name, param_value_size, param_value, NULL);
+}
 */
 import "C"
 
@@ -92,8 +105,17 @@ func (q *CommandQueue) GetQueueID() C.cl_command_queue {
 func (q *CommandQueue) GetQueueContext() (*Context, error) {
 	if q.clQueue != nil {
 		var outContext C.cl_context
-		err := C.clGetCommandQueueInfo(q.clQueue, C.CL_QUEUE_CONTEXT, C.size_t(unsafe.Sizeof(outContext)), unsafe.Pointer(&outContext), nil)
-		return &Context{clContext: outContext, devices: nil}, toError(err)
+		var tmpN C.size_t
+		defer C.free(unsafe.Pointer(&tmpN))
+		err := C.CLGetCommandQueueInfoParamSize(q.clQueue, C.CL_QUEUE_CONTEXT, &tmpN)
+		if toError(err) != nil {
+			return nil, toError(err)
+		}
+		err = C.CLGetCommandQueueInfoParamUnsafe(q.clQueue, C.CL_QUEUE_CONTEXT, tmpN, unsafe.Pointer(&outContext))
+		if toError(err) != nil {
+			return nil, toError(err)
+		}
+		return &Context{clContext: outContext, devices: nil}, nil
 	}
 	return nil, toError(C.CL_INVALID_COMMAND_QUEUE)
 }
@@ -101,7 +123,16 @@ func (q *CommandQueue) GetQueueContext() (*Context, error) {
 func (q *CommandQueue) GetQueueDevice() (*Device, error) {
 	if q.clQueue != nil {
 		var outDevice C.cl_device_id
-		err := C.clGetCommandQueueInfo(q.clQueue, C.CL_QUEUE_DEVICE, C.size_t(unsafe.Sizeof(outDevice)), unsafe.Pointer(&outDevice), nil)
+		var tmpN C.size_t
+		defer C.free(unsafe.Pointer(&tmpN))
+		err := C.CLGetCommandQueueInfoParamSize(q.clQueue, C.CL_QUEUE_DEVICE, &tmpN)
+		if toError(err) != nil {
+			return nil, toError(err)
+		}
+		err = C.CLGetCommandQueueInfoParamUnsafe(q.clQueue, C.CL_QUEUE_DEVICE, tmpN, unsafe.Pointer(&outDevice))
+		if toError(err) != nil {
+			return nil, toError(err)
+		}
 		return &Device{id: outDevice}, toError(err)
 	}
 	return nil, toError(C.CL_INVALID_COMMAND_QUEUE)
@@ -110,8 +141,17 @@ func (q *CommandQueue) GetQueueDevice() (*Device, error) {
 func (q *CommandQueue) GetQueueReferenceCount() (CLUint, error) {
 	if q.clQueue != nil {
 		var outCount C.cl_uint
-		err := C.clGetCommandQueueInfo(q.clQueue, C.CL_QUEUE_REFERENCE_COUNT, C.size_t(unsafe.Sizeof(outCount)), unsafe.Pointer(&outCount), nil)
-		return CLUint(outCount), toError(err)
+		var tmpN C.size_t
+		defer C.free(unsafe.Pointer(&tmpN))
+		err := C.CLGetCommandQueueInfoParamSize(q.clQueue, C.CL_QUEUE_REFERENCE_COUNT, &tmpN)
+		if toError(err) != nil {
+			return 0, toError(err)
+		}
+		err = C.CLGetCommandQueueInfoParamUnsafe(q.clQueue, C.CL_QUEUE_REFERENCE_COUNT, tmpN, unsafe.Pointer(&outCount))
+		if toError(err) != nil {
+			return 0, toError(err)
+		}
+		return CLUint(outCount), nil
 	}
 	return 0, toError(C.CL_INVALID_COMMAND_QUEUE)
 }
@@ -119,7 +159,16 @@ func (q *CommandQueue) GetQueueReferenceCount() (CLUint, error) {
 func (q *CommandQueue) GetQueueProperties() (CommandQueueProperty, error) {
 	if q.clQueue != nil {
 		var outVar CommandQueueProperty
-		err := C.clGetCommandQueueInfo(q.clQueue, C.CL_QUEUE_PROPERTIES, C.size_t(unsafe.Sizeof(outVar)), unsafe.Pointer(&outVar), nil)
+		var tmpN C.size_t
+		defer C.free(unsafe.Pointer(&tmpN))
+		err := C.CLGetCommandQueueInfoParamSize(q.clQueue, C.CL_QUEUE_PROPERTIES, &tmpN)
+		if toError(err) != nil {
+			return 0, toError(err)
+		}
+		err = C.CLGetCommandQueueInfoParamUnsafe(q.clQueue, C.CL_QUEUE_PROPERTIES, tmpN, unsafe.Pointer(&outVar))
+		if toError(err) != nil {
+			return 0, toError(err)
+		}
 		return outVar, toError(err)
 	}
 	return 0, toError(C.CL_INVALID_COMMAND_QUEUE)

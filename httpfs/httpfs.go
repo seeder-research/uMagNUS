@@ -1,6 +1,6 @@
 /*
 Package httpfs provides a (userspace) file system API over http.
-httpfs is used by uMagNUS-server to proved file system access to the compute nodes.
+httpfs is used by uMagNUS-server to provide file system access to the compute nodes.
 
 The API is similar to go's os package, but both local file names and URLs may be passed.
 When the file "name" starts with "http://", it is treated as a remote file, otherwise

@@ -21,8 +21,8 @@ all: ocl2go wrappers opencl2go
 wrappers: $(WRAPPERS)
 
 
-ocl2go: ocl2go.go
-	go build $<
+ocl2go:
+	$(MAKE) -C ../ocl2go all
 
 
 opencl2go: ocl2go
@@ -31,17 +31,16 @@ opencl2go: ocl2go
 
 
 %_wrapper.go: ../kernels_src/cl/%.cl ocl2go
-	./ocl2go $< > /dev/null
-	gofmt -w -s -l ../kernels_src/cl/$@ > /dev/null
-	mv ../kernels_src/cl/$@ ./$@
+	../ocl2go/ocl2go -outdir="$(GOPATH)/src/github.com/seeder-research/uMagNUS/opencl" $< > /dev/null
+	gofmt -w -s -l ./$@ > /dev/null
 
 
 clean:
 	$(MAKE) -C ../kernels_src clean
 	$(MAKE) -C ./oclRAND clean
-	rm -vf *_wrapper.go ocl2go ../kernels/program_wrapper.go
+	rm -vf *_wrapper.go ../kernels/program_wrapper.go
 
 
 realclean:
 	$(MAKE) -C ../kernels_src realclean
-	rm -vf *_wrapper.go ocl2go ../kernels/program_wrapper.go
+	rm -vf *_wrapper.go ../kernels/program_wrapper.go

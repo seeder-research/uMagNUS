@@ -7,5 +7,4 @@ inline void atomicFmaxabs(volatile __global real_t* a, real_t b){
     atomic_max((__global int*)(a), *((int*)(&b)));
 }
 
-#endif
-
+#endif // _ATOMICF_H_
