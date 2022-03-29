@@ -1,9 +1,8 @@
-package draw
+package draw64
 
 import (
 	"bufio"
 	"fmt"
-	data "github.com/seeder-research/uMagNUS/data64"
 	"image"
 	"image/gif"
 	"image/jpeg"
@@ -12,6 +11,8 @@ import (
 	"os"
 	"path"
 	"strings"
+
+	data "github.com/seeder-research/uMagNUS/data64"
 )
 
 func RenderFile(fname string, f *data.Slice, min, max string, arrowSize int, colormap ...ColorMapSpec) error {

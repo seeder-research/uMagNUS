@@ -1,4 +1,4 @@
-package draw
+package draw64
 
 import "image/color"
 import "fmt"

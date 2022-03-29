@@ -1,12 +1,13 @@
 package draw
 
 import (
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/util"
 	"image"
 	"image/color"
 	"log"
 	"strconv"
+
+	data "github.com/seeder-research/uMagNUS/data"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // Renders an image of slice. fmin, fmax = "auto" or a number to set the min/max color scale.

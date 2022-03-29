@@ -1,2 +1,2 @@
 // 2D rendering of data slices.
-package draw
+package draw64

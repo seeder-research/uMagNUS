@@ -1,11 +1,12 @@
-package draw
+package draw64
 
 import (
-	data "github.com/seeder-research/uMagNUS/data64"
-	"github.com/seeder-research/uMagNUS/freetype/raster"
 	"image"
 	"image/color"
 	"math"
+
+	data "github.com/seeder-research/uMagNUS/data64"
+	raster "github.com/seeder-research/uMagNUS/freetype/raster"
 )
 
 func drawArrows(img *image.RGBA, arr [3][][][]float64, sub int) {

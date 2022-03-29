@@ -2,9 +2,10 @@ package draw
 
 import (
 	"fmt"
-	"github.com/seeder-research/uMagNUS/svgo"
 	"io"
 	"math"
+
+	svgo "github.com/seeder-research/uMagNUS/svgo"
 )
 
 // Renders svg image of vector data.
