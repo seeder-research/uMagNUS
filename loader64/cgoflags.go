@@ -1,4 +1,4 @@
-package loader
+package loader64
 
 // This file provides CGO flags to find uMagNUS libraries and headers.
 

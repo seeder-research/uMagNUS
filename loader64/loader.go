@@ -1,4 +1,4 @@
-package loader
+package loader64
 
 /*
 #include "clCompiler.h"
@@ -35,7 +35,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/seeder-research/uMagNUS/cl"
+	cl "github.com/seeder-research/uMagNUS/cl"
 )
 
 func checkDevice(d *cl.Device) int {
