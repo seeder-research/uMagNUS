@@ -1,7 +1,7 @@
 package data64
 
 import (
-	"github.com/seeder-research/uMagNUS/util"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // Resample returns a slice of new size N,

@@ -5,11 +5,12 @@ package data
 import (
 	"bytes"
 	"fmt"
-	"github.com/seeder-research/uMagNUS/cl"
-	"github.com/seeder-research/uMagNUS/util"
 	"log"
 	"reflect"
 	"unsafe"
+
+	cl "github.com/seeder-research/uMagNUS/cl"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 const SIZEOF_FLOAT32 = 4
