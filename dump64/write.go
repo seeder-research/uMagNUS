@@ -2,14 +2,15 @@ package dump64
 
 import (
 	"bufio"
-	data "github.com/seeder-research/uMagNUS/data64"
-	"github.com/seeder-research/uMagNUS/util"
 	"hash"
 	"hash/crc64"
 	"io"
 	"math"
 	"os"
 	"unsafe"
+
+	data "github.com/seeder-research/uMagNUS/data64"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // Write the slice to out in binary format. Add time stamp.

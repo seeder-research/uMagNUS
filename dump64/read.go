@@ -3,14 +3,15 @@ package dump64
 
 import (
 	"fmt"
-	data "github.com/seeder-research/uMagNUS/data64"
-	"github.com/seeder-research/uMagNUS/util"
 	"hash"
 	"hash/crc64"
 	"io"
 	"math"
 	"os"
 	"unsafe"
+
+	data "github.com/seeder-research/uMagNUS/data64"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 func Read(in io.Reader) (*data.Slice, data.Meta, error) {
