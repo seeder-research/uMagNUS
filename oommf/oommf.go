@@ -4,12 +4,13 @@ package oommf
 import (
 	"bufio"
 	"fmt"
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/util"
 	"io"
 	"os"
 	"strconv"
 	"strings"
+
+	data "github.com/seeder-research/uMagNUS/data"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // Read any OOMMF file, autodetect OVF1/OVF2 format

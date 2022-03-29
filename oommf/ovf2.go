@@ -2,11 +2,12 @@ package oommf
 
 import (
 	"fmt"
-	"github.com/seeder-research/uMagNUS/data"
 	"io"
 	"log"
 	"strings"
 	"unsafe"
+
+	data "github.com/seeder-research/uMagNUS/data"
 )
 
 func WriteOVF2(out io.Writer, q *data.Slice, meta data.Meta, dataformat string) {

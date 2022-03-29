@@ -1,12 +1,13 @@
-package oommf
+package oommf64
 
 import (
 	"fmt"
-	data "github.com/seeder-research/uMagNUS/data64"
 	"io"
 	"log"
 	"strings"
 	"unsafe"
+
+	data "github.com/seeder-research/uMagNUS/data64"
 )
 
 func WriteOVF2(out io.Writer, q *data.Slice, meta data.Meta, dataformat string) {

@@ -1,15 +1,16 @@
 // package oommf provides the OVF data format as used by OOMMF.
-package oommf
+package oommf64
 
 import (
 	"bufio"
 	"fmt"
-	data "github.com/seeder-research/uMagNUS/data64"
-	"github.com/seeder-research/uMagNUS/util"
 	"io"
 	"os"
 	"strconv"
 	"strings"
+
+	data "github.com/seeder-research/uMagNUS/data64"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // Read any OOMMF file, autodetect OVF1/OVF2 format

@@ -1,4 +1,4 @@
-package oommf
+package oommf64
 
 import (
 	"io"
