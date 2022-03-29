@@ -28,6 +28,7 @@ Consider downloading a pre-compiled binary. If you want to compile nevertheless:
     - if unsure, it's probably already there
     - requires OpenCL 1.2 support
     - the steps to build from scratch to running the tests were tested on the following setups:
+        - Ubuntu 18.04 with Intel HD Graphics 630 (default Intel drivers from ubuntu repo)
         - Ubuntu 20.04 with Nvidia Quadro P100 (nvidia-dkms-510 driver from nvidia repo)
         - Ubuntu 20.04 with Nvidia Quadro P2000 (nvidia-dkms-510 driver from nvidia repo)
         - Ubuntu 20.04 with Nvidia RTX 2080 Super (nvidia-dkms-510 driver from nvidia repo)
@@ -47,10 +48,10 @@ Consider downloading a pre-compiled binary. If you want to compile nevertheless:
   * if you don't have git:
     - get the source from https://github.com/seeder-research/uMagNUS/releases
     - unzip the source into $GOPATH/src/github.com/seeder-research/uMagNUS
-    - `cd $GOPATH/src/github.com/seeder-research/uMagNUS`
+  * `cd $GOPATH/src/github.com/seeder-research/uMagNUS`
     - `make uMagNUS`
     - For double-precision support, run:
-        - `make uMagNUS`
+        - `make uMagNUS64`
   * optional: install gnuplot if you want pretty graphs
     - Ubuntu: `sudo apt-get install gnuplot`
 
