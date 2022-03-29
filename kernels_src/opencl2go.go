@@ -15,8 +15,8 @@ import (
 	"regexp"
 	"text/scanner"
 
-	"github.com/seeder-research/uMagNUS/kernels_src"
-	"github.com/seeder-research/uMagNUS/util"
+	kernels_src "github.com/seeder-research/uMagNUS/kernels_src"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // template data
