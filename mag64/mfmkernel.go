@@ -3,11 +3,12 @@ package mag64
 import (
 	"bufio"
 	"fmt"
-	d "github.com/seeder-research/uMagNUS/data64"
-	oommf "github.com/seeder-research/uMagNUS/oommf64"
-	"github.com/seeder-research/uMagNUS/util"
 	"math"
 	"os"
+
+	d "github.com/seeder-research/uMagNUS/data64"
+	oommf "github.com/seeder-research/uMagNUS/oommf64"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 func MFMKernel(mesh *d.Mesh, lift, tipsize float64, cacheDir string) (kernel [3]*d.Slice) {

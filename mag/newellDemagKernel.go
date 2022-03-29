@@ -3,11 +3,12 @@ package mag
 import (
 	"bufio"
 	"fmt"
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/oommf"
-	"github.com/seeder-research/uMagNUS/util"
 	"math"
 	"os"
+
+	data "github.com/seeder-research/uMagNUS/data"
+	oommf "github.com/seeder-research/uMagNUS/oommf"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 /////////// Additional data structures ////////////////

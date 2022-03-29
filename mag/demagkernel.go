@@ -3,12 +3,13 @@ package mag
 import (
 	"bufio"
 	"fmt"
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/oommf"
-	"github.com/seeder-research/uMagNUS/timer"
-	"github.com/seeder-research/uMagNUS/util"
 	"math"
 	"os"
+
+	data "github.com/seeder-research/uMagNUS/data"
+	oommf "github.com/seeder-research/uMagNUS/oommf"
+	timer "github.com/seeder-research/uMagNUS/timer"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // Obtains the demag kernel either from cacheDir/ or by calculating (and then storing in cacheDir for next time).
