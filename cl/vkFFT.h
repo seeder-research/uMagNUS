@@ -51,10 +51,19 @@
 #ifndef CL_USE_DEPRECATED_OPENCL_1_2_APIS
 #define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 #endif
+#ifndef CL_USE_DEPRECATED_OPENCL_2_0_APIS
+#define CL_USE_DEPRECATED_OPENCL_2_0_APIS
+#endif
+#ifndef CL_USE_DEPRECATED_OPENCL_2_1_APIS
+#define CL_USE_DEPRECATED_OPENCL_2_1_APIS
+#endif
+#ifndef CL_TARGET_OPENCL_VERSION
+#define CL_TARGET_OPENCL_VERSION 120
+#endif
 #ifdef __APPLE__
-#include <OpenCL/opencl.h>
+#include "OpenCL/opencl.h"
 #else
-#include <CL/cl.h>
+#include "CL/cl.h"
 #endif
 #endif
 

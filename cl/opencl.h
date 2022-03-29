@@ -9,9 +9,9 @@
 #define CL_USE_DEPRECATED_OPENCL_2_2_APIS
 #define CL_TARGET_OPENCL_VERSION 120
 #ifdef __APPLE__
-	#include <OpenCL/OpenCL.h>
+	#include "OpenCL/OpenCL.h"
 #else
-	#include <CL/opencl.h>
+	#include "CL/opencl.h"
 #endif
 
 #ifndef CL_VERSION_1_2

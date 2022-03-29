@@ -6,40 +6,57 @@ GO_BUILDFLAGS=-compiler gc
 
 CGO_CFLAGS_ALLOW='(-fno-schedule-insns|-malign-double|-ffast-math)'
 
+.PHONY: all install 6g gccgo test 6gtest gccgotest bench 6gtest gccgotest clean stubs doc
 
 all: 6g gccgo doc
 
-install:
+
+install: stubs
 	go install -v $(GO_BUILDFLAGS)
+
 
 6g:
 	go install -v
 	go vet *.go
 	gofmt -w *.go
 
+
 GCCGO=gccgo -gccgoflags '-static-libgcc -O3'
+
 
 gccgo:
 	go build -v -compiler $(GCCGO)
 
+
 test: 6gtest gccgotest
+
 
 6gtest:
 	go test
 
+
 gccgotest:
 	go test -compiler $(GCCGO)
 
+
 bench: 6gbench gccgobench
+
 
 6gbench:
 	go test -bench=.
 
+
 gccgobench:
 	go test -bench=. -compiler $(GCCGO)
 
+
+stubs:
+	$(MAKE) -C ./stubs all
+
+
 clean:
 	go clean
+
 
 doc:
 	godoc github.com/barnex/cuda5/cu > README

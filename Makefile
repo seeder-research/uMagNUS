@@ -170,6 +170,7 @@ clean:
 	$(MAKE) -C ./opencl64 clean
 	$(MAKE) -C ./libumagnus clean
 	$(MAKE) -C ./ocl2go realclean
+	$(MAKE) -C ./cl/stubs clean
 
 
 realclean: clean
@@ -178,3 +179,4 @@ realclean: clean
 	${MAKE} -C ./opencl64 realclean
 	$(MAKE) -C ./libumagnus realclean
 	$(MAKE) -C ./ocl2go realclean
+	$(MAKE) -C ./cl/stubs realclean
