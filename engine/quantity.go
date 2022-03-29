@@ -1,9 +1,10 @@
 package engine
 
 import (
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/opencl"
 	"reflect"
+
+	data "github.com/seeder-research/uMagNUS/data"
+	opencl "github.com/seeder-research/uMagNUS/opencl"
 )
 
 // Arbitrary physical quantity.

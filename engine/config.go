@@ -3,9 +3,10 @@ package engine
 // Utilities for setting magnetic configurations.
 
 import (
-	"github.com/seeder-research/uMagNUS/data"
 	"math"
 	"math/rand"
+
+	data "github.com/seeder-research/uMagNUS/data"
 )
 
 func init() {

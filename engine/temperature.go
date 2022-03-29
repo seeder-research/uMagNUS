@@ -1,15 +1,13 @@
 package engine
 
 import (
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/mag"
-	"github.com/seeder-research/uMagNUS/opencl"
-	//"github.com/seeder-research/uMagNUS/opencl/cl"
-	//"github.com/seeder-research/uMagNUS/util"
-	//"fmt"
 	"math"
 	"math/rand"
 	"time"
+
+	data "github.com/seeder-research/uMagNUS/data"
+	mag "github.com/seeder-research/uMagNUS/mag"
+	opencl "github.com/seeder-research/uMagNUS/opencl"
 )
 
 var (

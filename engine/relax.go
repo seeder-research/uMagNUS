@@ -3,8 +3,9 @@ package engine
 // Relax tries to find the minimum energy state.
 
 import (
-	"github.com/seeder-research/uMagNUS/opencl"
 	"math"
+
+	opencl "github.com/seeder-research/uMagNUS/opencl"
 )
 
 //Stopping relax Maxtorque in T. The user can check MaxTorque for sane values (e.g. 1e-3).

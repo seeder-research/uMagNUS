@@ -3,8 +3,9 @@ package engine
 // Management of output directory.
 
 import (
-	"github.com/seeder-research/uMagNUS/httpfs"
 	"strings"
+
+	httpfs "github.com/seeder-research/uMagNUS/httpfs"
 )
 
 var (

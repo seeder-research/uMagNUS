@@ -5,9 +5,9 @@ package engine
 import (
 	"log"
 
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/mag"
-	"github.com/seeder-research/uMagNUS/opencl"
+	data "github.com/seeder-research/uMagNUS/data"
+	mag "github.com/seeder-research/uMagNUS/mag"
+	opencl "github.com/seeder-research/uMagNUS/opencl"
 )
 
 // Demag variables

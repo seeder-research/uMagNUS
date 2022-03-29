@@ -2,10 +2,11 @@ package engine64
 
 import (
 	"fmt"
+	"math"
+
 	data "github.com/seeder-research/uMagNUS/data64"
 	mag "github.com/seeder-research/uMagNUS/mag64"
-	"github.com/seeder-research/uMagNUS/util"
-	"math"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 func init() {

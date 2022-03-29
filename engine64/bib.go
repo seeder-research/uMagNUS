@@ -3,8 +3,8 @@ package engine64
 import (
 	"io"
 
-	"github.com/seeder-research/uMagNUS/httpfs"
-	"github.com/seeder-research/uMagNUS/util"
+	httpfs "github.com/seeder-research/uMagNUS/httpfs"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 const separationline = `

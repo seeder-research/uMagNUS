@@ -4,11 +4,12 @@ package engine64
 
 import (
 	"flag"
-	opencl "github.com/seeder-research/uMagNUS/opencl64"
-	"github.com/seeder-research/uMagNUS/util"
 	"log"
 	"os"
 	"path"
+
+	opencl "github.com/seeder-research/uMagNUS/opencl64"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 var (

@@ -2,9 +2,10 @@ package engine
 
 import (
 	"fmt"
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/opencl"
-	"github.com/seeder-research/uMagNUS/util"
+
+	data "github.com/seeder-research/uMagNUS/data"
+	opencl "github.com/seeder-research/uMagNUS/opencl"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 func sInRegion(q Quantity, r int) ScalarField {

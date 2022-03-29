@@ -1,10 +1,11 @@
 package engine
 
 import (
-	"github.com/seeder-research/uMagNUS/opencl"
-	"github.com/seeder-research/uMagNUS/timer"
-	"github.com/seeder-research/uMagNUS/util"
 	"time"
+
+	opencl "github.com/seeder-research/uMagNUS/opencl"
+	timer "github.com/seeder-research/uMagNUS/timer"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // Asynchronous I/O queue flushes data to disk while simulation keeps running.

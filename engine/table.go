@@ -2,15 +2,16 @@ package engine
 
 import (
 	"fmt"
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/httpfs"
-	"github.com/seeder-research/uMagNUS/opencl"
-	"github.com/seeder-research/uMagNUS/script"
-	"github.com/seeder-research/uMagNUS/timer"
-	"github.com/seeder-research/uMagNUS/util"
 	"io"
 	"sync"
 	"time"
+
+	data "github.com/seeder-research/uMagNUS/data"
+	httpfs "github.com/seeder-research/uMagNUS/httpfs"
+	opencl "github.com/seeder-research/uMagNUS/opencl"
+	script "github.com/seeder-research/uMagNUS/script"
+	timer "github.com/seeder-research/uMagNUS/timer"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 var Table = *newTable("table") // output handle for tabular data (average magnetization etc.)

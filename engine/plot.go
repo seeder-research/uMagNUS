@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/seeder-research/uMagNUS/httpfs"
 	"image"
 	"image/png"
 	"io/ioutil"
 	"net/http"
 	"os/exec"
 	"sync/atomic"
+
+	httpfs "github.com/seeder-research/uMagNUS/httpfs"
 )
 
 var nPlots int32       // counts number of active gnuplot processes

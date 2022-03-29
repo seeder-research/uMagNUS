@@ -2,6 +2,7 @@ package engine64
 
 import (
 	"fmt"
+
 	data "github.com/seeder-research/uMagNUS/data64"
 )
 

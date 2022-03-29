@@ -3,9 +3,10 @@ package engine64
 // declare functionality for interpreted input scripts
 
 import (
-	"github.com/seeder-research/uMagNUS/httpfs"
-	script "github.com/seeder-research/uMagNUS/script64"
 	"reflect"
+
+	httpfs "github.com/seeder-research/uMagNUS/httpfs"
+	script "github.com/seeder-research/uMagNUS/script64"
 )
 
 func CompileFile(fname string) (*script.BlockStmt, error) {

@@ -3,8 +3,8 @@ package engine
 // Magnetocrystalline anisotropy.
 
 import (
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/opencl"
+	data "github.com/seeder-research/uMagNUS/data"
+	opencl "github.com/seeder-research/uMagNUS/opencl"
 )
 
 // Anisotropy variables

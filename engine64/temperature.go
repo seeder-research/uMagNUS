@@ -1,15 +1,13 @@
 package engine64
 
 import (
-	data "github.com/seeder-research/uMagNUS/data64"
-	mag "github.com/seeder-research/uMagNUS/mag64"
-	opencl "github.com/seeder-research/uMagNUS/opencl64"
-	//"github.com/seeder-research/uMagNUS/cl"
-	//"github.com/seeder-research/uMagNUS/util"
-	//"fmt"
 	"math"
 	"math/rand"
 	"time"
+
+	data "github.com/seeder-research/uMagNUS/data64"
+	mag "github.com/seeder-research/uMagNUS/mag64"
+	opencl "github.com/seeder-research/uMagNUS/opencl64"
 )
 
 var (

@@ -2,10 +2,11 @@ package engine
 
 import (
 	"fmt"
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/mag"
-	"github.com/seeder-research/uMagNUS/util"
 	"math"
+
+	data "github.com/seeder-research/uMagNUS/data"
+	mag "github.com/seeder-research/uMagNUS/mag"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 func init() {

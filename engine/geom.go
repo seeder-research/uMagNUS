@@ -1,10 +1,11 @@
 package engine
 
 import (
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/opencl"
-	"github.com/seeder-research/uMagNUS/util"
 	"math/rand"
+
+	data "github.com/seeder-research/uMagNUS/data"
+	opencl "github.com/seeder-research/uMagNUS/opencl"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 func init() {

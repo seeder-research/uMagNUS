@@ -9,10 +9,10 @@ import (
 	data "github.com/seeder-research/uMagNUS/data64"
 	draw "github.com/seeder-research/uMagNUS/draw64"
 	dump "github.com/seeder-research/uMagNUS/dump64"
-	"github.com/seeder-research/uMagNUS/httpfs"
+	httpfs "github.com/seeder-research/uMagNUS/httpfs"
 	oommf "github.com/seeder-research/uMagNUS/oommf64"
 	opencl "github.com/seeder-research/uMagNUS/opencl64"
-	"github.com/seeder-research/uMagNUS/util"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 func init() {

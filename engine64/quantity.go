@@ -1,9 +1,10 @@
 package engine64
 
 import (
+	"reflect"
+
 	data "github.com/seeder-research/uMagNUS/data64"
 	opencl "github.com/seeder-research/uMagNUS/opencl64"
-	"reflect"
 )
 
 // Arbitrary physical quantity.

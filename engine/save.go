@@ -6,13 +6,13 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/draw"
-	"github.com/seeder-research/uMagNUS/dump"
-	"github.com/seeder-research/uMagNUS/httpfs"
-	"github.com/seeder-research/uMagNUS/oommf"
-	"github.com/seeder-research/uMagNUS/opencl"
-	"github.com/seeder-research/uMagNUS/util"
+	data "github.com/seeder-research/uMagNUS/data"
+	draw "github.com/seeder-research/uMagNUS/draw"
+	dump "github.com/seeder-research/uMagNUS/dump"
+	httpfs "github.com/seeder-research/uMagNUS/httpfs"
+	oommf "github.com/seeder-research/uMagNUS/oommf"
+	opencl "github.com/seeder-research/uMagNUS/opencl"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 func init() {

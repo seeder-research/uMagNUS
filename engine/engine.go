@@ -12,12 +12,13 @@ TODO: godoc everything
 package engine
 
 import (
-	"github.com/seeder-research/uMagNUS/opencl"
-	"github.com/seeder-research/uMagNUS/timer"
 	"os"
 	"runtime"
 	"sync"
 	"time"
+
+	opencl "github.com/seeder-research/uMagNUS/opencl"
+	timer "github.com/seeder-research/uMagNUS/timer"
 )
 
 const VERSION = "uMagNUS 2.1.0"

@@ -2,15 +2,16 @@ package engine64
 
 import (
 	"fmt"
-	data "github.com/seeder-research/uMagNUS/data64"
-	"github.com/seeder-research/uMagNUS/httpfs"
-	opencl "github.com/seeder-research/uMagNUS/opencl64"
-	script "github.com/seeder-research/uMagNUS/script64"
-	"github.com/seeder-research/uMagNUS/timer"
-	"github.com/seeder-research/uMagNUS/util"
 	"io"
 	"sync"
 	"time"
+
+	data "github.com/seeder-research/uMagNUS/data64"
+	httpfs "github.com/seeder-research/uMagNUS/httpfs"
+	opencl "github.com/seeder-research/uMagNUS/opencl64"
+	script "github.com/seeder-research/uMagNUS/script64"
+	timer "github.com/seeder-research/uMagNUS/timer"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 var Table = *newTable("table") // output handle for tabular data (average magnetization etc.)

@@ -14,7 +14,7 @@ import (
 	data "github.com/seeder-research/uMagNUS/data64"
 	opencl "github.com/seeder-research/uMagNUS/opencl64"
 	script "github.com/seeder-research/uMagNUS/script64"
-	"github.com/seeder-research/uMagNUS/util"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // input parameter, settable by user

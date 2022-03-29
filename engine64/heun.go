@@ -1,10 +1,11 @@
 package engine64
 
 import (
+	"math"
+
 	data "github.com/seeder-research/uMagNUS/data64"
 	opencl "github.com/seeder-research/uMagNUS/opencl64"
 	util "github.com/seeder-research/uMagNUS/util"
-	"math"
 )
 
 // Adaptive Heun solver.

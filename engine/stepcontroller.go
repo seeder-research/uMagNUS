@@ -1,10 +1,11 @@
 package engine
 
 import (
+	"math"
+
 	data "github.com/seeder-research/uMagNUS/data"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
 	util "github.com/seeder-research/uMagNUS/util"
-	"math"
 )
 
 // Time step controller to be used with these solvers:

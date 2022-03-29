@@ -1,14 +1,15 @@
 package engine64
 
 import (
-	data "github.com/seeder-research/uMagNUS/data64"
-	draw "github.com/seeder-research/uMagNUS/draw64"
-	opencl "github.com/seeder-research/uMagNUS/opencl64"
 	"image"
 	"image/jpeg"
 	"math"
 	"net/http"
 	"sync"
+
+	data "github.com/seeder-research/uMagNUS/data64"
+	draw "github.com/seeder-research/uMagNUS/draw64"
+	opencl "github.com/seeder-research/uMagNUS/opencl64"
 )
 
 type render struct {

@@ -1,8 +1,9 @@
 package engine64
 
 import (
-	data "github.com/seeder-research/uMagNUS/data64"
 	"math"
+
+	data "github.com/seeder-research/uMagNUS/data64"
 )
 
 func init() {

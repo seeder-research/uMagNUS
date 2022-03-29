@@ -2,10 +2,11 @@ package engine
 
 import (
 	"fmt"
-	"github.com/seeder-research/uMagNUS/httpfs"
-	"github.com/seeder-research/uMagNUS/util"
 	"io"
 	"os"
+
+	httpfs "github.com/seeder-research/uMagNUS/httpfs"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 var (

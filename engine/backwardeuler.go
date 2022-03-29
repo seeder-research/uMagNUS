@@ -1,7 +1,6 @@
 package engine
 
 import (
-	//"fmt"
 	data "github.com/seeder-research/uMagNUS/data"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
 	util "github.com/seeder-research/uMagNUS/util"

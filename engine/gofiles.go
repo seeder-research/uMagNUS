@@ -4,11 +4,12 @@ package engine
 
 import (
 	"flag"
-	opencl "github.com/seeder-research/uMagNUS/opencl"
-	"github.com/seeder-research/uMagNUS/util"
 	"log"
 	"os"
 	"path"
+
+	opencl "github.com/seeder-research/uMagNUS/opencl"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 var (

@@ -3,8 +3,8 @@ package engine
 // Averaging of quantities over entire universe or just magnet.
 
 import (
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/opencl"
+	data "github.com/seeder-research/uMagNUS/data"
+	opencl "github.com/seeder-research/uMagNUS/opencl"
 )
 
 // average of quantity over universe

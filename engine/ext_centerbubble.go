@@ -1,8 +1,9 @@
 package engine
 
 import (
-	"github.com/seeder-research/uMagNUS/data"
 	"math"
+
+	data "github.com/seeder-research/uMagNUS/data"
 )
 
 func init() {

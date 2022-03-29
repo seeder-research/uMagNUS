@@ -2,10 +2,6 @@ package engine
 
 import (
 	"fmt"
-	"github.com/seeder-research/uMagNUS/gui"
-	"github.com/seeder-research/uMagNUS/httpfs"
-	"github.com/seeder-research/uMagNUS/opencl"
-	"github.com/seeder-research/uMagNUS/util"
 	"math/rand"
 	"net"
 	"net/http"
@@ -14,6 +10,11 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	gui "github.com/seeder-research/uMagNUS/gui"
+	httpfs "github.com/seeder-research/uMagNUS/httpfs"
+	opencl "github.com/seeder-research/uMagNUS/opencl"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // global GUI state stores what is currently shown in the web page.

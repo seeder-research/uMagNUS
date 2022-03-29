@@ -11,10 +11,10 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/opencl"
-	"github.com/seeder-research/uMagNUS/script"
-	"github.com/seeder-research/uMagNUS/util"
+	data "github.com/seeder-research/uMagNUS/data"
+	opencl "github.com/seeder-research/uMagNUS/opencl"
+	script "github.com/seeder-research/uMagNUS/script"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // input parameter, settable by user

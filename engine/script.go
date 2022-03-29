@@ -3,9 +3,10 @@ package engine
 // declare functionality for interpreted input scripts
 
 import (
-	"github.com/seeder-research/uMagNUS/httpfs"
-	"github.com/seeder-research/uMagNUS/script"
 	"reflect"
+
+	httpfs "github.com/seeder-research/uMagNUS/httpfs"
+	script "github.com/seeder-research/uMagNUS/script"
 )
 
 func CompileFile(fname string) (*script.BlockStmt, error) {

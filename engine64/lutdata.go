@@ -1,10 +1,11 @@
 package engine64
 
 import (
+	"unsafe"
+
 	data "github.com/seeder-research/uMagNUS/data64"
 	opencl "github.com/seeder-research/uMagNUS/opencl64"
-	"github.com/seeder-research/uMagNUS/util"
-	"unsafe"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // look-up table for region based parameters

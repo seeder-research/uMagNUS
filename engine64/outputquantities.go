@@ -10,6 +10,7 @@ in objects that provide:
 
 import (
 	"fmt"
+
 	data "github.com/seeder-research/uMagNUS/data64"
 	opencl "github.com/seeder-research/uMagNUS/opencl64"
 )

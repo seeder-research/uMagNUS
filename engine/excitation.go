@@ -1,12 +1,13 @@
 package engine
 
 import (
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/opencl"
-	"github.com/seeder-research/uMagNUS/script"
-	"github.com/seeder-research/uMagNUS/util"
 	"math"
 	"reflect"
+
+	data "github.com/seeder-research/uMagNUS/data"
+	opencl "github.com/seeder-research/uMagNUS/opencl"
+	script "github.com/seeder-research/uMagNUS/script"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // An excitation, typically field or current,

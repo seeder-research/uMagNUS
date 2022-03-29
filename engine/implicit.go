@@ -1,10 +1,9 @@
 package engine
 
 import (
-	//"fmt"
 	data "github.com/seeder-research/uMagNUS/data"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
-	"github.com/seeder-research/uMagNUS/util"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 func fixedPtIterations(hFac float32, Y, ks *data.Slice) (float64, float64, int) {

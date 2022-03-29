@@ -3,9 +3,10 @@ package engine64
 // Utilities for setting magnetic configurations.
 
 import (
-	data "github.com/seeder-research/uMagNUS/data64"
 	"math"
 	"math/rand"
+
+	data "github.com/seeder-research/uMagNUS/data64"
 )
 
 func init() {

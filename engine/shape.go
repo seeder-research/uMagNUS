@@ -6,8 +6,8 @@ import (
 	_ "image/png"
 	"math"
 
-	"github.com/seeder-research/uMagNUS/httpfs"
-	"github.com/seeder-research/uMagNUS/util"
+	httpfs "github.com/seeder-research/uMagNUS/httpfs"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 func init() {

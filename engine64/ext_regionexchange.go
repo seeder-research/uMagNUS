@@ -3,7 +3,7 @@ package engine64
 import (
 	data "github.com/seeder-research/uMagNUS/data64"
 	opencl "github.com/seeder-research/uMagNUS/opencl64"
-	"github.com/seeder-research/uMagNUS/util"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // declare a global structure that stores pairwise couplings

@@ -1,10 +1,11 @@
 package engine64
 
 import (
-	opencl "github.com/seeder-research/uMagNUS/opencl64"
-	"github.com/seeder-research/uMagNUS/timer"
-	"github.com/seeder-research/uMagNUS/util"
 	"time"
+
+	opencl "github.com/seeder-research/uMagNUS/opencl64"
+	timer "github.com/seeder-research/uMagNUS/timer"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // Asynchronous I/O queue flushes data to disk while simulation keeps running.

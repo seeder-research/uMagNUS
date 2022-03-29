@@ -7,7 +7,7 @@ import (
 
 	data "github.com/seeder-research/uMagNUS/data"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
-	"github.com/seeder-research/uMagNUS/util"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // Solver globals

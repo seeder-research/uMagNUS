@@ -1,14 +1,15 @@
 package engine
 
 import (
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/draw"
-	"github.com/seeder-research/uMagNUS/opencl"
 	"image"
 	"image/jpeg"
 	"math"
 	"net/http"
 	"sync"
+
+	data "github.com/seeder-research/uMagNUS/data"
+	draw "github.com/seeder-research/uMagNUS/draw"
+	opencl "github.com/seeder-research/uMagNUS/opencl"
 )
 
 type render struct {

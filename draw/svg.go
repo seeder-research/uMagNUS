@@ -18,7 +18,7 @@ func SVG(out io.Writer, arr [3][][][]float32) {
 		r2 = 1. / 4. // arrow half width
 	)
 
-	canvas := svg.New(out)
+	canvas := svgo.New(out)
 	canvas.Start(w, h)
 
 	for slice := 0; slice < len(arr[0]); slice++ {

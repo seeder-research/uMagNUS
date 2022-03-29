@@ -2,7 +2,8 @@ package engine
 
 import (
 	"fmt"
-	"github.com/seeder-research/uMagNUS/data"
+
+	data "github.com/seeder-research/uMagNUS/data"
 )
 
 var (
