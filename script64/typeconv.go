@@ -2,9 +2,10 @@ package script64
 
 import (
 	"fmt"
-	data "github.com/seeder-research/uMagNUS/data64"
 	"go/token"
 	"reflect"
+
+	data "github.com/seeder-research/uMagNUS/data64"
 )
 
 // converts in to an expression of type OutT.

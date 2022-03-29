@@ -3,8 +3,9 @@ package script
 // Here be dragons
 
 import (
-	"github.com/seeder-research/uMagNUS/data"
 	"reflect"
+
+	data "github.com/seeder-research/uMagNUS/data"
 )
 
 type ScalarFunction interface {

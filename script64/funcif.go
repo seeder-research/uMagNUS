@@ -3,8 +3,9 @@ package script64
 // Here be dragons
 
 import (
-	data "github.com/seeder-research/uMagNUS/data64"
 	"reflect"
+
+	data "github.com/seeder-research/uMagNUS/data64"
 )
 
 type ScalarFunction interface {

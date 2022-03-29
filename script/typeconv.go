@@ -2,9 +2,10 @@ package script
 
 import (
 	"fmt"
-	"github.com/seeder-research/uMagNUS/data"
 	"go/token"
 	"reflect"
+
+	data "github.com/seeder-research/uMagNUS/data"
 )
 
 // converts in to an expression of type OutT.
