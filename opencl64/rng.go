@@ -3,13 +3,13 @@ package opencl64
 import (
 	"fmt"
 	"log"
-	"unsafe"
-
-	"github.com/seeder-research/uMagNUS/cl"
-	data "github.com/seeder-research/uMagNUS/data64"
-	"github.com/seeder-research/uMagNUS/opencl64/oclRAND"
 	"math/rand"
 	"time"
+	"unsafe"
+
+	cl "github.com/seeder-research/uMagNUS/cl"
+	data "github.com/seeder-research/uMagNUS/data64"
+	oclRAND "github.com/seeder-research/uMagNUS/opencl64/oclRAND"
 )
 
 type Prng_ interface {

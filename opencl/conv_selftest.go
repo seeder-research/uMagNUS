@@ -5,8 +5,8 @@ package opencl
 import (
 	"math/rand"
 
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/util"
+	data "github.com/seeder-research/uMagNUS/data"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // Compares FFT-accelerated convolution against brute-force on sparse data.

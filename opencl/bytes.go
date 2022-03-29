@@ -6,8 +6,8 @@ import (
 	"log"
 	"unsafe"
 
-	"github.com/seeder-research/uMagNUS/cl"
-	"github.com/seeder-research/uMagNUS/util"
+	cl "github.com/seeder-research/uMagNUS/cl"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // 3D byte slice, used for region lookup.

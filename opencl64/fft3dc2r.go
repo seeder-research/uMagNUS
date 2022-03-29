@@ -2,11 +2,10 @@ package opencl64
 
 import (
 	"fmt"
-	//	"log"
 
-	"github.com/seeder-research/uMagNUS/cl"
+	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data64"
-	"github.com/seeder-research/uMagNUS/timer"
+	timer "github.com/seeder-research/uMagNUS/timer"
 )
 
 // 3D single-precision real-to-complex FFT plan.

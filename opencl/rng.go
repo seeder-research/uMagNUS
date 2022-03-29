@@ -3,13 +3,13 @@ package opencl
 import (
 	"fmt"
 	"log"
-	"unsafe"
-
-	"github.com/seeder-research/uMagNUS/cl"
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/opencl/oclRAND"
 	"math/rand"
 	"time"
+	"unsafe"
+
+	cl "github.com/seeder-research/uMagNUS/cl"
+	data "github.com/seeder-research/uMagNUS/data"
+	oclRAND "github.com/seeder-research/uMagNUS/opencl/oclRAND"
 )
 
 type Prng_ interface {

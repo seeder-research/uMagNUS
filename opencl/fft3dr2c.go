@@ -3,10 +3,10 @@ package opencl
 import (
 	"log"
 
-	"github.com/seeder-research/uMagNUS/cl"
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/timer"
-	"github.com/seeder-research/uMagNUS/util"
+	cl "github.com/seeder-research/uMagNUS/cl"
+	data "github.com/seeder-research/uMagNUS/data"
+	timer "github.com/seeder-research/uMagNUS/timer"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // 3D single-precision real-to-complex FFT plan.

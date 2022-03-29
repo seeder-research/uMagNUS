@@ -1,9 +1,10 @@
 package opencl64
 
 import (
-	"github.com/seeder-research/uMagNUS/cl"
-	data "github.com/seeder-research/uMagNUS/data64"
 	"unsafe"
+
+	cl "github.com/seeder-research/uMagNUS/cl"
+	data "github.com/seeder-research/uMagNUS/data64"
 )
 
 // Slice + scalar multiplier.

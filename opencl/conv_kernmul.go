@@ -6,9 +6,9 @@ package opencl
 import (
 	"fmt"
 
-	"github.com/seeder-research/uMagNUS/cl"
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/util"
+	cl "github.com/seeder-research/uMagNUS/cl"
+	data "github.com/seeder-research/uMagNUS/data"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // kernel multiplication for 3D demag convolution, exploiting full kernel symmetry.

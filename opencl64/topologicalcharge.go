@@ -3,9 +3,9 @@ package opencl64
 import (
 	"fmt"
 
-	"github.com/seeder-research/uMagNUS/cl"
+	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data64"
-	"github.com/seeder-research/uMagNUS/util"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // Set s to the toplogogical charge density s = m · (∂m/∂x ❌ ∂m/∂y)

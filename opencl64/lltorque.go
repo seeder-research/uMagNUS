@@ -3,7 +3,7 @@ package opencl64
 import (
 	"fmt"
 
-	"github.com/seeder-research/uMagNUS/cl"
+	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data64"
 )
 

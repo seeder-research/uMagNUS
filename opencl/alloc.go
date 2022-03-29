@@ -2,10 +2,9 @@ package opencl
 
 import (
 	"log"
-	//	"unsafe"
 
-	"github.com/seeder-research/uMagNUS/cl"
-	"github.com/seeder-research/uMagNUS/data"
+	cl "github.com/seeder-research/uMagNUS/cl"
+	data "github.com/seeder-research/uMagNUS/data"
 )
 
 // Wrapper for cu.MemAlloc, fatal exit on out of memory.

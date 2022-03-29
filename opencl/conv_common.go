@@ -6,8 +6,8 @@ import (
 	"log"
 	"math"
 
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/util"
+	data "github.com/seeder-research/uMagNUS/data"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // Output size of R2C FFT with given logic size, expressed in floats.

@@ -1,7 +1,7 @@
 package opencl
 
 import (
-	"github.com/seeder-research/uMagNUS/kernels"
+	kernels "github.com/seeder-research/uMagNUS/kernels"
 )
 
 func GenMergedKernelSource() string {

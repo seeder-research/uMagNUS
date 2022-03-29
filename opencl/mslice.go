@@ -1,9 +1,10 @@
 package opencl
 
 import (
-	"github.com/seeder-research/uMagNUS/cl"
-	"github.com/seeder-research/uMagNUS/data"
 	"unsafe"
+
+	cl "github.com/seeder-research/uMagNUS/cl"
+	data "github.com/seeder-research/uMagNUS/data"
 )
 
 // Slice + scalar multiplier.

@@ -6,8 +6,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/seeder-research/uMagNUS/cl"
-	"github.com/seeder-research/uMagNUS/data"
+	cl "github.com/seeder-research/uMagNUS/cl"
+	data "github.com/seeder-research/uMagNUS/data"
 	ld "github.com/seeder-research/uMagNUS/loader"
 )
 

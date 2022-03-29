@@ -3,8 +3,8 @@ package opencl
 import (
 	"fmt"
 
-	"github.com/seeder-research/uMagNUS/cl"
-	"github.com/seeder-research/uMagNUS/data"
+	cl "github.com/seeder-research/uMagNUS/cl"
+	data "github.com/seeder-research/uMagNUS/data"
 )
 
 // Add Slonczewski ST torque to torque (Tesla).

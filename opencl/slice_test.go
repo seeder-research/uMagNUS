@@ -3,7 +3,7 @@ package opencl
 import (
 	"testing"
 
-	"github.com/seeder-research/uMagNUS/data"
+	data "github.com/seeder-research/uMagNUS/data"
 )
 
 func TestSlice(t *testing.T) {

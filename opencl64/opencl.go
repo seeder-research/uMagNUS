@@ -4,7 +4,7 @@ import (
 	"log"
 	"unsafe"
 
-	"github.com/seeder-research/uMagNUS/cl"
+	cl "github.com/seeder-research/uMagNUS/cl"
 )
 
 // Type size in bytes
