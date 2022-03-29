@@ -24,7 +24,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
-	"github.com/seeder-research/uMagNUS/httpfs"
+	httpfs "github.com/seeder-research/uMagNUS/httpfs"
 )
 
 var (

@@ -5,8 +5,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	engine "github.com/seeder-research/uMagNUS/engine"
-	opencl "github.com/seeder-research/uMagNUS/opencl"
 	"io"
 	"log"
 	"net/http"
@@ -16,6 +14,9 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+
+	engine "github.com/seeder-research/uMagNUS/engine"
+	opencl "github.com/seeder-research/uMagNUS/opencl"
 )
 
 var (

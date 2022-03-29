@@ -6,8 +6,8 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/seeder-research/uMagNUS/engine"
-	"github.com/seeder-research/uMagNUS/util"
+	engine "github.com/seeder-research/uMagNUS/engine"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // check all input files for errors, don't run.

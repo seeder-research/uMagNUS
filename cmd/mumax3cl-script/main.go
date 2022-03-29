@@ -7,10 +7,11 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"github.com/seeder-research/uMagNUS/script"
 	"io"
 	"log"
 	"os"
+
+	script "github.com/seeder-research/uMagNUS/script"
 )
 
 var debug = flag.Bool("g", false, "print debug output")

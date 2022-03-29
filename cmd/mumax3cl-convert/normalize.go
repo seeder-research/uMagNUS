@@ -3,7 +3,7 @@ package main
 import (
 	"math"
 
-	"github.com/seeder-research/uMagNUS/data"
+	data "github.com/seeder-research/uMagNUS/data"
 )
 
 // normalize vector data to given length

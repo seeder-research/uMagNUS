@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/seeder-research/uMagNUS/data"
-	"github.com/seeder-research/uMagNUS/util"
+	data "github.com/seeder-research/uMagNUS/data"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 func resize(f *data.Slice, arg string) {

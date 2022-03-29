@@ -3,8 +3,9 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/seeder-research/uMagNUS/data"
 	"io"
+
+	data "github.com/seeder-research/uMagNUS/data"
 )
 
 func dumpNUMPY(f *data.Slice, info data.Meta, out io.Writer) {

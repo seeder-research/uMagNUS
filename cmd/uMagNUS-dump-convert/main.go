@@ -20,8 +20,8 @@ import (
 )
 
 var (
-	flag_ifile      = flag.String("i", "", "Input file")
-	flag_ofile      = flag.String("o", "", "Output file")
+	flag_ifile = flag.String("i", "", "Input file")
+	flag_ofile = flag.String("o", "", "Output file")
 )
 
 func main() {

@@ -13,7 +13,7 @@ import (
 	"io"
 	"log"
 
-	"github.com/seeder-research/uMagNUS/data"
+	data "github.com/seeder-research/uMagNUS/data"
 )
 
 func dumpVTK(out io.Writer, q *data.Slice, meta data.Meta, dataformat string) (err error) {

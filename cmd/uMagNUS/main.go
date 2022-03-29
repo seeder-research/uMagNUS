@@ -4,10 +4,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	engine "github.com/seeder-research/uMagNUS/engine"
-	opencl "github.com/seeder-research/uMagNUS/opencl"
-	script "github.com/seeder-research/uMagNUS/script"
-	"github.com/seeder-research/uMagNUS/util"
 	"log"
 	"os"
 	"os/exec"
@@ -15,6 +11,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	engine "github.com/seeder-research/uMagNUS/engine"
+	opencl "github.com/seeder-research/uMagNUS/opencl"
+	script "github.com/seeder-research/uMagNUS/script"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // flags in engine/gofiles.go

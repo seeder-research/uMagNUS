@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/seeder-research/uMagNUS/data"
+	data "github.com/seeder-research/uMagNUS/data"
 )
 
 func dumpJSON(f *data.Slice, info data.Meta, out io.Writer) {

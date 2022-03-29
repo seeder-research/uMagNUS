@@ -15,7 +15,7 @@ import (
 	"text/scanner"
 	"text/template"
 
-	"github.com/seeder-research/uMagNUS/util"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 var (

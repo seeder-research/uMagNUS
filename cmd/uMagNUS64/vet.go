@@ -7,7 +7,7 @@ import (
 	"os"
 
 	engine "github.com/seeder-research/uMagNUS/engine64"
-	"github.com/seeder-research/uMagNUS/util"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // check all input files for errors, don't run.

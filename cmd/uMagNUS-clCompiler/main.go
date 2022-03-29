@@ -4,10 +4,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/seeder-research/uMagNUS/cl"
 	"log"
 	"strconv"
 	"strings"
+
+	cl "github.com/seeder-research/uMagNUS/cl"
 )
 
 var (

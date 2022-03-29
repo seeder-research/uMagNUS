@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/seeder-research/uMagNUS/data"
+	data "github.com/seeder-research/uMagNUS/data"
 )
 
 const DELIM = "\t"

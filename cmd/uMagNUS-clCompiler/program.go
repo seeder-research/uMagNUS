@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/seeder-research/uMagNUS/cl"
+
+	cl "github.com/seeder-research/uMagNUS/cl"
 )
 
 var binariesMap map[string]*cl.ProgramBinaries

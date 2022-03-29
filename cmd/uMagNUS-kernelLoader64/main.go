@@ -7,7 +7,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/seeder-research/uMagNUS/cl"
+	cl "github.com/seeder-research/uMagNUS/cl"
 	ld "github.com/seeder-research/uMagNUS/loader64"
 )
 
