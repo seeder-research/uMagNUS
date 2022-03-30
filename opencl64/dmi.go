@@ -35,8 +35,7 @@ func AddDMI(Beff *data.Slice, m *data.Slice, Aex_red, Dex_red SymmLUT, Msat MSli
 	m.SetEvent(X, event)
 	m.SetEvent(Y, event)
 	m.SetEvent(Z, event)
-	err := cl.WaitForEvents([](*cl.Event){event})
-	if err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in adddmi: %+v \n", err)
 	}
 }

@@ -2,6 +2,7 @@ package opencl64
 
 import (
 	"fmt"
+	"unsafe"
 
 	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data64"
@@ -13,15 +14,16 @@ func Normalize(vec, vol *data.Slice) {
 	util.Argument(vol == nil || vol.NComp() == 1)
 	N := vec.Len()
 	cfg := make1DConf(N)
-	var event *cl.Event
 
-	if vol == nil {
-		event = k_normalize2_async(vec.DevPtr(X), vec.DevPtr(Y), vec.DevPtr(Z), nil, N, cfg,
-			[](*cl.Event){vec.GetEvent(X), vec.GetEvent(Y), vec.GetEvent(Z)})
-	} else {
-		event = k_normalize2_async(vec.DevPtr(X), vec.DevPtr(Y), vec.DevPtr(Z), vol.DevPtr(0), N, cfg,
-			[](*cl.Event){vec.GetEvent(X), vec.GetEvent(Y), vec.GetEvent(Z), vol.GetEvent(X)})
+	eventList := []*cl.Event{vec.GetEvent(X), vec.GetEvent(Y), vec.GetEvent(Z)}
+	volPtr := (unsafe.Pointer)(nil)
+
+	if vol != nil {
+		volPtr = vol.DevPtr(0)
+		eventList = append(eventList, vol.GetEvent(0))
 	}
+
+	event := k_normalize2_async(vec.DevPtr(X), vec.DevPtr(Y), vec.DevPtr(Z), volPtr, N, cfg, eventList)
 
 	vec.SetEvent(X, event)
 	vec.SetEvent(Y, event)
@@ -29,8 +31,7 @@ func Normalize(vec, vol *data.Slice) {
 	if vol != nil {
 		vol.SetEvent(X, event)
 	}
-	err := cl.WaitForEvents([]*cl.Event{event})
-	if err != nil {
+	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in normalize: %+v \n", err)
 	}
 }

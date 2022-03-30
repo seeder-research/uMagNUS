@@ -6,8 +6,10 @@ GO_BUILDFLAGS=-compiler gc
 
 CGO_CFLAGS_ALLOW='(-fno-schedule-insns|-malign-double|-ffast-math)'
 
+BUILD_TARGETS = all cl-binds cl-compiler clkernels clean data data64 draw draw64 dump dump64 engine engine64 freetype gui realclean hooks httpfs mag mag64 oommf oommf64 script script64 timer uMagNUS uMagNUS64 util loader loader64 kernloader kernloader64 libumagnus libumagnus64
 
-.PHONY: all cl-binds cl-compiler clkernels clean data data64 draw draw64 dump dump64 engine engine64 freetype gui realclean hooks httpfs mag mag64 oommf oommf64 script script64 timer uMagNUS uMagNUS64 util loader loader64 kernloader kernloader64 libumagnus libumagnus64
+
+.PHONY: $(BUILD_TARGETS)
 
 
 all: cl-compiler kernloader kernloader64 libumagnus libumagnus64 uMagNUS uMagNUS64

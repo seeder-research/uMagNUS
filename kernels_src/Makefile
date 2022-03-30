@@ -2,7 +2,10 @@
 
 SHELL = /bin/bash
 
-.PHONY: all double opencl2go clean realclean
+BUILD_TARGETS = all double opencl2go clean realclean
+
+
+.PHONY: $(BUILD_TARGETS)
 
 
 all: opencl2go

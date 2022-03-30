@@ -6,7 +6,11 @@ GO_BUILDFLAGS=-compiler gc
 
 CGO_CFLAGS_ALLOW='(-fno-schedule-insns|-malign-double|-ffast-math)'
 
-.PHONY: all install 6g gccgo test 6gtest gccgotest bench 6gtest gccgotest clean stubs doc
+BUILD_TARGETS = all install 6g gccgo test 6gtest gccgotest bench 6gtest gccgotest clean stubs doc
+
+
+.PHONY: $(BUILD_TARGETS)
+
 
 all: 6g gccgo doc
 

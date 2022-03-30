@@ -34,6 +34,7 @@ func AddSlonczewskiTorque2(torque, m *data.Slice, Msat, J, fixedP, alpha, pol, Î
 			m.GetEvent(X), m.GetEvent(Y), m.GetEvent(Z),
 			fixedP.GetEvent(X), fixedP.GetEvent(Y), fixedP.GetEvent(Z),
 			J.GetEvent(Z)})
+
 	torque.SetEvent(X, event)
 	torque.SetEvent(Y, event)
 	torque.SetEvent(Z, event)

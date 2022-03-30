@@ -20,6 +20,7 @@ func Minimize(m, m0, torque *data.Slice, dt float64) {
 		[](*cl.Event){m.GetEvent(X), m.GetEvent(Y), m.GetEvent(Z),
 			m0.GetEvent(X), m0.GetEvent(Y), m0.GetEvent(Z),
 			torque.GetEvent(X), torque.GetEvent(Y), torque.GetEvent(Z)})
+
 	m.SetEvent(X, event)
 	m.SetEvent(Y, event)
 	m.SetEvent(Z, event)
@@ -29,8 +30,7 @@ func Minimize(m, m0, torque *data.Slice, dt float64) {
 	torque.SetEvent(X, event)
 	torque.SetEvent(Y, event)
 	torque.SetEvent(Z, event)
-	err := cl.WaitForEvents([](*cl.Event){event})
-	if err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in minimize: %+v \n", err)
 	}
 }

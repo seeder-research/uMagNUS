@@ -2,7 +2,11 @@ CC := gcc
 CFLAGS := -fPIC -Wall -O4
 LDFLAGS := -shared
 
-.PHONY: all clean realclean
+BUILD_TARGETS = all clean realclean
+
+
+.PHONY: $(BUILD_TARGETS)
+
 
 all:
 	$(MAKE) -C ./lib all

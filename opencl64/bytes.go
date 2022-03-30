@@ -29,7 +29,9 @@ func NewBytes(Len int) *Bytes {
 	if err != nil {
 		panic(err)
 	}
-	err = cl.WaitForEvents([](*cl.Event){event})
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+		log.Panic("WaitForEvents failed in NewBytes:", err)
+	}
 	return &Bytes{unsafe.Pointer(ptr), Len}
 }
 
@@ -62,8 +64,7 @@ func (dst *Bytes) Set(index int, value byte) {
 	if err != nil {
 		panic(err)
 	}
-	err = cl.WaitForEvents([](*cl.Event){event})
-	if err != nil {
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		log.Panic("WaitForEvents failed in Bytes.Set():", err)
 	}
 }
@@ -79,8 +80,7 @@ func (src *Bytes) Get(index int) byte {
 	if err != nil {
 		panic(err)
 	}
-	err = cl.WaitForEvents([](*cl.Event){event})
-	if err != nil {
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		log.Panic("WaitForEvents failed in Bytes.Set():", err)
 	}
 	return dst[0]

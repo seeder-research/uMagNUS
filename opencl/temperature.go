@@ -27,10 +27,14 @@ func SetTemperature(Bth, noise *data.Slice, k2mu0_Mu0VgammaDt float64, Msat, Tem
 	if Bth != nil {
 		Beff = Bth.DevPtr(0)
 		eventList = append(eventList, Bth.GetEvent(0))
+	} else {
+		panic("ERROR (SetTemperature): Bth pointer cannot be nil")
 	}
 	if noise != nil {
 		nois = noise.DevPtr(0)
 		eventList = append(eventList, noise.GetEvent(0))
+	} else {
+		panic("ERROR (SetTemperature): Bth pointer cannot be nil")
 	}
 	if Msat.GetSlicePtr(0) != nil {
 		Msat_X = Msat.DevPtr(0)
@@ -51,12 +55,8 @@ func SetTemperature(Bth, noise *data.Slice, k2mu0_Mu0VgammaDt float64, Msat, Tem
 		N, cfg,
 		eventList)
 
-	if Beff != nil {
-		Bth.SetEvent(0, event)
-	}
-	if nois != nil {
-		noise.SetEvent(0, event)
-	}
+	Bth.SetEvent(0, event)
+	noise.SetEvent(0, event)
 	if Msat_X != nil {
 		Msat.SetEvent(0, event)
 	}

@@ -15,11 +15,6 @@ func NewSlice(nComp int, size [3]int) *data.Slice {
 	return newSlice(nComp, size, data.GPUMemory)
 }
 
-// Make a GPU Slice with nComp components each of size length.
-//func NewUnifiedSlice(nComp int, m *data.Mesh) *data.Slice {
-//	return newSlice(nComp, m, cu.MemAllocHost, data.UnifiedMemory)
-//}
-
 func newSlice(nComp int, size [3]int, memType int8) *data.Slice {
 	length := prod(size)
 	bytes := length * SIZEOF_FLOAT64
@@ -36,8 +31,7 @@ func newSlice(nComp int, size [3]int, memType int8) *data.Slice {
 		if err != nil {
 			fmt.Printf("CreateEmptyBuffer failed: %+v \n", err)
 		}
-		err = cl.WaitForEvents([]*cl.Event{fillWait[c]})
-		if err != nil {
+		if err = cl.WaitForEvents([]*cl.Event{fillWait[c]}); err != nil {
 			fmt.Printf("Wait for EnqueueFillBuffer failed: %+v \n", err)
 		}
 	}
@@ -65,8 +59,7 @@ func MemCpyDtoH(dst, src unsafe.Pointer, bytes int) []*cl.Event {
 		return nil
 	}
 	eventList[0] = waitList
-	err = cl.WaitForEvents(eventList)
-	if err != nil {
+	if err = cl.WaitForEvents(eventList); err != nil {
 		fmt.Printf("First WaitForEvents in MemCpyDtoH failed: %+v \n", err)
 		return nil
 	}
@@ -99,8 +92,7 @@ func MemCpyHtoD(dst, src unsafe.Pointer, bytes int) []*cl.Event {
 		return nil
 	}
 	eventList[0] = waitList
-	err = cl.WaitForEvents(eventList)
-	if err != nil {
+	if err = cl.WaitForEvents(eventList); err != nil {
 		fmt.Printf("First WaitForEvents in MemCpyHtoD failed: %+v \n", err)
 		return nil
 	}
@@ -133,8 +125,7 @@ func MemCpy(dst, src unsafe.Pointer, bytes int) []*cl.Event {
 		return nil
 	}
 	eventList[0] = waitList
-	err = cl.WaitForEvents(eventList)
-	if err != nil {
+	if err = cl.WaitForEvents(eventList); err != nil {
 		fmt.Printf("First WaitForEvents in MemCpy failed: %+v \n", err)
 		return nil
 	}
@@ -213,6 +204,9 @@ func SetElem(s *data.Slice, comp int, index int, value float64) {
 		return
 	}
 	s.SetEvent(comp, event)
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+		fmt.Printf("WaitForEvents in SetElem failed: %+v \n", err)
+	}
 }
 
 func GetElem(s *data.Slice, comp int, index int) float64 {

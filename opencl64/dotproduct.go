@@ -28,8 +28,7 @@ func AddDotProduct(dst *data.Slice, prefactor float64, a, b *data.Slice) {
 	b.SetEvent(X, event)
 	b.SetEvent(Y, event)
 	b.SetEvent(Z, event)
-	err := cl.WaitForEvents([](*cl.Event){event})
-	if err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in adddotproduct: %+v \n", err)
 	}
 }

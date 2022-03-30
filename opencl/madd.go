@@ -23,8 +23,7 @@ func Mul(dst, a, b *data.Slice) {
 		a.SetEvent(c, eventList[c])
 		b.SetEvent(c, eventList[c])
 	}
-	err := cl.WaitForEvents(eventList)
-	if err != nil {
+	if err := cl.WaitForEvents(eventList); err != nil {
 		fmt.Printf("WaitForEvents failed in mul: %+v \n", err)
 	}
 }
@@ -44,8 +43,7 @@ func Div(dst, a, b *data.Slice) {
 		a.SetEvent(c, eventList[c])
 		b.SetEvent(c, eventList[c])
 	}
-	err := cl.WaitForEvents(eventList)
-	if err != nil {
+	if err := cl.WaitForEvents(eventList); err != nil {
 		fmt.Printf("WaitForEvents failed in div: %+v \n", err)
 	}
 }
@@ -71,8 +69,7 @@ func Madd2(dst, src1, src2 *data.Slice, factor1, factor2 float32) {
 		src1.SetEvent(c, eventList[c])
 		src2.SetEvent(c, eventList[c])
 	}
-	err := cl.WaitForEvents(eventList)
-	if err != nil {
+	if err := cl.WaitForEvents(eventList); err != nil {
 		fmt.Printf("WaitForEvents failed in madd2: %+v \n", err)
 	}
 }
@@ -95,8 +92,7 @@ func Madd3(dst, src1, src2, src3 *data.Slice, factor1, factor2, factor3 float32)
 		src2.SetEvent(c, eventList[c])
 		src3.SetEvent(c, eventList[c])
 	}
-	err := cl.WaitForEvents(eventList)
-	if err != nil {
+	if err := cl.WaitForEvents(eventList); err != nil {
 		fmt.Printf("WaitForEvents failed in madd3: %+v \n", err)
 	}
 }
@@ -123,8 +119,7 @@ func Madd4(dst, src1, src2, src3, src4 *data.Slice, factor1, factor2, factor3, f
 		src3.SetEvent(c, eventList[c])
 		src4.SetEvent(c, eventList[c])
 	}
-	err := cl.WaitForEvents(eventList)
-	if err != nil {
+	if err := cl.WaitForEvents(eventList); err != nil {
 		fmt.Printf("WaitForEvents failed in madd4: %+v \n", err)
 	}
 }
@@ -154,8 +149,7 @@ func Madd5(dst, src1, src2, src3, src4, src5 *data.Slice, factor1, factor2, fact
 		src4.SetEvent(c, eventList[c])
 		src5.SetEvent(c, eventList[c])
 	}
-	err := cl.WaitForEvents(eventList)
-	if err != nil {
+	if err := cl.WaitForEvents(eventList); err != nil {
 		fmt.Printf("WaitForEvents failed in madd5: %+v \n", err)
 	}
 }
@@ -188,8 +182,7 @@ func Madd6(dst, src1, src2, src3, src4, src5, src6 *data.Slice, factor1, factor2
 		src5.SetEvent(c, eventList[c])
 		src6.SetEvent(c, eventList[c])
 	}
-	err := cl.WaitForEvents(eventList)
-	if err != nil {
+	if err := cl.WaitForEvents(eventList); err != nil {
 		fmt.Printf("WaitForEvents failed in madd6: %+v \n", err)
 	}
 }
@@ -224,8 +217,7 @@ func Madd7(dst, src1, src2, src3, src4, src5, src6, src7 *data.Slice, factor1, f
 		src6.SetEvent(c, eventList[c])
 		src7.SetEvent(c, eventList[c])
 	}
-	err := cl.WaitForEvents(eventList)
-	if err != nil {
+	if err := cl.WaitForEvents(eventList); err != nil {
 		fmt.Printf("WaitForEvents failed in madd7: %+v \n", err)
 	}
 }

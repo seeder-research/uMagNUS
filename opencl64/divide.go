@@ -19,9 +19,11 @@ func Divide(dst, a, b *data.Slice) {
 	for c := 0; c < nComp; c++ {
 		eventList[c] = k_divide_async(dst.DevPtr(c), a.DevPtr(c), b.DevPtr(c), N, cfg,
 			[](*cl.Event){dst.GetEvent(c), a.GetEvent(c), b.GetEvent(c)})
+		dst.SetEvent(c, eventList[c])
+		a.SetEvent(c, eventList[c])
+		b.SetEvent(c, eventList[c])
 	}
-	err := cl.WaitForEvents(eventList)
-	if err != nil {
+	if err := cl.WaitForEvents(eventList); err != nil {
 		fmt.Printf("WaitForEvents failed in divide: %+v \n", err)
 	}
 }

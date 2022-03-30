@@ -25,6 +25,7 @@ func LLTorque(torque, m, B *data.Slice, alpha MSlice) {
 			m.GetEvent(X), m.GetEvent(Y), m.GetEvent(Z),
 			B.GetEvent(X), B.GetEvent(Y), B.GetEvent(Z),
 			alpha.GetEvent(0)})
+
 	torque.SetEvent(X, event)
 	torque.SetEvent(Y, event)
 	torque.SetEvent(Z, event)
@@ -35,8 +36,7 @@ func LLTorque(torque, m, B *data.Slice, alpha MSlice) {
 	B.SetEvent(Y, event)
 	B.SetEvent(Z, event)
 	alpha.SetEvent(0, event)
-	err := cl.WaitForEvents([](*cl.Event){event})
-	if err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in lltorque: %+v \n", err)
 	}
 }
@@ -53,6 +53,7 @@ func LLNoPrecess(torque, m, B *data.Slice) {
 		[](*cl.Event){torque.GetEvent(X), torque.GetEvent(Y), torque.GetEvent(Z),
 			m.GetEvent(X), m.GetEvent(Y), m.GetEvent(Z),
 			B.GetEvent(X), B.GetEvent(Y), B.GetEvent(Z)})
+
 	torque.SetEvent(X, event)
 	torque.SetEvent(Y, event)
 	torque.SetEvent(Z, event)
@@ -62,8 +63,7 @@ func LLNoPrecess(torque, m, B *data.Slice) {
 	B.SetEvent(X, event)
 	B.SetEvent(Y, event)
 	B.SetEvent(Z, event)
-	err := cl.WaitForEvents([](*cl.Event){event})
-	if err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in llnoprecess: %+v \n", err)
 	}
 }

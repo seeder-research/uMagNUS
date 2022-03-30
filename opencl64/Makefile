@@ -10,8 +10,10 @@ OPENCL64FILES := $(wildcard ../kernels_src/cl64/*.cl)
 WRAPPER64FILES := $(notdir $(OPENCL64FILES))
 WRAPPERS64 := $(WRAPPER64FILES:.cl=_fp64_wrapper.go)
 
+BUILD_TARGETS = all ocl2go wrappers fp64wrappers clean realclean
 
-.PHONY: all ocl2go wrappers fp64wrappers clean realclean
+
+.PHONY: $(BUILD_TARGETS)
 
 
 all: ocl2go wrappers fp64wrappers opencl2go

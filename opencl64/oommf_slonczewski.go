@@ -36,6 +36,7 @@ func AddOommfSlonczewskiTorque(torque, m *data.Slice, Msat, J, fixedP, alpha, pf
 			alpha.GetEvent(0), ε_prime.GetEvent(0), Msat.GetEvent(0),
 			pfix.GetEvent(0), pfree.GetEvent(0),
 			λfix.GetEvent(0), λfree.GetEvent(0)})
+
 	torque.SetEvent(X, event)
 	torque.SetEvent(Y, event)
 	torque.SetEvent(Z, event)
@@ -53,8 +54,7 @@ func AddOommfSlonczewskiTorque(torque, m *data.Slice, Msat, J, fixedP, alpha, pf
 	pfree.SetEvent(0, event)
 	λfix.SetEvent(0, event)
 	λfree.SetEvent(0, event)
-	err := cl.WaitForEvents([]*cl.Event{event})
-	if err != nil {
+	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in addoommfslonczewskitorque: %+v \n", err)
 	}
 }

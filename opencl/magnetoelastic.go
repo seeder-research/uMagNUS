@@ -34,6 +34,7 @@ func AddMagnetoelasticField(Beff, m *data.Slice, exx, eyy, ezz, exy, exz, eyz, B
 			exx.GetEvent(0), eyy.GetEvent(0), ezz.GetEvent(0),
 			exy.GetEvent(0), exz.GetEvent(0), eyz.GetEvent(0),
 			B1.GetEvent(0), B2.GetEvent(0), Msat.GetEvent(0)})
+
 	Beff.SetEvent(X, event)
 	Beff.SetEvent(Y, event)
 	Beff.SetEvent(Z, event)
@@ -49,8 +50,7 @@ func AddMagnetoelasticField(Beff, m *data.Slice, exx, eyy, ezz, exy, exz, eyz, B
 	B1.SetEvent(0, event)
 	B2.SetEvent(0, event)
 	Msat.SetEvent(0, event)
-	err := cl.WaitForEvents([](*cl.Event){event})
-	if err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents in addmagnetoelasticfield failed: %+v \n", err)
 	}
 }
@@ -86,8 +86,7 @@ func GetMagnetoelasticForceDensity(out, m *data.Slice, B1, B2 MSlice, mesh *data
 	m.SetEvent(Z, event)
 	B1.SetEvent(0, event)
 	B2.SetEvent(0, event)
-	err := cl.WaitForEvents([](*cl.Event){event})
-	if err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents in addmagnetoelasticforce failed: %+v \n", err)
 	}
 }

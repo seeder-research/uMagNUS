@@ -29,6 +29,7 @@ func AddZhangLiTorque(torque, m *data.Slice, Msat, J, alpha, xi, pol MSlice, mes
 		[](*cl.Event){torque.GetEvent(X), torque.GetEvent(Y), torque.GetEvent(Z),
 			m.GetEvent(X), m.GetEvent(Y), m.GetEvent(Z),
 			J.GetEvent(X), J.GetEvent(Y), J.GetEvent(Z)})
+
 	torque.SetEvent(X, event)
 	torque.SetEvent(Y, event)
 	torque.SetEvent(Z, event)
@@ -38,10 +39,6 @@ func AddZhangLiTorque(torque, m *data.Slice, Msat, J, alpha, xi, pol MSlice, mes
 	J.SetEvent(X, event)
 	J.SetEvent(Y, event)
 	J.SetEvent(Z, event)
-	Msat.SetEvent(0, event)
-	alpha.SetEvent(0, event)
-	xi.SetEvent(0, event)
-	pol.SetEvent(0, event)
 
 	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in addzhanglitorque: %+v \n", err)

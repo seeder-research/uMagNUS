@@ -15,10 +15,11 @@ func ShiftX(dst, src *data.Slice, shiftX int, clampL, clampR float32) {
 	util.Assert(dst.Len() == src.Len())
 	N := dst.Size()
 	cfg := make3DConf(N)
+
 	event := k_shiftx_async(dst.DevPtr(0), src.DevPtr(0), N[X], N[Y], N[Z], shiftX, clampL, clampR, cfg,
 		[]*cl.Event{src.GetEvent(0), dst.GetEvent(0)})
-	err := cl.WaitForEvents([](*cl.Event){event})
-	if err != nil {
+
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents in shiftx failed: %+v \n", err)
 	}
 }
@@ -28,10 +29,11 @@ func ShiftY(dst, src *data.Slice, shiftY int, clampL, clampR float32) {
 	util.Assert(dst.Len() == src.Len())
 	N := dst.Size()
 	cfg := make3DConf(N)
+
 	event := k_shifty_async(dst.DevPtr(0), src.DevPtr(0), N[X], N[Y], N[Z], shiftY, clampL, clampR, cfg,
 		[]*cl.Event{src.GetEvent(0), dst.GetEvent(0)})
-	err := cl.WaitForEvents([](*cl.Event){event})
-	if err != nil {
+
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents in shifty failed: %+v \n", err)
 	}
 }
@@ -41,10 +43,11 @@ func ShiftZ(dst, src *data.Slice, shiftZ int, clampL, clampR float32) {
 	util.Assert(dst.Len() == src.Len())
 	N := dst.Size()
 	cfg := make3DConf(N)
+
 	event := k_shiftz_async(dst.DevPtr(0), src.DevPtr(0), N[X], N[Y], N[Z], shiftZ, clampL, clampR, cfg,
 		[]*cl.Event{src.GetEvent(0), dst.GetEvent(0)})
-	err := cl.WaitForEvents([](*cl.Event){event})
-	if err != nil {
+
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents in shiftz failed: %+v \n", err)
 	}
 }
@@ -53,9 +56,10 @@ func ShiftZ(dst, src *data.Slice, shiftZ int, clampL, clampR float32) {
 func ShiftBytes(dst, src *Bytes, m *data.Mesh, shiftX int, clamp byte) {
 	N := m.Size()
 	cfg := make3DConf(N)
+
 	event := k_shiftbytes_async(dst.Ptr, src.Ptr, N[X], N[Y], N[Z], shiftX, clamp, cfg, nil)
-	err := cl.WaitForEvents([](*cl.Event){event})
-	if err != nil {
+
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents in shiftbytes failed: %+v \n", err)
 	}
 }
@@ -63,9 +67,10 @@ func ShiftBytes(dst, src *Bytes, m *data.Mesh, shiftX int, clamp byte) {
 func ShiftBytesY(dst, src *Bytes, m *data.Mesh, shiftY int, clamp byte) {
 	N := m.Size()
 	cfg := make3DConf(N)
+
 	event := k_shiftbytesy_async(dst.Ptr, src.Ptr, N[X], N[Y], N[Z], shiftY, clamp, cfg, nil)
-	err := cl.WaitForEvents([](*cl.Event){event})
-	if err != nil {
+
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents in shiftbytesy failed: %+v \n", err)
 	}
 }

@@ -26,8 +26,7 @@ func Crop(dst, src *data.Slice, offX, offY, offZ int) {
 		dst.SetEvent(c, eventList[c])
 		src.SetEvent(c, eventList[c])
 	}
-	err := cl.WaitForEvents(eventList)
-	if err != nil {
+	if err := cl.WaitForEvents(eventList); err != nil {
 		fmt.Printf("WaitForEvents failed in crop: %+v \n", err)
 	}
 }

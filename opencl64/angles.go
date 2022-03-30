@@ -2,7 +2,6 @@ package opencl64
 
 import (
 	"fmt"
-	"unsafe"
 
 	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data64"
@@ -14,36 +13,17 @@ func SetPhi(s *data.Slice, m *data.Slice) {
 	util.Argument(m.Size() == N)
 	cfg := make3DConf(N)
 
-	sPtr_X := (unsafe.Pointer)(nil)
-	mPtr_X := (unsafe.Pointer)(nil)
-	mPtr_Y := (unsafe.Pointer)(nil)
-	eventList := [](*cl.Event){}
-
-	if s != nil {
-		sPtr_X = s.DevPtr(X)
-		eventList = append(eventList, s.GetEvent(X))
-	}
-	if m != nil {
-		mPtr_X = m.DevPtr(X)
-		eventList = append(eventList, m.GetEvent(X))
-		mPtr_Y = m.DevPtr(Y)
-		eventList = append(eventList, m.GetEvent(Y))
-	}
-
-	event := k_setPhi_async(sPtr_X,
-		mPtr_X, mPtr_Y,
+	event := k_setPhi_async(s.DevPtr(0),
+		m.DevPtr(X), m.DevPtr(Y),
 		N[X], N[Y], N[Z],
-		cfg, eventList)
-	if s != nil {
-		s.SetEvent(X, event)
-	}
-	if m != nil {
-		m.SetEvent(X, event)
-		m.SetEvent(Y, event)
-	}
+		cfg, []*cl.Event{s.GetEvent(0), m.GetEvent(X), m.GetEvent(Y)})
+
+	s.SetEvent(X, event)
+	m.SetEvent(X, event)
+	m.SetEvent(Y, event)
+
 	// Force synchronization
-	err := cl.WaitForEvents([](*cl.Event){event})
-	if err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in phi: %+v \n", err)
 	}
 	return
@@ -53,31 +33,16 @@ func SetTheta(s *data.Slice, m *data.Slice) {
 	N := s.Size()
 	util.Argument(m.Size() == N)
 	cfg := make3DConf(N)
-	sPtr_X := (unsafe.Pointer)(nil)
-	mPtr_Z := (unsafe.Pointer)(nil)
-	eventList := [](*cl.Event){}
 
-	if s != nil {
-		sPtr_X = s.DevPtr(X)
-		eventList = append(eventList, s.GetEvent(X))
-	}
-	if m != nil {
-		mPtr_Z = m.DevPtr(Z)
-		eventList = append(eventList, m.GetEvent(Z))
-	}
-
-	event := k_setTheta_async(sPtr_X, mPtr_Z,
+	event := k_setTheta_async(s.DevPtr(0), m.DevPtr(Z),
 		N[X], N[Y], N[Z],
-		cfg, eventList)
-	if s != nil {
-		s.SetEvent(X, event)
-	}
-	if m != nil {
-		m.SetEvent(Z, event)
-	}
+		cfg, []*cl.Event{s.GetEvent(0), m.GetEvent(Z)})
+
+	s.SetEvent(X, event)
+	m.SetEvent(Z, event)
+
 	// Force synchronization
-	err := cl.WaitForEvents([](*cl.Event){event})
-	if err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in theta: %+v \n", err)
 	}
 	return

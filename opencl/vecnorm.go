@@ -15,9 +15,11 @@ func VecNorm(dst *data.Slice, a *data.Slice) {
 
 	N := dst.Len()
 	cfg := make1DConf(N)
+
 	event := k_vecnorm_async(dst.DevPtr(0),
 		a.DevPtr(X), a.DevPtr(Y), a.DevPtr(Z),
 		N, cfg, [](*cl.Event){dst.GetEvent(0), a.GetEvent(X), a.GetEvent(Y), a.GetEvent(Z)})
+
 	dst.SetEvent(0, event)
 	a.SetEvent(X, event)
 	a.SetEvent(Y, event)

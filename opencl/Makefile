@@ -6,8 +6,10 @@ OPENCLFILES := $(wildcard ../kernels_src/cl/*.cl)
 WRAPPERFILES := $(notdir $(OPENCLFILES))
 WRAPPERS := $(WRAPPERFILES:.cl=_wrapper.go)
 
+BUILD_TARGETS = all ocl2go wrappers clean realclean
 
-.PHONY: all ocl2go wrappers clean realclean
+
+.PHONY: $(BUILD_TARGETS)
 
 
 all: ocl2go wrappers opencl2go
