@@ -5,16 +5,23 @@ LIBPREFIX :=
 LIBSUFFIX := 
 LIBLINKS := 
 LIB64LINKS := 
+VER_MAJOR := 2
+VER_MINOR := 1
+VER_PATCH := 1
+MINOR_VER := $(VER_MAJOR).$(VER_MINOR)
+FULL_VER := $(MINOR_VER).$(VER_PATCH)
 ifeq ($(OS),Windows_NT)
         LIBSUFFIX = dll
 else
         LIBPREFIX = lib
-        LIBSUFFIX = so.2.1.0
-        LIBLINKS = ln -sf libumagnus.so.2.1.0 libumagnus.so.2.1 && ln -sf libumagnus.so.2.1 libumagnus.so.2 && ln -sf libumagnus.so.2 libumagnus.so
-        LIB64LINKS = ln -sf libumagnus64.so.2.1.0 libumagnus64.so.2.1 && ln -sf libumagnus64.so.2.1 libumagnus64.so.2 && ln -sf libumagnus64.so.2 libumagnus64.so
+        LIBSUFFIX = so.$(FULL_VER)
+        LIBLINKS = ln -sf libumagnus.so.$(FULL_VER) libumagnus.so.$(MINOR_VER) && ln -sf libumagnus.so.$(MINOR_VER) libumagnus.so.$(VER_MAJOR) && ln -sf libumagnus.so.$(VER_MAJOR) libumagnus.so
+        LIB64LINKS = ln -sf libumagnus64.so.$(FULL_VER) libumagnus64.so.$(MINOR_VER) && ln -sf libumagnus64.so.$(MINOR_VER) libumagnus64.so.$(VER_MAJOR) && ln -sf libumagnus64.so.$(VER_MAJOR) libumagnus64.so
 endif
 
-.PHONY = all obj obj64 lib lib64 clean realclean
+BUILD_TARGETS = all obj obj64 lib lib64 clean realclean
+
+.PHONY: $(BUILD_TARGETS)
 
 lib: obj
 	$(CC) $(LDFLAGS) -o $(LIBPREFIX)umagnus.$(LIBSUFFIX) libumagnus.o

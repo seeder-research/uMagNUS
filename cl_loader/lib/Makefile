@@ -6,17 +6,25 @@ LIBPREFIX :=
 LIBSUFFIX := 
 LINKLIBS := 
 LIBFILES := 
+VER_MAJOR := 2
+VER_MINOR := 1
+VER_PATCH := 1
+MINOR_VER := $(VER_MAJOR).$(VER_MINOR)
+FULL_VER := $(MINOR_VER).$(VER_PATCH)
 ifeq ($(OS),Windows_NT)
 	LIBSUFFIX = dll
 	LIBFILES = *.o *.dll
 else
 	LIBPREFIX = lib
-	LIBSUFFIX = so.2.1.0
+	LIBSUFFIX = so.$(FULL_VER)
 	LIBFILES = *.o lib*.so lib*.so*
-	LINKLIBS = ln -sf libumagnus.so.2.1.0 libumagnus.so.2.1 && ln -sf libumagnus.so.2.1 libumagnus.so.2 && ln -sf libumagnus.so.2 libumagnus.so && ln -sf libumagnus.so.2 libumagnus64.so
+	LINKLIBS = ln -sf libumagnus.so.$(FULL_VER) libumagnus.so.$(MINOR_VER) && ln -sf libumagnus.so.$(MINOR_VER) libumagnus.so.$(VER_MAJOR) && ln -sf libumagnus.so.$(VER_MAJOR) libumagnus.so && ln -sf libumagnus.so.$(VER_MAJOR) libumagnus64.so
 endif
 
-.PHONY = all obj lib clean realclean
+BUILD_TARGETS = all obj lib clean realclean
+
+
+.PHONY: $(BUILD_TARGETS)
 
 lib: obj
 	$(CC) $(LDFLAGS) -o $(LIBPREFIX)umagnus.$(LIBSUFFIX) clCompiler.o
