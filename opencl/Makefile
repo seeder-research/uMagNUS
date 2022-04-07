@@ -1,4 +1,4 @@
-# Builds mumax3 opencl kernels and create GO wrappers
+# Builds uMagNUS opencl kernels and create GO wrappers
 
 SHELL = /bin/bash
 

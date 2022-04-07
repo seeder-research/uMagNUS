@@ -4,13 +4,13 @@
 
 set -e
 
-go install -race github.com/mumax/3cl/cmd/mumax3cl
+go install -race github.com/seeder-research/uMagNUS/cmd/uMagNUS
 
 google-chrome http://localhost:35367 &
 
 for f in *.mx3; do
-	mumax3cl $f 
+	uMagNUS $f 
 done
 
-go install github.com/mumax/3cl/cmd/mumax3cl # re-build without race detector
+go install github.com/seeder-research/uMagNUS/cmd/uMagNUS # re-build without race detector
 
