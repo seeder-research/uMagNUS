@@ -104,7 +104,7 @@ const templText = `
 
 
 <body>
-<iframe src="http://mumax.github.io/header.html" width="100%" height="180" frameborder="0"></iframe>
+<iframe src="https://seeder-research.github.io/umagnus.github.io/header.html" width="100%" height="180" frameborder="0"></iframe>
 <span style="color:gray; font-weight:bold; font-size:1.5em" >
 	{{.Span "title" "uMagNUS"}} &nbsp; </span>
 	{{.Progress "progress" 100 0}} {{.Span "busy" "" }} &nbsp; {{.ErrorBox}} <br/>
