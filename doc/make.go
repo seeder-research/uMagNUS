@@ -12,11 +12,12 @@ import (
 	"sort"
 	"strings"
 	"text/template"
+
+	"github.com/seeder-research/uMagNUS/engine"
 )
 
-var flag_vet = flag.Bool("vet", false, "only vet source files, don't run them")
-var flag_examples = flag.Bool("examples", false, "run mumax3 examples")
-var flag_forced = flag.Bool("forced", false, "force to re-run mumax3 examples")
+var flag_examples = flag.Bool("examples", false, "run uMagNUS examples")
+var flag_forced = flag.Bool("forced", false, "force to re-run uMagNUS examples")
 var flag_builddir = flag.String("builddir", "build", "build directory")
 
 var buildDir string
@@ -100,12 +101,12 @@ func (s *State) Example(in string) string {
 	// exec input file
 	check(ioutil.WriteFile(s.infile(), []byte(in), 0666))
 	arg := "-v"
-	if *flag_vet {
+	if *engine.Flag_vet {
 		arg = "-vet"
 	}
 
 	if _, err := os.Stat(s.outfile()); os.IsNotExist(err) || *flag_forced {
-		cmd("mumax3", "-cache", "/tmp", arg, s.infile())
+		cmd("uMagNUS", "-cache", "/tmp", arg, s.infile())
 	}
 
 	recordExamples(in, s.count)
@@ -125,7 +126,7 @@ func recordExamples(input string, num int) {
 }
 
 func (s *State) Img(fname string) string {
-	cmd("mumax3-convert", "-png", "-arrows", "16", path.Join(s.outfile(), fname+".ovf"))
+	cmd("mumax3cl-convert", "-png", "-arrows", "16", path.Join(s.outfile(), fname+".ovf"))
 	pngfile := path.Join(s.relativeOutfile(), fname+".png")
 	return fmt.Sprintf(`
 <figure style="float:left">
@@ -157,7 +158,7 @@ func (s *State) Output() string {
 
 	for _, f := range files {
 		if f == "table.txt" {
-			cmd("mumax3-plot", path.Join(s.outfile(), f))
+			cmd("mumax3cl-plot", path.Join(s.outfile(), f))
 		}
 	}
 
