@@ -65,11 +65,14 @@ var (
 	A2int2             = NewExcitation("A2int2", "", "Second scale factor for calculating J from applied voltage for interface 2")
 	VcmaCoeff2         = NewScalarParam("VcmaCoeff2", "J/m3/V", "voltage-controlled anisotropy constant for interface 2")
 	AnisVCMAU2         = NewVectorParam("anisVCMAU2", "", "Voltage-controlled magnetic anisotropy direction for interface 2")
+
+	customTorques []Quantity // vector
 )
 
 func init() {
 	Pol.setUniform([]float64{1}) // default spin polarization
 	Lambda.Set(1)                // sensible default value (?).
+	DeclFunc("AddTorqueTerm", AddTorqueTerm, "Adds an expression to total torque.")
 	DeclVar("GammaLL", &GammaLL, "Gyromagnetic ratio in rad/Ts")
 	DeclVar("DisableZhangLiTorque", &DisableZhangLiTorque, "Disables Zhang-Li torque (default=false)")
 	DeclVar("DisableSlonczewskiTorque", &DisableSlonczewskiTorque, "Disables Slonczewski torque (default=false)")
@@ -93,6 +96,28 @@ func init() {
 	DeclVar("ToMulFactorInt1", &ToMulFactorInt1, "Sets function converting voltage to current as multiply at interface 1 (default=true, divide if false)")
 	DeclVar("DisableVoltageInt2", &DisableVoltageInt2, "Disables voltage based calculation of Slonczewski torque through interface 2 (default=true)")
 	DeclVar("ToMulFactorInt2", &ToMulFactorInt2, "Sets function converting voltage to current as multiply at interface 2 (default=true, divide if false)")
+	DeclFunc("RemoveCustomTorques", RemoveCustomTorques, "Removes all custom torques again")
+}
+
+//Removes all customfields
+func RemoveCustomTorques() {
+	customTorques = nil
+}
+
+// AddFieldTerm adds an effective field function (returning Teslas) to B_eff.
+// Be sure to also add the corresponding energy term using AddEnergyTerm.
+func AddTorqueTerm(b Quantity) {
+	customTorques = append(customTorques, b)
+}
+
+// AddCustomTorque evaluates the user-defined custom torque terms
+// and adds the result to dst.
+func AddCustomTorques(dst *data.Slice) {
+	for _, term := range customTorques {
+		buf := ValueOf(term)
+		opencl.Add(dst, dst, buf)
+		opencl.Recycle(buf)
+	}
 }
 
 // Sets dst to the current total torque
@@ -102,6 +127,7 @@ func SetTorque(dst *data.Slice) {
 	AddSTTorque1(dst)
 	AddSTTorque2(dst)
 	AddRegionLinkSpinTorque(dst)
+	AddCustomTorques(dst)
 	FreezeSpins(dst)
 }
 

@@ -35,6 +35,7 @@ func init() {
 	DeclFunc("Shifted", Shifted, "Shifted quantity")
 	DeclFunc("Masked", Masked, "Mask quantity with shape")
 	DeclFunc("Normalized", Normalized, "Normalize quantity")
+	DeclFunc("CustomQuantity", CustomQuantity, "Custom scalar/vector quantity defined using array")
 	DeclFunc("RemoveCustomFields", RemoveCustomFields, "Removes all custom fields again")
 }
 
@@ -449,4 +450,33 @@ func (q *normalized) EvalTo(dst *data.Slice) {
 	util.Assert(dst.NComp() == q.NComp())
 	q.orig.EvalTo(dst)
 	opencl.Normalize(dst, nil)
+}
+
+func CustomQuantity(inSlice *data.Slice) Quantity {
+	util.Assert(inSlice.NComp() == 1 || inSlice.NComp() == 3)
+	size := Mesh().Size()
+	sliceSize := inSlice.Size()
+	util.Assert(size[X] == sliceSize[X] && size[Y] == sliceSize[Y] && size[Z] == sliceSize[Z])
+	retQuant := &customQuantity{nil, size}
+	if inSlice.NComp() == 1 {
+		retQuant.customquant = opencl.NewSlice(SCALAR, size)
+	} else {
+		retQuant.customquant = opencl.NewSlice(VECTOR, size)
+	}
+	data.Copy(retQuant.customquant, inSlice)
+	return retQuant
+}
+
+type customQuantity struct {
+	customquant *data.Slice
+	size        [3]int
+}
+
+func (q *customQuantity) NComp() int {
+	return q.customquant.NComp()
+}
+
+func (q *customQuantity) EvalTo(dst *data.Slice) {
+	util.Assert(dst.NComp() == q.customquant.NComp())
+	data.Copy(dst, q.customquant)
 }

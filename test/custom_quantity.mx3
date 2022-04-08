@@ -1,0 +1,51 @@
+Nx := 1024
+Ny := 32
+Nz := 3
+
+cellSizeX := 1e-9
+cellSizeY := cellSizeX
+cellSizeZ := cellSizeX
+
+SetGridSize(Nx, Ny, Nz)
+SetCellSize(cellSizeX, cellSizeY, cellSizeZ)
+
+Ms := 580e3
+Msat = Ms
+Aex = 15e-12
+Dind = 0.0
+Ku_val := 0.8e6
+Ku1 = Ku_val
+u := ConstVector(0, 0, 1)
+AnisU = vector(0, 0, 1)
+
+DefRegion(1, Layer(2))
+DefRegion(2, Layer(0))
+
+M.SetRegion(1, Uniform(0, 0, 1))
+M.SetRegion(2, Uniform(0, 0, -1))
+
+DisableZhangLiTorque = true
+DisableSlonczewskiTorque = true
+EnableDemag = false
+EnableNewellDemag = true
+
+scalarfield := NewSlice(1, Nx, Ny, Nz)
+for iz := 0; iz < Nz; iz++ {
+	for iy := 0; iy < Ny; iy++ {
+		for ix := 0; ix < Nx; ix++ {
+			if iz > 0 {
+				scalarfield.Set(0, ix, iy, iz, 0.0)
+			} else {
+				scalarfield.Set(0, ix, iy, iz, ix)
+			}
+		}
+	}
+}
+varQuant := CustomQuantity(scalarfield)
+prefactor := Const((2.0 * Ku_val) / (Ms * Nx))
+MyAnis := Mul(Mul(prefactor, varQuant), Mul(Dot(u, M), u))
+AddFieldTerm(MyAnis)
+AddEdensTerm(Mul(Const(-0.5), Dot(MyAnis, M_full)))
+
+OutputFormat = OVF2_TEXT
+Save(B_custom)
