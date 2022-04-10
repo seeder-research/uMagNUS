@@ -4,6 +4,11 @@ GO_BUILDFLAGS=-compiler gc
 # or may not be faster than gc and which may or may not compile...
 # GO_BUILDFLAGS=-compiler gccgo -gccgoflags '-static-libgcc -O4 -Ofast -march=native'
 
+CLEANLIBFILES := 
+ifeq ($(OS), Windows_NT)
+	CLEANLIBFILES = rm -frv $(GOPATH)/bin/*.dll
+endif
+
 CGO_CFLAGS_ALLOW='(-fno-schedule-insns|-malign-double|-ffast-math)'
 
 BUILD_TARGETS = all mod cl-binds cl-compiler clkernels clean data data64 draw draw64 dump dump64 engine engine64 freetype gui realclean hooks httpfs mag mag64 oommf oommf64 script script64 timer uMagNUS uMagNUS64 util loader loader64 kernloader kernloader64 libumagnus libumagnus64
@@ -167,6 +172,7 @@ uMagNUS64: engine64
 clean:
 	rm -frv $(GOPATH)/pkg/*/github.com/seeder-research/uMagNUS/*
 	rm -frv $(GOPATH)/bin/mumax3* $(GOPATH)/bin/uMagNUS* go.mod
+	$(CLEANLIBFILES)
 	$(MAKE) -C ./cl_loader clean
 	$(MAKE) -C ./opencl clean
 	$(MAKE) -C ./opencl64 clean
