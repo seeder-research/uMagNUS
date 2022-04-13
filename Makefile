@@ -11,13 +11,17 @@ endif
 
 CGO_CFLAGS_ALLOW='(-fno-schedule-insns|-malign-double|-ffast-math)'
 
-BUILD_TARGETS = all mod cl-binds cl-compiler clkernels clean data data64 draw draw64 dump dump64 engine engine64 freetype gui realclean hooks httpfs mag mag64 oommf oommf64 script script64 timer uMagNUS uMagNUS64 util loader loader64 kernloader kernloader64 libumagnus libumagnus64
+BUILD_TARGETS = all base mod cl-binds cl-compiler clkernels clean data data64 draw draw64 dump dump64 engine engine64 freetype gui realclean hooks httpfs mag mag64 oommf oommf64 script script64 timer uMagNUS uMagNUS64 util loader loader64 kernloader kernloader64 libumagnus libumagnus64 libs
 
 
 .PHONY: $(BUILD_TARGETS)
 
 
-all: mod cl-compiler kernloader kernloader64 libumagnus libumagnus64 uMagNUS uMagNUS64
+all: base libs
+	$(MAKE) -C ./ libumagnus libumagnus64
+
+
+base: mod cl-compiler kernloader kernloader64 uMagNUS uMagNUS64
 	go install -v $(GO_BUILDFLAGS) github.com/seeder-research/uMagNUS/cmd/...
 
 
@@ -71,6 +75,7 @@ util: go.mod
 ocl2go: go.mod
 	$(MAKE) -C ./ocl2go all
 
+
 cl-compiler: cl-binds
 	$(MAKE) -C ./cmd/uMagNUS-clCompiler all
 
@@ -103,6 +108,9 @@ libumagnus64: cl-compiler
 	rm -f ./libumagnus/*.cc
 	uMagNUS-clCompiler -args="-cl-opt-disable -cl-fp32-correctly-rounded-divide-sqrt -cl-kernel-arg-info -D__REAL_IS_DOUBLE__" -std="CL1.2" -iopts="-I$(PWD)/kernels_src" -dump $(PWD)/kernels_src/Kernels/kernels64.h >> libumagnus/libumagnus64.cc
 	$(MAKE) -C ./libumagnus lib64
+
+
+libs: libumagnus libumagnus64
 
 
 data: cl-binds util
