@@ -17,14 +17,33 @@ func Mul(dst, a, b *data.Slice) {
 	cfg := make1DConf(N)
 	eventList := make([]*cl.Event, nComp)
 	for c := 0; c < nComp; c++ {
+		intEventList := []*cl.Event{}
+		tmpEvt := dst.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = a.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = b.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		if len(intEventList) == 0 {
+			intEventList = nil
+		}
 		eventList[c] = k_mul_async(dst.DevPtr(c), a.DevPtr(c), b.DevPtr(c), N, cfg,
-			[](*cl.Event){dst.GetEvent(c), a.GetEvent(c), b.GetEvent(c)})
+			intEventList)
+
 		dst.SetEvent(c, eventList[c])
 		a.SetEvent(c, eventList[c])
 		b.SetEvent(c, eventList[c])
 	}
-	if err := cl.WaitForEvents(eventList); err != nil {
-		fmt.Printf("WaitForEvents failed in mul: %+v \n", err)
+	if Debug {
+		if err := cl.WaitForEvents(eventList); err != nil {
+			fmt.Printf("WaitForEvents failed in mul: %+v \n", err)
+		}
 	}
 }
 
@@ -37,14 +56,33 @@ func Div(dst, a, b *data.Slice) {
 	cfg := make1DConf(N)
 	eventList := make([]*cl.Event, nComp)
 	for c := 0; c < nComp; c++ {
+		intEventList := []*cl.Event{}
+		tmpEvt := dst.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = a.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = b.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		if len(intEventList) == 0 {
+			intEventList = nil
+		}
 		eventList[c] = k_pointwise_div_async(dst.DevPtr(c), a.DevPtr(c), b.DevPtr(c), N, cfg,
-			[](*cl.Event){dst.GetEvent(c), a.GetEvent(c), b.GetEvent(c)})
+			intEventList)
+
 		dst.SetEvent(c, eventList[c])
 		a.SetEvent(c, eventList[c])
 		b.SetEvent(c, eventList[c])
 	}
-	if err := cl.WaitForEvents(eventList); err != nil {
-		fmt.Printf("WaitForEvents failed in div: %+v \n", err)
+	if Debug {
+		if err := cl.WaitForEvents(eventList); err != nil {
+			fmt.Printf("WaitForEvents failed in div: %+v \n", err)
+		}
 	}
 }
 
@@ -62,15 +100,34 @@ func Madd2(dst, src1, src2 *data.Slice, factor1, factor2 float32) {
 	cfg := make1DConf(N)
 	eventList := make([]*cl.Event, nComp)
 	for c := 0; c < nComp; c++ {
+		intEventList := []*cl.Event{}
+		tmpEvt := dst.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = src1.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = src2.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		if len(intEventList) == 0 {
+			intEventList = nil
+		}
 		eventList[c] = k_madd2_async(dst.DevPtr(c), src1.DevPtr(c), factor1,
 			src2.DevPtr(c), factor2, N, cfg,
-			[](*cl.Event){dst.GetEvent(c), src1.GetEvent(c), src2.GetEvent(c)})
+			intEventList)
+
 		dst.SetEvent(c, eventList[c])
 		src1.SetEvent(c, eventList[c])
 		src2.SetEvent(c, eventList[c])
 	}
-	if err := cl.WaitForEvents(eventList); err != nil {
-		fmt.Printf("WaitForEvents failed in madd2: %+v \n", err)
+	if Debug {
+		if err := cl.WaitForEvents(eventList); err != nil {
+			fmt.Printf("WaitForEvents failed in madd2: %+v \n", err)
+		}
 	}
 }
 
@@ -83,17 +140,39 @@ func Madd3(dst, src1, src2, src3 *data.Slice, factor1, factor2, factor3 float32)
 	cfg := make1DConf(N)
 	eventList := make([]*cl.Event, nComp)
 	for c := 0; c < nComp; c++ {
+		intEventList := []*cl.Event{}
+		tmpEvt := dst.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = src1.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = src2.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = src3.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		if len(intEventList) == 0 {
+			intEventList = nil
+		}
 		eventList[c] = k_madd3_async(dst.DevPtr(c), src1.DevPtr(c), factor1,
 			src2.DevPtr(c), factor2, src3.DevPtr(c), factor3, N, cfg,
-			[](*cl.Event){dst.GetEvent(c), src1.GetEvent(c),
-				src2.GetEvent(c), src3.GetEvent(c)})
+			intEventList)
+
 		dst.SetEvent(c, eventList[c])
 		src1.SetEvent(c, eventList[c])
 		src2.SetEvent(c, eventList[c])
 		src3.SetEvent(c, eventList[c])
 	}
-	if err := cl.WaitForEvents(eventList); err != nil {
-		fmt.Printf("WaitForEvents failed in madd3: %+v \n", err)
+	if Debug {
+		if err := cl.WaitForEvents(eventList); err != nil {
+			fmt.Printf("WaitForEvents failed in madd3: %+v \n", err)
+		}
 	}
 }
 
@@ -106,21 +185,47 @@ func Madd4(dst, src1, src2, src3, src4 *data.Slice, factor1, factor2, factor3, f
 	cfg := make1DConf(N)
 	eventList := make([]*cl.Event, nComp)
 	for c := 0; c < nComp; c++ {
+		intEventList := []*cl.Event{}
+		tmpEvt := dst.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = src1.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = src2.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = src3.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = src4.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		if len(intEventList) == 0 {
+			intEventList = nil
+		}
 		eventList[c] = k_madd4_async(dst.DevPtr(c),
 			src1.DevPtr(c), factor1,
 			src2.DevPtr(c), factor2,
 			src3.DevPtr(c), factor3,
 			src4.DevPtr(c), factor4, N, cfg,
-			[](*cl.Event){dst.GetEvent(c), src1.GetEvent(c),
-				src2.GetEvent(c), src3.GetEvent(c), src4.GetEvent(c)})
+			intEventList)
+
 		dst.SetEvent(c, eventList[c])
 		src1.SetEvent(c, eventList[c])
 		src2.SetEvent(c, eventList[c])
 		src3.SetEvent(c, eventList[c])
 		src4.SetEvent(c, eventList[c])
 	}
-	if err := cl.WaitForEvents(eventList); err != nil {
-		fmt.Printf("WaitForEvents failed in madd4: %+v \n", err)
+	if Debug {
+		if err := cl.WaitForEvents(eventList); err != nil {
+			fmt.Printf("WaitForEvents failed in madd4: %+v \n", err)
+		}
 	}
 }
 
@@ -133,15 +238,42 @@ func Madd5(dst, src1, src2, src3, src4, src5 *data.Slice, factor1, factor2, fact
 	cfg := make1DConf(N)
 	eventList := make([]*cl.Event, nComp)
 	for c := 0; c < nComp; c++ {
+		intEventList := []*cl.Event{}
+		tmpEvt := dst.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = src1.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = src2.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = src3.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = src4.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = src5.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		if len(intEventList) == 0 {
+			intEventList = nil
+		}
 		eventList[c] = k_madd5_async(dst.DevPtr(c),
 			src1.DevPtr(c), factor1,
 			src2.DevPtr(c), factor2,
 			src3.DevPtr(c), factor3,
 			src4.DevPtr(c), factor4,
 			src5.DevPtr(c), factor5, N, cfg,
-			[](*cl.Event){dst.GetEvent(c), src1.GetEvent(c),
-				src2.GetEvent(c), src3.GetEvent(c),
-				src4.GetEvent(c), src5.GetEvent(c)})
+			intEventList)
+
 		dst.SetEvent(c, eventList[c])
 		src1.SetEvent(c, eventList[c])
 		src2.SetEvent(c, eventList[c])
@@ -149,8 +281,10 @@ func Madd5(dst, src1, src2, src3, src4, src5 *data.Slice, factor1, factor2, fact
 		src4.SetEvent(c, eventList[c])
 		src5.SetEvent(c, eventList[c])
 	}
-	if err := cl.WaitForEvents(eventList); err != nil {
-		fmt.Printf("WaitForEvents failed in madd5: %+v \n", err)
+	if Debug {
+		if err := cl.WaitForEvents(eventList); err != nil {
+			fmt.Printf("WaitForEvents failed in madd5: %+v \n", err)
+		}
 	}
 }
 
@@ -163,6 +297,38 @@ func Madd6(dst, src1, src2, src3, src4, src5, src6 *data.Slice, factor1, factor2
 	cfg := make1DConf(N)
 	eventList := make([]*cl.Event, nComp)
 	for c := 0; c < nComp; c++ {
+		intEventList := []*cl.Event{}
+		tmpEvt := dst.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = src1.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = src2.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = src3.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = src4.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = src5.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = src6.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		if len(intEventList) == 0 {
+			intEventList = nil
+		}
 		eventList[c] = k_madd6_async(dst.DevPtr(c),
 			src1.DevPtr(c), factor1,
 			src2.DevPtr(c), factor2,
@@ -170,10 +336,8 @@ func Madd6(dst, src1, src2, src3, src4, src5, src6 *data.Slice, factor1, factor2
 			src4.DevPtr(c), factor4,
 			src5.DevPtr(c), factor5,
 			src6.DevPtr(c), factor6, N, cfg,
-			[](*cl.Event){dst.GetEvent(c), src1.GetEvent(c),
-				src2.GetEvent(c), src3.GetEvent(c),
-				src4.GetEvent(c), src5.GetEvent(c),
-				src6.GetEvent(c)})
+			intEventList)
+
 		dst.SetEvent(c, eventList[c])
 		src1.SetEvent(c, eventList[c])
 		src2.SetEvent(c, eventList[c])
@@ -182,8 +346,10 @@ func Madd6(dst, src1, src2, src3, src4, src5, src6 *data.Slice, factor1, factor2
 		src5.SetEvent(c, eventList[c])
 		src6.SetEvent(c, eventList[c])
 	}
-	if err := cl.WaitForEvents(eventList); err != nil {
-		fmt.Printf("WaitForEvents failed in madd6: %+v \n", err)
+	if Debug {
+		if err := cl.WaitForEvents(eventList); err != nil {
+			fmt.Printf("WaitForEvents failed in madd6: %+v \n", err)
+		}
 	}
 }
 
@@ -196,6 +362,42 @@ func Madd7(dst, src1, src2, src3, src4, src5, src6, src7 *data.Slice, factor1, f
 	cfg := make1DConf(N)
 	eventList := make([]*cl.Event, nComp)
 	for c := 0; c < nComp; c++ {
+		intEventList := []*cl.Event{}
+		tmpEvt := dst.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = src1.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = src2.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = src3.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = src4.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = src5.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = src6.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		tmpEvt = src7.GetEvent(c)
+		if tmpEvt != nil {
+			intEventList = append(intEventList, tmpEvt)
+		}
+		if len(intEventList) == 0 {
+			intEventList = nil
+		}
 		eventList[c] = k_madd7_async(dst.DevPtr(c),
 			src1.DevPtr(c), factor1,
 			src2.DevPtr(c), factor2,
@@ -204,10 +406,8 @@ func Madd7(dst, src1, src2, src3, src4, src5, src6, src7 *data.Slice, factor1, f
 			src5.DevPtr(c), factor5,
 			src6.DevPtr(c), factor6,
 			src7.DevPtr(c), factor7, N, cfg,
-			[](*cl.Event){dst.GetEvent(c), src1.GetEvent(c),
-				src2.GetEvent(c), src3.GetEvent(c),
-				src4.GetEvent(c), src5.GetEvent(c),
-				src6.GetEvent(c), src7.GetEvent(c)})
+			intEventList)
+
 		dst.SetEvent(c, eventList[c])
 		src1.SetEvent(c, eventList[c])
 		src2.SetEvent(c, eventList[c])
@@ -217,7 +417,9 @@ func Madd7(dst, src1, src2, src3, src4, src5, src6, src7 *data.Slice, factor1, f
 		src6.SetEvent(c, eventList[c])
 		src7.SetEvent(c, eventList[c])
 	}
-	if err := cl.WaitForEvents(eventList); err != nil {
-		fmt.Printf("WaitForEvents failed in madd7: %+v \n", err)
+	if Debug {
+		if err := cl.WaitForEvents(eventList); err != nil {
+			fmt.Printf("WaitForEvents failed in madd7: %+v \n", err)
+		}
 	}
 }
