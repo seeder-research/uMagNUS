@@ -16,12 +16,50 @@ func kernMulRSymm3D_async(fftM [3]*data.Slice, Kxx, Kyy, Kzz, Kyz, Kxz, Kxy *dat
 	util.Argument(fftM[X].NComp() == 1 && Kxx.NComp() == 1)
 	cfg := make3DConf([3]int{Nx, Ny, Nz})
 
+	eventList := []*cl.Event{}
+	tmpEvt := fftM[X].GetEvent(0)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = fftM[Y].GetEvent(0)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = fftM[Z].GetEvent(0)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = Kxx.GetEvent(0)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = Kyy.GetEvent(0)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = Kzz.GetEvent(0)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = Kxy.GetEvent(0)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = Kxz.GetEvent(0)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = Kyz.GetEvent(0)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	if len(eventList) == 0 {
+		eventList = nil
+	}
+
 	event := k_kernmulRSymm3D_async(fftM[X].DevPtr(0), fftM[Y].DevPtr(0), fftM[Z].DevPtr(0),
 		Kxx.DevPtr(0), Kyy.DevPtr(0), Kzz.DevPtr(0), Kyz.DevPtr(0), Kxz.DevPtr(0), Kxy.DevPtr(0),
-		Nx, Ny, Nz, cfg,
-		[]*cl.Event{fftM[X].GetEvent(0), fftM[Y].GetEvent(0), fftM[Z].GetEvent(0),
-			Kxx.GetEvent(0), Kyy.GetEvent(0), Kzz.GetEvent(0),
-			Kxy.GetEvent(0), Kyz.GetEvent(0), Kxz.GetEvent(0)})
+		Nx, Ny, Nz, cfg, eventList)
 
 	fftM[X].SetEvent(0, event)
 	fftM[Y].SetEvent(0, event)
@@ -32,8 +70,11 @@ func kernMulRSymm3D_async(fftM [3]*data.Slice, Kxx, Kyy, Kzz, Kyz, Kxz, Kxy *dat
 	Kyz.SetEvent(0, event)
 	Kxz.SetEvent(0, event)
 	Kxy.SetEvent(0, event)
-	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-		fmt.Printf("WaitForEvents failed in kernmulrsymm3d_async: %+v \n", err)
+
+	if Debug {
+		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+			fmt.Printf("WaitForEvents failed in kernmulrsymm3d_async: %+v \n", err)
+		}
 	}
 }
 
@@ -41,6 +82,31 @@ func kernMulRSymm3D_async(fftM [3]*data.Slice, Kxx, Kyy, Kzz, Kyz, Kxz, Kxy *dat
 func kernMulRSymm2Dxy_async(fftMx, fftMy, Kxx, Kyy, Kxy *data.Slice, Nx, Ny int) {
 	util.Argument(fftMy.NComp() == 1 && Kxx.NComp() == 1)
 	cfg := make3DConf([3]int{Nx, Ny, 1})
+
+	eventList := []*cl.Event{}
+	tmpEvt := fftMx.GetEvent(0)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = fftMy.GetEvent(0)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = Kxx.GetEvent(0)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = Kyy.GetEvent(0)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = Kxy.GetEvent(0)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	if len(eventList) == 0 {
+		eventList = nil
+	}
 
 	event := k_kernmulRSymm2Dxy_async(fftMx.DevPtr(0), fftMy.DevPtr(0),
 		Kxx.DevPtr(0), Kyy.DevPtr(0), Kxy.DevPtr(0),
@@ -53,8 +119,11 @@ func kernMulRSymm2Dxy_async(fftMx, fftMy, Kxx, Kyy, Kxy *data.Slice, Nx, Ny int)
 	Kxx.SetEvent(0, event)
 	Kyy.SetEvent(0, event)
 	Kxy.SetEvent(0, event)
-	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-		fmt.Printf("WaitForEvents failed in kernmulrsymm2dxy_async: %+v \n", err)
+
+	if Debug {
+		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+			fmt.Printf("WaitForEvents failed in kernmulrsymm2dxy_async: %+v \n", err)
+		}
 	}
 }
 
@@ -63,13 +132,29 @@ func kernMulRSymm2Dz_async(fftMz, Kzz *data.Slice, Nx, Ny int) {
 	util.Argument(fftMz.NComp() == 1 && Kzz.NComp() == 1)
 	cfg := make3DConf([3]int{Nx, Ny, 1})
 
+	eventList := []*cl.Event{}
+	tmpEvt := fftMz.GetEvent(0)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = Kzz.GetEvent(0)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	if len(eventList) == 0 {
+		eventList = nil
+	}
+
 	event := k_kernmulRSymm2Dz_async(fftMz.DevPtr(0), Kzz.DevPtr(0), Nx, Ny, cfg,
-		[]*cl.Event{fftMz.GetEvent(0), Kzz.GetEvent(0)})
+		eventList)
 
 	fftMz.SetEvent(0, event)
 	Kzz.SetEvent(0, event)
-	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
-		fmt.Printf("WaitForEvents failed in kernmulrsymm2dz_async: %+v \n", err)
+
+	if Debug {
+		if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
+			fmt.Printf("WaitForEvents failed in kernmulrsymm2dz_async: %+v \n", err)
+		}
 	}
 }
 
@@ -79,12 +164,28 @@ func kernMulC_async(fftM, K *data.Slice, Nx, Ny int) {
 	util.Argument(fftM.NComp() == 1 && K.NComp() == 1)
 	cfg := make3DConf([3]int{Nx, Ny, 1})
 
+	eventList := []*cl.Event{}
+	tmpEvt := fftM.GetEvent(0)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = K.GetEvent(0)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	if len(eventList) == 0 {
+		eventList = nil
+	}
+
 	event := k_kernmulC_async(fftM.DevPtr(0), K.DevPtr(0), Nx, Ny, cfg,
-		[]*cl.Event{fftM.GetEvent(0), K.GetEvent(0)})
+		eventList)
 
 	fftM.SetEvent(0, event)
 	K.SetEvent(0, event)
-	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
-		fmt.Printf("WaitForEvents failed in kernmulC_async: %+v \n", err)
+
+	if Debug {
+		if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
+			fmt.Printf("WaitForEvents failed in kernmulC_async: %+v \n", err)
+		}
 	}
 }

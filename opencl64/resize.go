@@ -21,11 +21,47 @@ func Resize(dst, src *data.Slice, layer int) {
 
 	cfg := make3DConf(dstsize)
 
+	eventsList := []*cl.Event{}
+	tmpEvt := dst.GetEvent(X)
+	if tmpEvt != nil {
+		eventsList = append(eventsList, tmpEvt)
+	}
+	tmpEvt = dst.GetEvent(Y)
+	if tmpEvt != nil {
+		eventsList = append(eventsList, tmpEvt)
+	}
+	tmpEvt = dst.GetEvent(Z)
+	if tmpEvt != nil {
+		eventsList = append(eventsList, tmpEvt)
+	}
+	tmpEvt = src.GetEvent(X)
+	if tmpEvt != nil {
+		eventsList = append(eventsList, tmpEvt)
+	}
+	tmpEvt = src.GetEvent(Y)
+	if tmpEvt != nil {
+		eventsList = append(eventsList, tmpEvt)
+	}
+	tmpEvt = src.GetEvent(Z)
+	if tmpEvt != nil {
+		eventsList = append(eventsList, tmpEvt)
+	}
+	if len(eventsList) == 0 {
+		eventsList = nil
+	}
+
 	event := k_resize_async(dst.DevPtr(0), dstsize[X], dstsize[Y], dstsize[Z],
 		src.DevPtr(0), srcsize[X], srcsize[Y], srcsize[Z], layer, scalex, scaley, cfg,
-		[](*cl.Event){dst.GetEvent(0), src.GetEvent(0)})
-	dst.SetEvent(0, event)
-	src.SetEvent(0, event)
+		eventsList)
+
+	dst.SetEvent(X, event)
+	dst.SetEvent(Y, event)
+	dst.SetEvent(Z, event)
+	src.SetEvent(X, event)
+	src.SetEvent(Y, event)
+	src.SetEvent(Z, event)
+
+	// Synchronize for resize
 	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in resize: %+v \n", err)
 	}

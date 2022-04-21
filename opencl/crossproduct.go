@@ -14,20 +14,64 @@ func CrossProduct(dst, a, b *data.Slice) {
 
 	N := dst.Len()
 	cfg := make1DConf(N)
+	eventWaitList := []*cl.Event{}
+	tmpEvent := dst.GetEvent(X)
+	if tmpEvent != nil {
+		eventWaitList = append(eventWaitList, tmpEvent)
+	}
+	tmpEvent = dst.GetEvent(Y)
+	if tmpEvent != nil {
+		eventWaitList = append(eventWaitList, tmpEvent)
+	}
+	tmpEvent = dst.GetEvent(Z)
+	if tmpEvent != nil {
+		eventWaitList = append(eventWaitList, tmpEvent)
+	}
+	tmpEvent = a.GetEvent(X)
+	if tmpEvent != nil {
+		eventWaitList = append(eventWaitList, tmpEvent)
+	}
+	tmpEvent = a.GetEvent(Y)
+	if tmpEvent != nil {
+		eventWaitList = append(eventWaitList, tmpEvent)
+	}
+	tmpEvent = a.GetEvent(Z)
+	if tmpEvent != nil {
+		eventWaitList = append(eventWaitList, tmpEvent)
+	}
+	tmpEvent = b.GetEvent(X)
+	if tmpEvent != nil {
+		eventWaitList = append(eventWaitList, tmpEvent)
+	}
+	tmpEvent = b.GetEvent(Y)
+	if tmpEvent != nil {
+		eventWaitList = append(eventWaitList, tmpEvent)
+	}
+	tmpEvent = b.GetEvent(Z)
+	if tmpEvent != nil {
+		eventWaitList = append(eventWaitList, tmpEvent)
+	}
+	if len(eventWaitList) == 0 {
+		eventWaitList = nil
+	}
+
 	event := k_crossproduct_async(dst.DevPtr(X), dst.DevPtr(Y), dst.DevPtr(Z),
 		a.DevPtr(X), a.DevPtr(Y), a.DevPtr(Z),
 		b.DevPtr(X), b.DevPtr(Y), b.DevPtr(Z),
-		N, cfg, [](*cl.Event){dst.GetEvent(0), a.GetEvent(X), a.GetEvent(Y), a.GetEvent(Z),
-			b.GetEvent(X), b.GetEvent(Y), b.GetEvent(Z)})
+		N, cfg, eventWaitList)
 
-	dst.SetEvent(0, event)
+	dst.SetEvent(X, event)
+	dst.SetEvent(Y, event)
+	dst.SetEvent(Z, event)
 	a.SetEvent(X, event)
 	a.SetEvent(Y, event)
 	a.SetEvent(Z, event)
 	b.SetEvent(X, event)
 	b.SetEvent(Y, event)
 	b.SetEvent(Z, event)
-	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-		fmt.Printf("WaitForEvents failed in crossproduct: %+v \n", err)
+	if Debug {
+		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+			fmt.Printf("WaitForEvents failed in crossproduct: %+v \n", err)
+		}
 	}
 }

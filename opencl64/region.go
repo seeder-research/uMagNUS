@@ -14,15 +14,40 @@ func RegionAddV(dst *data.Slice, lut LUTPtrs, regions *Bytes) {
 	util.Argument(dst.NComp() == 3)
 	N := dst.Len()
 	cfg := make1DConf(N)
+
+	eventsList := []*cl.Event{}
+	tmpEvt := dst.GetEvent(X)
+	if tmpEvt != nil {
+		eventsList = append(eventsList, tmpEvt)
+	}
+	tmpEvt = dst.GetEvent(Y)
+	if tmpEvt != nil {
+		eventsList = append(eventsList, tmpEvt)
+	}
+	tmpEvt = dst.GetEvent(Z)
+	if tmpEvt != nil {
+		eventsList = append(eventsList, tmpEvt)
+	}
+	tmpEvt = regions.GetEvent()
+	if tmpEvt != nil {
+		eventsList = append(eventsList, tmpEvt)
+	}
+	if len(eventsList) == 0 {
+		eventsList = nil
+	}
+
 	event := k_regionaddv_async(dst.DevPtr(X), dst.DevPtr(Y), dst.DevPtr(Z),
-		lut[X], lut[Y], lut[Z], regions.Ptr, N, cfg,
-		[](*cl.Event){dst.GetEvent(X), dst.GetEvent(Y), dst.GetEvent(Z)})
+		lut[X], lut[Y], lut[Z], regions.Ptr, N, cfg, eventsList)
+
 	dst.SetEvent(X, event)
 	dst.SetEvent(Y, event)
 	dst.SetEvent(Z, event)
+	regions.SetEvent(event)
 
-	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-		fmt.Printf("WaitForEvents in regionaddv failed: %+v \n", err)
+	if Debug {
+		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+			fmt.Printf("WaitForEvents in regionaddv failed: %+v \n", err)
+		}
 	}
 }
 
@@ -31,12 +56,30 @@ func RegionAddS(dst *data.Slice, lut LUTPtr, regions *Bytes) {
 	util.Argument(dst.NComp() == 1)
 	N := dst.Len()
 	cfg := make1DConf(N)
-	event := k_regionadds_async(dst.DevPtr(0), unsafe.Pointer(lut), regions.Ptr, N, cfg,
-		[](*cl.Event){dst.GetEvent(0)})
-	dst.SetEvent(0, event)
 
-	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-		fmt.Printf("WaitForEvents in regionadds failed: %+v \n", err)
+	eventsList := []*cl.Event{}
+	tmpEvt := dst.GetEvent(0)
+	if tmpEvt != nil {
+		eventsList = append(eventsList, tmpEvt)
+	}
+	tmpEvt = regions.GetEvent()
+	if tmpEvt != nil {
+		eventsList = append(eventsList, tmpEvt)
+	}
+	if len(eventsList) == 0 {
+		eventsList = nil
+	}
+
+	event := k_regionadds_async(dst.DevPtr(0), unsafe.Pointer(lut), regions.Ptr, N, cfg,
+		eventsList)
+
+	dst.SetEvent(0, event)
+	regions.SetEvent(event)
+
+	if Debug {
+		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+			fmt.Printf("WaitForEvents in regionadds failed: %+v \n", err)
+		}
 	}
 }
 
@@ -44,12 +87,30 @@ func RegionAddS(dst *data.Slice, lut LUTPtr, regions *Bytes) {
 func RegionDecode(dst *data.Slice, lut LUTPtr, regions *Bytes) {
 	N := dst.Len()
 	cfg := make1DConf(N)
-	event := k_regiondecode_async(dst.DevPtr(0), unsafe.Pointer(lut), regions.Ptr, N, cfg,
-		[](*cl.Event){dst.GetEvent(0)})
-	dst.SetEvent(0, event)
 
-	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-		fmt.Printf("WaitForEvents in regiondecode failed: %+v \n", err)
+	eventsList := []*cl.Event{}
+	tmpEvt := dst.GetEvent(0)
+	if tmpEvt != nil {
+		eventsList = append(eventsList, tmpEvt)
+	}
+	tmpEvt = regions.GetEvent()
+	if tmpEvt != nil {
+		eventsList = append(eventsList, tmpEvt)
+	}
+	if len(eventsList) == 0 {
+		eventsList = nil
+	}
+
+	event := k_regiondecode_async(dst.DevPtr(0), unsafe.Pointer(lut), regions.Ptr, N, cfg,
+		eventsList)
+
+	dst.SetEvent(0, event)
+	regions.SetEvent(event)
+
+	if Debug {
+		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+			fmt.Printf("WaitForEvents in regiondecode failed: %+v \n", err)
+		}
 	}
 }
 
@@ -61,12 +122,28 @@ func RegionSelect(dst, src *data.Slice, regions *Bytes, region byte) {
 
 	eventList := make([]*cl.Event, dst.NComp())
 	for c := 0; c < dst.NComp(); c++ {
+		intWaitList := []*cl.Event{}
+		tmpEvt := dst.GetEvent(c)
+		if tmpEvt != nil {
+			intWaitList = append(intWaitList, tmpEvt)
+		}
+		tmpEvt = src.GetEvent(c)
+		if tmpEvt != nil {
+			intWaitList = append(intWaitList, tmpEvt)
+		}
+		if len(intWaitList) == 0 {
+			intWaitList = nil
+		}
+
 		eventList[c] = k_regionselect_async(dst.DevPtr(c), src.DevPtr(c), regions.Ptr, region, N, cfg,
-			[](*cl.Event){dst.GetEvent(c), src.GetEvent(c)})
+			intWaitList)
+
 		dst.SetEvent(c, eventList[c])
 		src.SetEvent(c, eventList[c])
 	}
-	if err := cl.WaitForEvents(eventList); err != nil {
-		fmt.Printf("WaitForEvents in regionselect failed: %+v \n", err)
+	if Debug {
+		if err := cl.WaitForEvents(eventList); err != nil {
+			fmt.Printf("WaitForEvents in regionselect failed: %+v \n", err)
+		}
 	}
 }

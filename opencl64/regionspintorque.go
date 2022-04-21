@@ -25,7 +25,44 @@ func AddRegionSpinTorque(torque, m *data.Slice, Msat MSlice, regions *Bytes, reg
 	N := mesh.Size()
 	cfg := make3DConf(N)
 
-	eventsList := []*cl.Event{torque.GetEvent(X), torque.GetEvent(Y), torque.GetEvent(Z), m.GetEvent(X), m.GetEvent(Y), m.GetEvent(Z)}
+	eventsList := []*cl.Event{}
+	tmpEvt := torque.GetEvent(X)
+	if tmpEvt != nil {
+		eventsList = append(eventsList, tmpEvt)
+	}
+	tmpEvt = torque.GetEvent(Y)
+	if tmpEvt != nil {
+		eventsList = append(eventsList, tmpEvt)
+	}
+	tmpEvt = torque.GetEvent(Z)
+	if tmpEvt != nil {
+		eventsList = append(eventsList, tmpEvt)
+	}
+	tmpEvt = m.GetEvent(X)
+	if tmpEvt != nil {
+		eventsList = append(eventsList, tmpEvt)
+	}
+	tmpEvt = m.GetEvent(Y)
+	if tmpEvt != nil {
+		eventsList = append(eventsList, tmpEvt)
+	}
+	tmpEvt = m.GetEvent(Z)
+	if tmpEvt != nil {
+		eventsList = append(eventsList, tmpEvt)
+	}
+	if Msat.GetSlicePtr() != nil {
+		tmpEvt = Msat.GetEvent(0)
+		if tmpEvt != nil {
+			eventsList = append(eventsList, tmpEvt)
+		}
+	}
+	tmpEvt = regions.GetEvent()
+	if tmpEvt != nil {
+		eventsList = append(eventsList, tmpEvt)
+	}
+	if len(eventsList) == 0 {
+		eventsList = nil
+	}
 
 	event := k_addtworegionoommfslonczewskitorque_async(torque.DevPtr(X), torque.DevPtr(Y), torque.DevPtr(Z),
 		m.DevPtr(X), m.DevPtr(Y), m.DevPtr(Z),
@@ -42,8 +79,14 @@ func AddRegionSpinTorque(torque, m *data.Slice, Msat MSlice, regions *Bytes, reg
 	m.SetEvent(X, event)
 	m.SetEvent(Y, event)
 	m.SetEvent(Z, event)
+	if Msat.GetSlicePtr() != nil {
+		Msat.SetEvent(0, event)
+	}
+	regions.SetEvent(event)
 
-	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-		fmt.Printf("WaitForEvents failed in addtworegionoommfslonczewskitorque: %+v", err)
+	if Debug {
+		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+			fmt.Printf("WaitForEvents failed in addtworegionoommfslonczewskitorque: %+v", err)
+		}
 	}
 }

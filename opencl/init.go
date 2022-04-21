@@ -23,7 +23,8 @@ var (
 	PlatformInfo string                    // Human-readable OpenCL platform description
 	GPUInfo      string                    // Human-readable GPU description
 	GPUList      []GPU                     // List of GPUs available
-	Synchronous  bool                      // for debug: synchronize stream0 at every kernel launch
+	Synchronous  bool                      // for debug: synchronize command queue at every kernel launch
+	Debug        bool                      // for debug: synchronize command queue after every kernel launch
 	ClPlatforms  []*cl.Platform            // list of platforms available
 	ClPlatform   *cl.Platform              // platform the global OpenCL context is attached to
 	ClDevices    []*cl.Device              // list of devices global OpenCL context may be associated with

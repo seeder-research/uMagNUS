@@ -22,12 +22,45 @@ func AddDMI(Beff *data.Slice, m *data.Slice, Aex_red, Dex_red SymmLUT, Msat MSli
 		openBC = 1
 	}
 
+	eventWaitList := []*cl.Event{}
+	tmpEvent := Beff.GetEvent(X)
+	if tmpEvent != nil {
+		eventWaitList = append(eventWaitList, tmpEvent)
+	}
+	tmpEvent = Beff.GetEvent(Y)
+	if tmpEvent != nil {
+		eventWaitList = append(eventWaitList, tmpEvent)
+	}
+	tmpEvent = Beff.GetEvent(Z)
+	if tmpEvent != nil {
+		eventWaitList = append(eventWaitList, tmpEvent)
+	}
+	tmpEvent = m.GetEvent(X)
+	if tmpEvent != nil {
+		eventWaitList = append(eventWaitList, tmpEvent)
+	}
+	tmpEvent = m.GetEvent(Y)
+	if tmpEvent != nil {
+		eventWaitList = append(eventWaitList, tmpEvent)
+	}
+	tmpEvent = m.GetEvent(Z)
+	if tmpEvent != nil {
+		eventWaitList = append(eventWaitList, tmpEvent)
+	}
+	tmpEvent = regions.GetEvent()
+	if tmpEvent != nil {
+		eventWaitList = append(eventWaitList, tmpEvent)
+	}
+	if len(eventWaitList) == 0 {
+		eventWaitList = nil
+	}
 	event := k_adddmi_async(Beff.DevPtr(X), Beff.DevPtr(Y), Beff.DevPtr(Z),
 		m.DevPtr(X), m.DevPtr(Y), m.DevPtr(Z),
 		Msat.DevPtr(0), Msat.Mul(0),
 		unsafe.Pointer(Aex_red), unsafe.Pointer(Dex_red), regions.Ptr,
-		float64(cellsize[X]), float64(cellsize[Y]), float64(cellsize[Z]), N[X], N[Y], N[Z], mesh.PBC_code(), openBC, cfg,
-		[](*cl.Event){Beff.GetEvent(X), Beff.GetEvent(Y), Beff.GetEvent(Z), m.GetEvent(X), m.GetEvent(Y), m.GetEvent(Z)})
+		float64(cellsize[X]), float64(cellsize[Y]), float64(cellsize[Z]),
+		N[X], N[Y], N[Z], mesh.PBC_code(), openBC, cfg,
+		eventWaitList)
 
 	Beff.SetEvent(X, event)
 	Beff.SetEvent(Y, event)
@@ -35,7 +68,11 @@ func AddDMI(Beff *data.Slice, m *data.Slice, Aex_red, Dex_red SymmLUT, Msat MSli
 	m.SetEvent(X, event)
 	m.SetEvent(Y, event)
 	m.SetEvent(Z, event)
-	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-		fmt.Printf("WaitForEvents failed in adddmi: %+v \n", err)
+	regions.SetEvent(event)
+
+	if Debug {
+		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+			fmt.Printf("WaitForEvents failed in adddmi: %+v \n", err)
+		}
 	}
 }

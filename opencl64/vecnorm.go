@@ -16,16 +16,39 @@ func VecNorm(dst *data.Slice, a *data.Slice) {
 	N := dst.Len()
 	cfg := make1DConf(N)
 
+	eventsList := []*cl.Event{}
+	tmpEvt := dst.GetEvent(0)
+	if tmpEvt != nil {
+		eventsList = append(eventsList, tmpEvt)
+	}
+	tmpEvt = a.GetEvent(X)
+	if tmpEvt != nil {
+		eventsList = append(eventsList, tmpEvt)
+	}
+	tmpEvt = a.GetEvent(Y)
+	if tmpEvt != nil {
+		eventsList = append(eventsList, tmpEvt)
+	}
+	tmpEvt = a.GetEvent(Z)
+	if tmpEvt != nil {
+		eventsList = append(eventsList, tmpEvt)
+	}
+	if len(eventsList) == 0 {
+		eventsList = nil
+	}
+
 	event := k_vecnorm_async(dst.DevPtr(0),
 		a.DevPtr(X), a.DevPtr(Y), a.DevPtr(Z),
-		N, cfg, [](*cl.Event){dst.GetEvent(0), a.GetEvent(X), a.GetEvent(Y), a.GetEvent(Z)})
+		N, cfg, eventsList)
 
 	dst.SetEvent(0, event)
 	a.SetEvent(X, event)
 	a.SetEvent(Y, event)
 	a.SetEvent(Z, event)
 
-	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
-		fmt.Printf("WaitForEvents failed in vecnorm: %+v \n", err)
+	if Debug {
+		if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
+			fmt.Printf("WaitForEvents failed in vecnorm: %+v \n", err)
+		}
 	}
 }

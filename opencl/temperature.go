@@ -23,31 +23,51 @@ func SetTemperature(Bth, noise *data.Slice, k2mu0_Mu0VgammaDt float64, Msat, Tem
 	Temp_X := (unsafe.Pointer)(nil)
 	Alpha_X := (unsafe.Pointer)(nil)
 	eventList := [](*cl.Event){}
+	var tmpEvt *cl.Event
 
 	if Bth != nil {
 		Beff = Bth.DevPtr(0)
-		eventList = append(eventList, Bth.GetEvent(0))
+		tmpEvt = Bth.GetEvent(0)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
 	} else {
 		panic("ERROR (SetTemperature): Bth pointer cannot be nil")
 	}
 	if noise != nil {
 		nois = noise.DevPtr(0)
-		eventList = append(eventList, noise.GetEvent(0))
+		tmpEvt = noise.GetEvent(0)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
 	} else {
 		panic("ERROR (SetTemperature): Bth pointer cannot be nil")
 	}
-	if Msat.GetSlicePtr(0) != nil {
+	if Msat.GetSlicePtr() != nil {
 		Msat_X = Msat.DevPtr(0)
-		eventList = append(eventList, Msat.GetEvent(0))
+		tmpEvt = Msat.GetEvent(0)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
 	}
-	if Temp.GetSlicePtr(0) != nil {
+	if Temp.GetSlicePtr() != nil {
 		Temp_X = Temp.DevPtr(0)
-		eventList = append(eventList, Temp.GetEvent(0))
+		tmpEvt = Temp.GetEvent(0)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
 	}
-	if Alpha.GetSlicePtr(0) != nil {
+	if Alpha.GetSlicePtr() != nil {
 		Alpha_X = Alpha.DevPtr(0)
-		eventList = append(eventList, Alpha.GetEvent(0))
+		tmpEvt = Alpha.GetEvent(0)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
 	}
+	if len(eventList) == 0 {
+		eventList = nil
+	}
+
 	event := k_settemperature2_async(Beff, nois, float32(k2mu0_Mu0VgammaDt),
 		Msat_X, Msat.Mul(0),
 		Temp_X, Temp.Mul(0),
@@ -66,7 +86,9 @@ func SetTemperature(Bth, noise *data.Slice, k2mu0_Mu0VgammaDt float64, Msat, Tem
 	if Alpha_X != nil {
 		Alpha.SetEvent(0, event)
 	}
-	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-		fmt.Printf("WaitForEvents failed in settemperature: %+v \n", err)
+	if Debug {
+		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+			fmt.Printf("WaitForEvents failed in settemperature: %+v \n", err)
+		}
 	}
 }

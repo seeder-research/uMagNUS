@@ -109,16 +109,14 @@ func (c *DemagConvolution) fwFFT(i int, inp, vol *data.Slice, Msat MSlice) {
 	zero1_async(c.fftRBuf[i])
 	in := inp.Comp(i)
 	copyPadMul(c.fftRBuf[i], in, vol, c.realKernSize, c.inputSize, Msat)
-	err := c.fwPlan.ExecAsync(c.fftRBuf[i], c.fftCBuf[i])
-	if err != nil {
+	if err := c.fwPlan.ExecAsync(c.fftRBuf[i], c.fftCBuf[i]); err != nil {
 		fmt.Printf("Error enqueuing forward fft: %+v \n", err)
 	}
 }
 
 // backward FFT component i
 func (c *DemagConvolution) bwFFT(i int, outp *data.Slice) {
-	err := c.bwPlan.ExecAsync(c.fftCBuf[i], c.fftRBuf[i])
-	if err != nil {
+	if err := c.bwPlan.ExecAsync(c.fftCBuf[i], c.fftRBuf[i]); err != nil {
 		fmt.Printf("Error enqueuing backward fft: %+v", err)
 	}
 	out := outp.Comp(i)

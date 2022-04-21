@@ -59,6 +59,7 @@ func InitAndClose() func() {
 		}
 	}
 	opencl.Synchronous = *Flag_sync
+	opencl.Debug = *Flag_debug
 
 	od := *Flag_od
 	if od == "" {

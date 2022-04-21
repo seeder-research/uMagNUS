@@ -15,8 +15,86 @@ func AddCubicAnisotropy2(Beff, m *data.Slice, Msat, k1, k2, k3, c1, c2 MSlice) {
 	N := Beff.Len()
 	cfg := make1DConf(N)
 
-	eventList := []*cl.Event{Beff.GetEvent(X), Beff.GetEvent(Y), Beff.GetEvent(Z),
-		m.GetEvent(X), m.GetEvent(Y), m.GetEvent(Z)}
+	eventList := []*cl.Event{}
+	tmpEvt := Beff.GetEvent(X)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = Beff.GetEvent(Y)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = Beff.GetEvent(Z)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = m.GetEvent(X)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = m.GetEvent(Y)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = m.GetEvent(Z)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	if Msat.GetSlicePtr() != nil {
+		tmpEvt = Msat.GetEvent(0)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
+	}
+	if k1.GetSlicePtr() != nil {
+		tmpEvt = k1.GetEvent(0)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
+	}
+	if k2.GetSlicePtr() != nil {
+		tmpEvt = k2.GetEvent(0)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
+	}
+	if k3.GetSlicePtr() != nil {
+		tmpEvt = k3.GetEvent(0)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
+	}
+	if c1.GetSlicePtr() != nil {
+		tmpEvt = c1.GetEvent(X)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
+		tmpEvt = c1.GetEvent(Y)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
+		tmpEvt = c1.GetEvent(Z)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
+	}
+	if c2.GetSlicePtr() != nil {
+		tmpEvt = c2.GetEvent(X)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
+		tmpEvt = c2.GetEvent(Y)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
+		tmpEvt = c2.GetEvent(Z)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
+	}
+	if len(eventList) == 0 {
+		eventList = nil
+	}
 
 	event := k_addcubicanisotropy2_async(
 		Beff.DevPtr(X), Beff.DevPtr(Y), Beff.DevPtr(Z),
@@ -39,9 +117,33 @@ func AddCubicAnisotropy2(Beff, m *data.Slice, Msat, k1, k2, k3, c1, c2 MSlice) {
 	m.SetEvent(X, event)
 	m.SetEvent(Y, event)
 	m.SetEvent(Z, event)
+	if Msat.GetSlicePtr() != nil {
+		Msat.SetEvent(0, event)
+	}
+	if k1.GetSlicePtr() != nil {
+		k1.SetEvent(0, event)
+	}
+	if k2.GetSlicePtr() != nil {
+		k2.SetEvent(0, event)
+	}
+	if k3.GetSlicePtr() != nil {
+		k3.SetEvent(0, event)
+	}
+	if c1.GetSlicePtr() != nil {
+		c1.SetEvent(X, event)
+		c1.SetEvent(Y, event)
+		c1.SetEvent(Z, event)
+	}
+	if c2.GetSlicePtr() != nil {
+		c2.SetEvent(X, event)
+		c2.SetEvent(Y, event)
+		c2.SetEvent(Z, event)
+	}
 
-	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-		fmt.Printf("WaitForEvents failed in addcubicanisotropy: %+v \n", err)
+	if Debug {
+		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+			fmt.Printf("WaitForEvents failed in addcubicanisotropy: %+v \n", err)
+		}
 	}
 }
 
@@ -53,8 +155,66 @@ func AddUniaxialAnisotropy2(Beff, m *data.Slice, Msat, k1, k2, u MSlice) {
 	N := Beff.Len()
 	cfg := make1DConf(N)
 
-	eventList := []*cl.Event{Beff.GetEvent(X), Beff.GetEvent(Y), Beff.GetEvent(Z),
-		m.GetEvent(X), m.GetEvent(Y), m.GetEvent(Z)}
+	eventList := []*cl.Event{}
+	tmpEvt := Beff.GetEvent(X)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = Beff.GetEvent(Y)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = Beff.GetEvent(Z)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = m.GetEvent(X)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = m.GetEvent(Y)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = m.GetEvent(Z)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	if Msat.GetSlicePtr() != nil {
+		tmpEvt = Msat.GetEvent(0)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
+	}
+	if k1.GetSlicePtr() != nil {
+		tmpEvt = k1.GetEvent(0)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
+	}
+	if k2.GetSlicePtr() != nil {
+		tmpEvt = k2.GetEvent(0)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
+	}
+	if u.GetSlicePtr() != nil {
+		tmpEvt = u.GetEvent(X)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
+		tmpEvt = u.GetEvent(Y)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
+		tmpEvt = u.GetEvent(Z)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
+	}
+	if len(eventList) == 0 {
+		eventList = nil
+	}
 
 	event := k_adduniaxialanisotropy2_async(
 		Beff.DevPtr(X), Beff.DevPtr(Y), Beff.DevPtr(Z),
@@ -73,9 +233,25 @@ func AddUniaxialAnisotropy2(Beff, m *data.Slice, Msat, k1, k2, u MSlice) {
 	m.SetEvent(X, event)
 	m.SetEvent(Y, event)
 	m.SetEvent(Z, event)
+	if Msat.GetSlicePtr() != nil {
+		Msat.SetEvent(0, event)
+	}
+	if k1.GetSlicePtr() != nil {
+		k1.SetEvent(0, event)
+	}
+	if k2.GetSlicePtr() != nil {
+		k2.SetEvent(0, event)
+	}
+	if u.GetSlicePtr() != nil {
+		u.SetEvent(X, event)
+		u.SetEvent(Y, event)
+		u.SetEvent(Z, event)
+	}
 
-	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-		fmt.Printf("WaitForEvents failed in addcubicanisotropy2: %+v \n", err)
+	if Debug {
+		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+			fmt.Printf("WaitForEvents failed in addcubicanisotropy2: %+v \n", err)
+		}
 	}
 }
 
@@ -87,8 +263,60 @@ func AddUniaxialAnisotropy(Beff, m *data.Slice, Msat, k1, u MSlice) {
 	N := Beff.Len()
 	cfg := make1DConf(N)
 
-	eventList := []*cl.Event{Beff.GetEvent(X), Beff.GetEvent(Y), Beff.GetEvent(Z),
-		m.GetEvent(X), m.GetEvent(Y), m.GetEvent(Z)}
+	eventList := []*cl.Event{}
+	tmpEvt := Beff.GetEvent(X)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = Beff.GetEvent(Y)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = Beff.GetEvent(Z)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = m.GetEvent(X)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = m.GetEvent(Y)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = m.GetEvent(Z)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	if Msat.GetSlicePtr() != nil {
+		tmpEvt = Msat.GetEvent(0)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
+	}
+	if k1.GetSlicePtr() != nil {
+		tmpEvt = k1.GetEvent(0)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
+	}
+	if u.GetSlicePtr() != nil {
+		tmpEvt = u.GetEvent(X)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
+		tmpEvt = u.GetEvent(Y)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
+		tmpEvt = u.GetEvent(Z)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
+	}
+	if len(eventList) == 0 {
+		eventList = nil
+	}
 
 	event := k_adduniaxialanisotropy_async(
 		Beff.DevPtr(X), Beff.DevPtr(Y), Beff.DevPtr(Z),
@@ -106,9 +334,22 @@ func AddUniaxialAnisotropy(Beff, m *data.Slice, Msat, k1, u MSlice) {
 	m.SetEvent(X, event)
 	m.SetEvent(Y, event)
 	m.SetEvent(Z, event)
+	if Msat.GetSlicePtr() != nil {
+		Msat.SetEvent(0, event)
+	}
+	if k1.GetSlicePtr() != nil {
+		k1.SetEvent(0, event)
+	}
+	if u.GetSlicePtr() != nil {
+		u.SetEvent(X, event)
+		u.SetEvent(Y, event)
+		u.SetEvent(Z, event)
+	}
 
-	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-		fmt.Printf("WaitForEvents failed in addcubicanisotropy: %+v \n", err)
+	if Debug {
+		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+			fmt.Printf("WaitForEvents failed in addcubicanisotropy: %+v \n", err)
+		}
 	}
 }
 
@@ -122,8 +363,66 @@ func AddVoltageControlledAnisotropy(Beff, m *data.Slice, Msat, vcmaCoeff, voltag
 	N := Beff.Len()
 	cfg := make1DConf(N)
 
-	eventList := []*cl.Event{Beff.GetEvent(X), Beff.GetEvent(Y), Beff.GetEvent(Z),
-		m.GetEvent(X), m.GetEvent(Y), m.GetEvent(Z)}
+	eventList := []*cl.Event{}
+	tmpEvt := Beff.GetEvent(X)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = Beff.GetEvent(Y)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = Beff.GetEvent(Z)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = m.GetEvent(X)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = m.GetEvent(Y)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = m.GetEvent(Z)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	if Msat.GetSlicePtr() != nil {
+		tmpEvt = Msat.GetEvent(0)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
+	}
+	if vcmaCoeff.GetSlicePtr() != nil {
+		tmpEvt = vcmaCoeff.GetEvent(0)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
+	}
+	if voltage.GetSlicePtr() != nil {
+		tmpEvt = voltage.GetEvent(0)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
+	}
+	if u.GetSlicePtr() != nil {
+		tmpEvt = u.GetEvent(X)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
+		tmpEvt = u.GetEvent(Y)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
+		tmpEvt = u.GetEvent(Z)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
+	}
+	if len(eventList) == 0 {
+		eventList = nil
+	}
 
 	event := k_addvoltagecontrolledanisotropy2_async(
 		Beff.DevPtr(X), Beff.DevPtr(Y), Beff.DevPtr(Z),
@@ -142,8 +441,24 @@ func AddVoltageControlledAnisotropy(Beff, m *data.Slice, Msat, vcmaCoeff, voltag
 	m.SetEvent(X, event)
 	m.SetEvent(Y, event)
 	m.SetEvent(Z, event)
+	if Msat.GetSlicePtr() != nil {
+		Msat.SetEvent(0, event)
+	}
+	if vcmaCoeff.GetSlicePtr() != nil {
+		vcmaCoeff.SetEvent(0, event)
+	}
+	if voltage.GetSlicePtr() != nil {
+		voltage.SetEvent(0, event)
+	}
+	if u.GetSlicePtr() != nil {
+		u.SetEvent(X, event)
+		u.SetEvent(Y, event)
+		u.SetEvent(Z, event)
+	}
 
-	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-		fmt.Printf("WaitForEvents failed in addvoltagecontrolledanisotropy: %+v \n", err)
+	if Debug {
+		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+			fmt.Printf("WaitForEvents failed in addvoltagecontrolledanisotropy: %+v \n", err)
+		}
 	}
 }

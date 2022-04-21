@@ -43,7 +43,25 @@ func (p *fft3DR2CPlan) ExecAsync(src, dst *data.Slice) error {
 	srcMemObj := *(*cl.MemObject)(tmpPtr)
 	tmpPtr = dst.DevPtr(0)
 	dstMemObj := *(*cl.MemObject)(tmpPtr)
-	err := p.handle.EnqueueForwardTransform([]*cl.MemObject{&srcMemObj}, []*cl.MemObject{&dstMemObj})
+
+	// Synchronize in the beginning
+	var err error
+	eventList := []*cl.Event{}
+	tmpEvt := src.GetEvent(0)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = dst.GetEvent(0)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	if len(eventList) != 0 {
+		if err = cl.WaitForEvents(eventList); err != nil {
+			log.Printf("WaitForEvents failed in fwPlan.ExecAsync: %+v \n", err)
+		}
+	}
+
+	err = p.handle.EnqueueForwardTransform([]*cl.MemObject{&srcMemObj}, []*cl.MemObject{&dstMemObj})
 	if Synchronous {
 		ClCmdQueue.Finish()
 		timer.Stop("fft")

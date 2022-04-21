@@ -16,15 +16,30 @@ func copyUnPad(dst, src *data.Slice, dstsize, srcsize [3]int) {
 
 	cfg := make3DConf(dstsize)
 
+	eventList := []*cl.Event{}
+	tmpEvt := dst.GetEvent(0)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = src.GetEvent(0)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	if len(eventList) == 0 {
+		eventList = nil
+	}
+
 	event := k_copyunpad_async(dst.DevPtr(0), dstsize[X], dstsize[Y], dstsize[Z],
 		src.DevPtr(0), srcsize[X], srcsize[Y], srcsize[Z], cfg,
-		[]*cl.Event{dst.GetEvent(0), src.GetEvent(0)})
+		eventList)
 
 	dst.SetEvent(0, event)
 	src.SetEvent(0, event)
 
-	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-		fmt.Printf("WaitForEvents failed in copyunpad: %+v \n", err)
+	if Debug {
+		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+			fmt.Printf("WaitForEvents failed in copyunpad: %+v \n", err)
+		}
 	}
 }
 
@@ -37,9 +52,27 @@ func copyPadMul(dst, src, vol *data.Slice, dstsize, srcsize [3]int, Msat MSlice)
 
 	cfg := make3DConf(srcsize)
 
-	eventList := []*cl.Event{dst.GetEvent(0), src.GetEvent(0), vol.GetEvent(0)}
-	if Msat.GetSlicePtr(0) != nil {
-		eventList = append(eventList, Msat.GetEvent(0))
+	eventList := []*cl.Event{}
+	tmpEvent := dst.GetEvent(0)
+	if tmpEvent != nil {
+		eventList = append(eventList, tmpEvent)
+	}
+	tmpEvent = src.GetEvent(0)
+	if tmpEvent != nil {
+		eventList = append(eventList, tmpEvent)
+	}
+	tmpEvent = vol.GetEvent(0)
+	if tmpEvent != nil {
+		eventList = append(eventList, tmpEvent)
+	}
+	if Msat.GetSlicePtr() != nil {
+		tmpEvent = Msat.GetEvent(0)
+		if tmpEvent != nil {
+			eventList = append(eventList, tmpEvent)
+		}
+	}
+	if len(eventList) == 0 {
+		eventList = nil
 	}
 
 	event := k_copypadmul2_async(dst.DevPtr(0), dstsize[X], dstsize[Y], dstsize[Z],
@@ -50,11 +83,13 @@ func copyPadMul(dst, src, vol *data.Slice, dstsize, srcsize [3]int, Msat MSlice)
 	dst.SetEvent(0, event)
 	src.SetEvent(0, event)
 	vol.SetEvent(0, event)
-	if Msat.GetSlicePtr(0) != nil {
+	if Msat.GetSlicePtr() != nil {
 		Msat.SetEvent(0, event)
 	}
 
-	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-		fmt.Printf("WaitForEvents failed in copypadmul: %+v \n", err)
+	if Debug {
+		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+			fmt.Printf("WaitForEvents failed in copypadmul: %+v \n", err)
+		}
 	}
 }
