@@ -100,13 +100,13 @@ kernloader64: loader64
 
 libumagnus: cl-compiler
 	rm -f ./libumagnus/*.cc
-	uMagNUS-clCompiler -args="-cl-opt-disable -cl-fp32-correctly-rounded-divide-sqrt -cl-kernel-arg-info" -std="CL1.2" -iopts="-I$(PWD)/kernels_src" -dump $(PWD)/kernels_src/Kernels/kernels32.h >> libumagnus/libumagnus.cc
+	uMagNUS-clCompiler -args="-cl-opt-disable -cl-mad-enable -cl-finite-math-only -cl-single-precision-constant -cl-fp32-correctly-rounded-divide-sqrt -cl-kernel-arg-info" -std="CL1.2" -iopts="-I$(PWD)/kernels_src" -dump $(PWD)/kernels_src/Kernels/kernels32.h >> libumagnus/libumagnus.cc
 	$(MAKE) -C ./libumagnus lib
 
 
 libumagnus64: cl-compiler
 	rm -f ./libumagnus/*.cc
-	uMagNUS-clCompiler -args="-cl-opt-disable -cl-fp32-correctly-rounded-divide-sqrt -cl-kernel-arg-info -D__REAL_IS_DOUBLE__" -std="CL1.2" -iopts="-I$(PWD)/kernels_src" -dump $(PWD)/kernels_src/Kernels/kernels64.h >> libumagnus/libumagnus64.cc
+	uMagNUS-clCompiler -args="-cl-opt-disable -cl-mad-enable -cl-finite-math-only -cl-fp32-correctly-rounded-divide-sqrt -cl-kernel-arg-info -D__REAL_IS_DOUBLE__" -std="CL1.2" -iopts="-I$(PWD)/kernels_src" -dump $(PWD)/kernels_src/Kernels/kernels64.h >> libumagnus/libumagnus64.cc
 	$(MAKE) -C ./libumagnus lib64
 
 
