@@ -20,10 +20,10 @@ type config struct {
 // Make a 1D kernel launch configuration suited for N threads.
 func make1DConf(N int) *config {
 	bl := make([]int, 3)
-	bl[0], bl[1], bl[2] = ClPrefWGSz, 1, 1
+	bl[0], bl[1], bl[2] = ClMaxWGSize, 1, 1
 
 	gr := make([]int, 3)
-	gr[0], gr[1], gr[2] = (ClCUnits * bl[0]), 1, 1
+	gr[0], gr[1], gr[2] = (ClMaxWGNum * bl[0]), 1, 1
 
 	return &config{gr, bl}
 }
