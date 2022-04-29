@@ -47,7 +47,7 @@ reducedot(         __global real_t* __restrict       x1, __global real_t* __rest
 
     // Add barrier to sync all threads
     barrier(CLK_LOCAL_MEM_FENCE);
-    for (int offset = get_local_size(0) / 2; offset > 0; offset = offset / 2) {
+    for (int offset = get_local_size(0) / 2; offset > 0; offset >>= 1) {
         if (local_idx < offset) {
             tmpR0 = scratch1[local_idx];
             tmpR1 = scratch1[local_idx + offset];

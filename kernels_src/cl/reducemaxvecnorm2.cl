@@ -18,7 +18,7 @@ reducemaxvecnorm2(__global real_t* __restrict       x, __global real_t* __restri
     // Add barrier to sync all threads
     barrier(CLK_LOCAL_MEM_FENCE);
 
-    for (int offset = get_local_size(0) / 2; offset > 0; offset = offset / 2) {
+    for (int offset = get_local_size(0) / 2; offset > 0; offset >>= 1) {
         if (local_idx < offset) {
             real_t other = scratch[local_idx + offset];
             real_t  mine = scratch[local_idx];

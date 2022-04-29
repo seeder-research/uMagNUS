@@ -43,7 +43,7 @@ reducesum(__global real_t* __restrict      src, __global real_t* __restrict     
         barrier(CLK_LOCAL_MEM_FENCE);
 
         // Reduce sum of data in local memory using divide and conquer strategy
-        for (int offset = get_local_size(0) / 2; offset > 0; offset = offset / 2) {
+        for (int offset = get_local_size(0) / 2; offset > 0; offset >>= 1) {
             if (local_idx < offset) {
                 aVal = scratch1[local_idx]; // Load accumulator
                 bVal = scratch1[local_idx + offset]; // Load accumulator
