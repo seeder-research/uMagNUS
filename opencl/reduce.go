@@ -11,6 +11,17 @@ import (
 	util "github.com/seeder-research/uMagNUS/util"
 )
 
+/*
+Need to update the reduction sum and dot algorithms to balance the distribution of inputs to the work-groups
+Less of a problem for max and min because they are direct comparisons
+
+for sum and dot, the magnitude of intermediate values depend on how many input values were summed to obtain
+them. Thus, the entire input data should be distributed in a binary tree for the summation, and the work-
+groups should "synchronize" at a fixed level of the tree. Small input sizes will need fewer work-groups
+that can efficiently calculate for trees having short depths. Larger input sizes will need larger number of
+possibly small work-groups.
+*/
+
 // Sum of all elements.
 func Sum(in *data.Slice) float32 {
 	util.Argument(in.NComp() == 1)

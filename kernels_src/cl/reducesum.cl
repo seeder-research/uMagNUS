@@ -1,3 +1,116 @@
+/*
+Alternative reducesum kernels
+__kernel void
+reducesum_onestage(__global real_t* __restrict      src, __global real_t* __restrict      dst, real_t initVal, int n, int nbatch
+                      __local real_t* scratch1,             __local real_t* scratch2) {
+    // Calculate indices
+    int  local_idx = get_local_id(0); // Work-item index within workgroup
+    int     grp_sz = get_local_size(0); // Total number of work-items in each workgroup
+    int     grp_id = get_group_id(0); // Index of workgroup
+    int global_idx = grp_id * nbatch + local_idx; // Calculate global index of work-item
+    int grp_offset = get_num_groups(0) * nbatch; // Offset for memory access
+
+    // Grab data from global memory
+    if ((global_idx < n) && (local_idx < nbatch)) {
+        if (global_idx + grp_offset < n) {
+            scratch1[local_idx] = src[global_idx] + src[global_idx + grp_offset];
+        } else {
+            scratch1[local_idx] = src[global_idx];
+        }
+    } else {
+        scratch1[local_idx] = 0.0;
+    }
+
+    // Barrier synchronization
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    // Reduce items in local memory
+    for (int ii = grp_sz >> 1; ii > 1; ii >>= 1) {
+        if (local_idx < ii) {
+            scratch1[local_idx] += scratch1[local_idx + ii];
+        }
+        // Barrier synchronization
+        barrier(CLK_LOCAL_MEM_FENCE);
+    }
+
+    // Output to separate global buffer
+    if (local_idx == 0) {
+        dst[grp_idx] = scratch1[0] + scratch1[1];
+    }
+}
+
+__kernel void
+reducesum_twostages(__global real_t* __restrict      src, __global real_t* __restrict      dst, real_t initVal, int n, int nbatch
+                      __local real_t* scratch1,             __local real_t* scratch2) {
+    // Calculate indices
+    int  local_idx = get_local_id(0); // Work-item index within workgroup
+    int     grp_sz = get_local_size(0); // Total number of work-items in each workgroup
+    int     grp_id = get_group_id(0); // Index of workgroup
+    int global_idx = grp_id * nbatch + local_idx; // Calculate global index of work-item
+    int grp_offset = get_num_groups(0) * nbatch; // Offset for memory access
+
+    // Initialize an intermediate group sum
+    real_t grpSum = 0.0f;
+
+    // loop for every work-group
+    for (int cnt = 0; cnt < grp_sz; cnt++) {
+        // Grab data from global memory
+        if ((global_idx < n) && (local_idx < nbatch)) {
+            if (global_idx + grp_offset < n) {
+                scratch1[local_idx] = src[global_idx] + src[global_idx + grp_offset];
+            } else {
+                scratch1[local_idx] = src[global_idx];
+            }
+        } else {
+            scratch1[local_idx] = 0.0;
+        }
+
+        // Barrier synchronization
+        barrier(CLK_LOCAL_MEM_FENCE);
+
+        // Reduce items in local memory
+        for (int ii = grp_sz >> 1; ii > 1; ii >>= 1) {
+            if (local_idx < ii) {
+                scratch1[local_idx] += scratch1[local_idx + ii];
+            }
+
+            // Barrier synchronization
+            barrier(CLK_LOCAL_MEM_FENCE);
+        }
+
+        // accumulate group sum in work-item specific register
+        // i.e., distribute storage of first stage results
+        if (local_idx == cnt) {
+            grpSum = scratch1[0] + scratch1[1];
+        }
+
+        global_idx += grp_offset + grp_offset;
+
+        // Barrier synchronization
+        barrier(CLK_LOCAL_MEM_FENCE);
+    }
+
+    // reduce results of distributed storage of group sums...
+    scratch1[local_idx] = grpSum;
+
+    // Barrier synchronization
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    // Reduce items in local memory
+    for (int ii = grp_sz >> 1; ii > 1; ii >>= 1) {
+        if (local_idx < ii) {
+            scratch1[local_idx] += scratch1[local_idx + ii];
+        }
+        // Barrier synchronization
+        barrier(CLK_LOCAL_MEM_FENCE);
+    }
+
+    // Output sum after 2 stages to separate global buffer
+    if (local_idx == 0) {
+        dst[grp_idx] = scratch1[0] + scratch1[1];
+    }
+}
+*/
 __kernel void
 reducesum(__global real_t* __restrict      src, __global real_t* __restrict      dst, real_t initVal, int n,
                       __local real_t* scratch1,             __local real_t* scratch2) {
