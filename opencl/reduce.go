@@ -284,3 +284,104 @@ func initReduceBuf() {
 // could be improved but takes hardly ~1% of execution time
 var reducecfg = &config{Grid: []int{1, 1, 1}, Block: []int{1, 1, 1}}
 var reduceintcfg = &config{Grid: []int{8, 1, 1}, Block: []int{1, 1, 1}}
+var reducesumcfg = &config{Grid: []int{1, 1, 1}, Block: []int{1, 1, 1}}
+var reducesumintcfg = &config{Grid: []int{8, 1, 1}, Block: []int{1, 1, 1}}
+var reducesumbatch = 1
+var stageScheme = 1
+
+func updateReduceSumConfigs(c []int) {
+	numItems := c[0] * c[1] * c[2]                          // total number of items to sum
+	log2Num := int(math.Ceil(math.Log2(float64(numItems)))) // base 2 log of total number of items to sum
+	// Note: log2Num is maximally about 32 to 35, constrained by total memory available
+
+	// Configuration of final stage on the device (maximum work-items in one work-group)
+	// The objective is to reduce the total number of items to sum into this number
+	maxOneStageItems := 2 * ClMaxWGSize                               // number of items to sum in final stage
+	log2Last := int(math.Floor(math.Log2(float64(maxOneStageItems)))) // base 2 log of number of items to sum in final stage
+
+	// Number of items can be summed within one stage...
+	if numItems <= maxOneStageItems {
+		stageScheme = 1
+		reducesumbatch = numItems
+		return
+	}
+
+	// Find depth of tree to reduce to single stage...
+	log2NumAboveStage := log2Num - log2Last
+
+	if log2NumAboveStage < log2Last {
+		stageScheme = 2 // single-stage kernel twice
+		reducesumbatch = (numItems / maxOneStageItems) + 1
+	} else {
+		log2NumAboveStage -= log2Last
+		maxOneStageItems2 := maxOneStageItems * maxOneStageItems
+		if log2NumAboveStage < log2Last {
+			stageScheme = 3 // one deep-stage
+			reducesumbatch = (numItems / maxOneStageItems2) + 1
+		} else {
+			if log2NumAboveStage > log2Last+log2Last { // too many items
+				util.Fatal("Number of items to sum exceeds capability of GPU! \n")
+			} else {
+				stageScheme = 4 // Two strided stages
+				maxOneStageItems3 := maxOneStageItems2 * maxOneStageItems
+				reducesumbatch = (numItems / maxOneStageItems3) + 1
+			}
+		}
+	}
+}
+
+/*******************************************************
+Note: 2^3  = 8
+      2^4  = 16
+      2^5  = 32
+      2^6  = 64
+      2^7  = 128
+      2^8  = 256
+      2^9  = 512
+      2^10 = 1024
+
+We try to support reductions up to
+1024 * 1024 * 1024 * 1024 items
+= 2^42 bytes (4TiB) for float
+= 2^44 bytes (8TiB) for double
+
+If we cannot use one stage to sum everything, we need
+to first find the number of stages needed and balance
+distribution of items to the work-groups
+
+NOTE: An intermediate buffer will be used store results
+For a simple tree merge kernel, each work group can
+process (2 * N) items (i.e., log2Last)
+Using one float4 in a work item, each work group can
+act as (4 * N) work groups (i.e., log2Last + 1)
+Hence, a single workgroup can process (8 * N * N)
+items (i.e., 1 + 2 * log2Last) in one call but it
+might be slow. This might be ok if the number of
+items is very large
+
+For a single stage, the local memory (in bytes)
+needed is (4 * N) for floats
+4kB for N = 1024
+1kB for N = 256
+
+For intermediate number of items (up to roughly
+2^18), we can use an intermediate buffer of
+4 * N bytes after launching N work groups that each
+process 2 * N items (2 * N * N items in total).
+Need to launch single stage twice in this scheme
+2 * N * N = 2^17 if N = 256
+2 * N * N = 2^19 if N = 512
+
+For number of items more than 2^18, we can use the
+same size intermediate buffer if each work-group
+can process 512*1024 (2^19) items.
+Need to launch deep stage once followed by single
+stage
+
+For number of items more than about 2^32, we need
+to use a larger intermediate buffer (buffer
+store about N * N items with N being number of work
+items), and use two launches of special deep stage
+kernels. These special kernels should use strides
+> 1 to retrieve inputs.
+*******************************************************/
