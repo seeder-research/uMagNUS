@@ -57,6 +57,8 @@
 #include "cl/reducemaxvecdiff2.cl"
 #include "cl/reducemaxvecnorm2.cl"
 #include "cl/reducesum.cl"
+#include "cl/reducesum_onestage.cl"
+#include "cl/reducesum_twophase.cl"
 #include "cl/regionadds.cl"
 #include "cl/regionaddv.cl"
 #include "cl/regiondecode.cl"
