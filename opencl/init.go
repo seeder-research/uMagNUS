@@ -223,12 +223,13 @@ func Init(gpu int) {
 		}
 	}
 	ClMaxWGNum = ClCUnits
-	if GPUVend == 1 {
+	if GPUVend == 1 { // Nvidia
 		ClMaxWGNum = (ClWGSize[2] * ClCUnits) / ClMaxWGSize
 	}
-	if GPUVend == 2 {
+	if GPUVend == 2 { // Intel
 		ClMaxWGNum = (ClCUnits * 7 * 32 / ClMaxWGSize)
 	}
+        // TODO: update reducecfg and reduceintcfg on update of mesh size instead
 	reducecfg.Grid[0] = ClMaxWGSize
 	reducecfg.Block[0] = ClMaxWGSize
 	reduceintcfg.Grid[0] = ClMaxWGSize * ClMaxWGNum
