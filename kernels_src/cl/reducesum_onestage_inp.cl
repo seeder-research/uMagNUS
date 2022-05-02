@@ -7,6 +7,7 @@ reducesum_onestage_inp(__global real_t* __restrict      src,
                                 real_t              initVal,
                                    int                    n,
                                    int               nbatch,
+                                  bool            overwrite,
                         __local real_t*            scratch1) {
 
     // Calculate indices
@@ -26,11 +27,15 @@ reducesum_onestage_inp(__global real_t* __restrict      src,
         if ((global_idx < n) && (local_idx < nbatch)) { // Execute only if work-item is valid
             if (global_idx + nbatch < n) { // If work-item has two valid inputs
                 scratch1[local_idx] = src[global_idx] + src[global_idx + nbatch];
-                src[global_idx] = 0.0;
-                src[global_idx + nbatch] = 0.0;
+                if (overwrite) {
+                    src[global_idx] = 0.0;
+                    src[global_idx + nbatch] = 0.0;
+                }
             } else { // If work-item has only one valid input
                 scratch1[local_idx] = src[global_idx];
-                src[global_idx] = 0.0;
+                if (overwrite) {
+                    src[global_idx] = 0.0;
+                }
             }
         }
 
