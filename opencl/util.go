@@ -25,7 +25,7 @@ func make1DConf(N int) *config {
 	gr := make([]int, 3)
 	gr[0], gr[1], gr[2] = (ClMaxWGNum * bl[0]), 1, 1
 
-	return &config{gr, bl}
+	return &config{Grid: gr, Block: nil}
 }
 
 // Make a 3D kernel launch configuration suited for N threads.
