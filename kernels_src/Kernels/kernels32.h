@@ -58,6 +58,8 @@
 #include "cl/reducemaxvecnorm2.cl"
 #include "cl/reducesum.cl"
 #include "cl/reducesum_onestage.cl"
+#include "cl/reducesum_onestage_oop.cl"
+#include "cl/reducesum_onestage_inp.cl"
 #include "cl/reducesum_twophase.cl"
 #include "cl/regionadds.cl"
 #include "cl/regionaddv.cl"
