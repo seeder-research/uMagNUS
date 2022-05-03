@@ -210,7 +210,7 @@ func Init(gpu int) {
 	nvRegExp := regexp.MustCompile("(?i)nvidia")
 	inRegExp := regexp.MustCompile("(?i)intel")
 	adRegExp0 := regexp.MustCompile("(?i)amd")
-	adRegExp1 := regexp.MustCompile("(?i)advanced micro device")
+	adRegExp1 := regexp.MustCompile("(?i)micro device")
 	if chk0 := nvRegExp.Match([]byte(GPUInfo)); chk0 {
 		GPUVend = 1
 	} else {
@@ -226,12 +226,14 @@ func Init(gpu int) {
 		}
 	}
 	ClMaxWGNum = ClCUnits
-	if GPUVend == 1 {
+	if GPUVend == 1 { // Nvidia
 		ClMaxWGNum = (ClWGSize[2] * ClCUnits) / ClMaxWGSize
 	}
-	if GPUVend == 2 {
-		ClMaxWGNum = (ClCUnits * 7 * 32 / ClMaxWGSize)
+	if GPUVend == 2 { // Intel
+		ClMaxWGSize = 7 * 32
 	}
+
+	// Reduce kernel launch parameters are updated on update to mesh size
 	reducecfg.Grid[0] = ClMaxWGSize
 	reducecfg.Block[0] = ClMaxWGSize
 	reduceintcfg.Grid[0] = ClMaxWGSize * ClMaxWGNum

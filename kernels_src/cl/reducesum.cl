@@ -8,44 +8,52 @@ reducesum(__global real_t* __restrict      src,
     // Calculate indices
     int  local_idx = get_local_id(0); // Work-item index within workgroup
     int     grp_sz = get_local_size(0); // Total number of work-items in each workgroup
-    int     grp_id = get_group_id(0); // Index of workgroup
-    int global_idx = grp_id * grp_sz + local_idx; // Calculate global index of work-item
     int grp_offset = get_num_groups(0) * grp_sz; // Offset for memory access
 
-    // Use 8 local resisters to track work-item sum to reduce truncation errors
-    real_t mine[8] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-    uint itr = 0;
-    while (global_idx < n) {
-        itr = itr & 0x00000007;
-        mine[itr] += src[global_idx];
-        global_idx += grp_offset;
-        itr++;
-    }
-
-    // Merge work-item sums
-    mine[4] += mine[6];
-    mine[5] += mine[7];
-    mine[2] += mine[4];
-    mine[3] += mine[5];
-    mine[0] += mine[2];
-    mine[1] += mine[3];
-
-    // Load work-item sums into local shared memory
-    scratch1[local_idx] = mine[0] + mine[1];
-
-    // Synchronize work-group
-    barrier(CLK_LOCAL_MEM_FENCE);
-
-    for (unsigned int s = (grp_sz >> 1); s > 1; s >>= 1 ) {
-        if (local_idx < s) {
-            scratch1[local_idx] += scratch1[local_idx + s];
+    // Loop through groups
+    for (int grp_id = get_group_id(0); grp_id < grp_sz; grp_id += get_num_groups(0)) {
+        // Early termination if work-group is noop
+        int global_idx = grp_id * grp_sz; // Calculate global_idx for work-item 0 of group
+        if (global_idx >= n) { // Entire work-group is noop
+            break;
         }
+
+        global_idx  += local_idx; // Calculate global index of work-item
+        // Use 8 local resisters to track work-item sum to reduce truncation errors
+        real_t mine[8] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+        uint itr = 0;
+        while (global_idx < n) {
+            itr = itr & 0x00000007;
+            mine[itr] += src[global_idx];
+            global_idx += grp_offset;
+            itr++;
+        }
+
+        // Merge work-item partial sums
+        mine[0] += mine[4];
+        mine[1] += mine[5];
+        mine[2] += mine[6];
+        mine[3] += mine[7];
+        mine[0] += mine[2];
+        mine[1] += mine[3];
+
+        // Load work-item sums into local shared memory
+        scratch1[local_idx] = mine[0] + mine[1];
 
         // Synchronize work-group
         barrier(CLK_LOCAL_MEM_FENCE);
-    }
 
-    if (local_idx == 0) {
-        dst[grp_id] = (scratch1[0] + scratch1[1]) + initVal;
+        for (unsigned int s = (grp_sz >> 1); s > 1; s >>= 1 ) {
+            if (local_idx < s) {
+                scratch1[local_idx] += scratch1[local_idx + s];
+            }
+
+            // Synchronize work-group
+            barrier(CLK_LOCAL_MEM_FENCE);
+        }
+
+        if (local_idx == 0) {
+            dst[grp_id] = (scratch1[0] + scratch1[1]) + initVal;
+        }
     }
 }

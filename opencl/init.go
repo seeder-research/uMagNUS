@@ -227,12 +227,13 @@ func Init(gpu int) {
 		ClMaxWGNum = (ClWGSize[2] * ClCUnits) / ClMaxWGSize
 	}
 	if GPUVend == 2 { // Intel
-		ClMaxWGNum = (ClCUnits * 7 * 32 / ClMaxWGSize)
+		ClMaxWGSize = 7 * 32
 	}
-	// TODO: update reducecfg and reduceintcfg on update of mesh size instead
+
+	// Reduce kernel launch parameters are updated on update to mesh size
 	reducecfg.Grid[0] = ClMaxWGSize
 	reducecfg.Block[0] = ClMaxWGSize
-	reduceintcfg.Grid[0] = ClMaxWGSize * ClMaxWGSize
+	reduceintcfg.Grid[0] = ClMaxWGSize * ClMaxWGNum
 	reduceintcfg.Block[0] = ClMaxWGSize
 	ClPrefWGSz, err = KernList["madd2"].PreferredWorkGroupSizeMultiple(ClDevice)
 	if err != nil {
