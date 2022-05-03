@@ -207,7 +207,7 @@ func Init(gpu int) {
 	nvRegExp := regexp.MustCompile("(?i)nvidia")
 	inRegExp := regexp.MustCompile("(?i)intel")
 	adRegExp0 := regexp.MustCompile("(?i)amd")
-	adRegExp1 := regexp.MustCompile("(?i)advanced micro device")
+	adRegExp1 := regexp.MustCompile("(?i)micro device")
 	if chk0 := nvRegExp.Match([]byte(GPUInfo)); chk0 {
 		GPUVend = 1
 	} else {
@@ -229,10 +229,10 @@ func Init(gpu int) {
 	if GPUVend == 2 { // Intel
 		ClMaxWGNum = (ClCUnits * 7 * 32 / ClMaxWGSize)
 	}
-        // TODO: update reducecfg and reduceintcfg on update of mesh size instead
+	// TODO: update reducecfg and reduceintcfg on update of mesh size instead
 	reducecfg.Grid[0] = ClMaxWGSize
 	reducecfg.Block[0] = ClMaxWGSize
-	reduceintcfg.Grid[0] = ClMaxWGSize * ClMaxWGNum
+	reduceintcfg.Grid[0] = ClMaxWGSize * ClMaxWGSize
 	reduceintcfg.Block[0] = ClMaxWGSize
 	ClPrefWGSz, err = KernList["madd2"].PreferredWorkGroupSizeMultiple(ClDevice)
 	if err != nil {
