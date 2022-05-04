@@ -230,16 +230,17 @@ func Init(gpu int) {
 		ClMaxWGSize = 7 * 32
 	}
 
-	// Reduce kernel launch parameters are updated on update to mesh size
-	reducecfg.Grid[0] = ClMaxWGSize
-	reducecfg.Block[0] = ClMaxWGSize
-	reduceintcfg.Grid[0] = ClMaxWGSize * ClMaxWGNum
-	reduceintcfg.Block[0] = ClMaxWGSize
-	reduceSingleSize = 16 * ClMaxWGSize
 	ClPrefWGSz, err = KernList["madd2"].PreferredWorkGroupSizeMultiple(ClDevice)
 	if err != nil {
 		fmt.Printf("PreferredWorkGroupSizeMultiple failed: %+v \n", err)
 	}
+
+	// Reduce kernel launch parameters are updated on update to mesh size
+	reduceSingleSize = 16 * 2 * ClPrefWGSz
+	reducecfg.Grid[0] = reduceSingleSize
+	reducecfg.Block[0] = reduceSingleSize
+	reduceintcfg.Grid[0] = ClMaxWGSize * ClMaxWGNum
+	reduceintcfg.Block[0] = reduceSingleSize
 
 	data.EnableGPU(memFree, memFree, MemCpy, MemCpyDtoH, MemCpyHtoD)
 

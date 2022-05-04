@@ -370,17 +370,17 @@ func UpdateReduceConfigs(c []int) {
 	numItems := c[0] * c[1] * c[2] // total number of items to sum
 
 	// Set up reduce config for final reduce step
-	reducecfg = &config{Grid: []int{ClMaxWGSize, 1, 1}, Block: []int{ClMaxWGSize, 1, 1}}
+	reducecfg = &config{Grid: []int{reduceSingleSize, 1, 1}, Block: []int{reduceSingleSize, 1, 1}}
 
 	// Find reduce config for intermediate reduce step
 	if numItems <= reduceSingleSize {
 		reduceintcfg = nil
 	} else {
 		if numItems >= ClMaxWGSize*ClMaxWGNum {
-			reduceintcfg = &config{Grid: []int{ClMaxWGSize * ClMaxWGNum, 1, 1}, Block: []int{ClMaxWGSize, 1, 1}}
+			reduceintcfg = &config{Grid: []int{ClMaxWGSize * ClMaxWGNum, 1, 1}, Block: []int{reduceSingleSize, 1, 1}}
 		} else {
-			for ii0 := ClMaxWGSize; ii0 < numItems; ii0 += ClMaxWGSize {
-				reduceintcfg = &config{Grid: []int{ii0, 1, 1}, Block: []int{ClMaxWGSize, 1, 1}}
+			for ii0 := reduceSingleSize; ii0 < numItems; ii0 += reduceSingleSize {
+				reduceintcfg = &config{Grid: []int{ii0, 1, 1}, Block: []int{reduceSingleSize, 1, 1}}
 			}
 		}
 	}
