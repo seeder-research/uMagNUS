@@ -7,17 +7,25 @@ reducedot(__global real_t* __restrict     src1,
           __local  real_t*            scratch1){
 
     // Calculate indices
-    int  local_idx = get_local_id(0); // Work-item index within workgroup
+    int  local_idx = get_local_id(0);   // Work-item index within workgroup
     int     grp_sz = get_local_size(0); // Total number of work-items in each workgroup
-    int grp_offset = grp_sz * grp_sz; // Offset for memory access
+    int    grp_cnt = grp_sz << 4;       // Maximum number of workgroups to emulate
+    int grp_offset = grp_sz;            // Offset for memory access (if sole workgroup)
 
-    // loop through groups
-    for (int grp_id = get_group_id(0); grp_id < grp_sz; grp_id += get_num_groups(0)) {
-        // Early termination if work group is noop
-        int global_idx = grp_id * grp_sz;
-        if (global_idx >= n) {
+    // If this is not the final stage reduction, need to
+    // change the stride for memory accesses
+    if (get_num_groups(0) > 1) {
+        grp_offset *= grp_cnt;
+    }
+
+    // Loop through groups
+    for (int grp_id = get_group_id(0); grp_id < grp_cnt; grp_id += get_num_groups(0)) {
+        // Early termination if work-group is noop
+        int global_idx = grp_id * grp_sz; // Calculate global_idx for work-item 0 of group
+        if (global_idx >= n) { // Entire work-group is noop
             break;
-	}
+        }
+
         global_idx += local_idx; // Calculate global index of work-item
 
         // Use 8 local resisters to track work-item sum to reduce truncation errors
@@ -30,7 +38,7 @@ reducedot(__global real_t* __restrict     src1,
             itr++;
         }
 
-        // Merge work-item sums
+        // Merge work-item partial sums
         mine[0] += mine[4];
         mine[1] += mine[5];
         mine[2] += mine[6];
@@ -52,6 +60,7 @@ reducedot(__global real_t* __restrict     src1,
             // Synchronize work-group
             barrier(CLK_LOCAL_MEM_FENCE);
         }
+
         if (local_idx == 0) {
             dst[grp_id] = (scratch1[0] + scratch1[1]) + initVal;
         }
