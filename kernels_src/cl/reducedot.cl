@@ -10,7 +10,13 @@ reducedot(__global real_t* __restrict     src1,
     int  local_idx = get_local_id(0);   // Work-item index within workgroup
     int     grp_sz = get_local_size(0); // Total number of work-items in each workgroup
     int    grp_cnt = grp_sz << 4;       // Maximum number of workgroups to emulate
-    int grp_offset = grp_cnt * grp_sz;  // Offset for memory access
+    int grp_offset = grp_sz;            // Offset for memory access (if sole workgroup)
+
+    // If this is not the final stage reduction, need to
+    // change the stride for memory accesses
+    if (get_num_groups(0) > 1) {
+        grp_offset *= grp_cnt;
+    }
 
     // Loop through groups
     for (int grp_id = get_group_id(0); grp_id < grp_cnt; grp_id += get_num_groups(0)) {
