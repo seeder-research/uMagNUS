@@ -1,71 +1,59 @@
 __kernel void
-reducedot(         __global real_t* __restrict       x1, __global real_t* __restrict       x2,
-          volatile __global real_t* __restrict      dst,
-                                        real_t  initVal,
-                                           int        n,
-                               __local real_t* scratch1,             __local real_t* scratch2) {
+reducedot(__global real_t* __restrict     src1,
+          __global real_t* __restrict     src2,
+          __global real_t* __restrict      dst,
+                   real_t              initVal,
+                      int                    n,
+          __local  real_t*            scratch1){
 
-    // Initialize indices
-    int  local_idx = get_local_id(0);
-    int    grp_idx = get_group_id(0);
-    int grp_offset = get_local_size(0);
-    int global_idx = grp_idx * grp_offset + local_idx;
-    grp_offset *= get_num_groups(0);
+    // Calculate indices
+    int  local_idx = get_local_id(0); // Work-item index within workgroup
+    int     grp_sz = get_local_size(0); // Total number of work-items in each workgroup
+    int grp_offset = grp_sz * grp_sz; // Offset for memory access
 
-    // Initialize memory
-    real_t currVal = 0.0f;
-    real_t currErr = 0.0f;
-    real_t   tmpR0 = 0.0f;
-    real_t   tmpR1 = 0.0f;
-    real_t   tmpR2 = 0.0f;
-    real_t   tmpR3 = 0.0f;
-    real_t   tmpR4 = 0.0f;
-    
-    // Set the accumulator value to initVal for the first work-item only
-    if (global_idx == 0) {
-        currVal = initVal;
-    }
+    // loop through groups
+    for (int grp_id = get_group_id(0); grp_id < grp_sz; grp_id += get_num_groups(0)) {
+        // Early termination if work group is noop
+        int global_idx = grp_id * grp_sz;
+        if (global_idx >= n) {
+            break;
+	}
+        global_idx += local_idx; // Calculate global index of work-item
 
-    // Loop over input elements in chunks and accumulate each chunk into local memory
-    while (global_idx < n) {
-        tmpR0 = x1[global_idx];
-        tmpR1 = x2[global_idx];
-        tmpR2 = fma(tmpR0, tmpR1, (real_t)0.0);
-        tmpR3 = currVal + tmpR2;
-        tmpR0 = tmpR3 - currVal;
-        tmpR1 = tmpR3 - tmpR2;
-        tmpR4 = tmpR0 - tmpR2;
-        tmpR0 = tmpR1 - currVal;
-        currVal = tmpR3;
-        currErr += tmpR4 + tmpR0;
-        global_idx += grp_offset;
-    }
-
-    // At this point, accumulated values on chunks are in local memory. Perform parallel reduction
-    scratch1[local_idx] = currVal;
-    scratch2[local_idx] = currErr;
-
-    // Add barrier to sync all threads
-    barrier(CLK_LOCAL_MEM_FENCE);
-    for (int offset = get_local_size(0) / 2; offset > 0; offset = offset / 2) {
-        if (local_idx < offset) {
-            tmpR0 = scratch1[local_idx];
-            tmpR1 = scratch1[local_idx + offset];
-            currErr = scratch2[local_idx] + scratch2[local_idx + offset];
-            currVal = tmpR0 + tmpR1;
-            tmpR3 = currVal - tmpR0;
-            tmpR4 = currVal - tmpR1;
-            tmpR2 = tmpR3 - tmpR1;
-            tmpR3 = tmpR4 - tmpR1;
-            currErr += tmpR2 + tmpR3;
-            scratch1[local_idx] = currVal;
-            scratch2[local_idx] = currErr;
+        // Use 8 local resisters to track work-item sum to reduce truncation errors
+        real_t mine[8] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+        uint itr = 0;
+        while (global_idx < n) {
+            itr = itr & 0x00000007;
+            mine[itr] = fma(src1[global_idx], src2[global_idx], mine[itr]);
+            global_idx += grp_offset;
+            itr++;
         }
-        // barrier for syncing work group
-        barrier(CLK_LOCAL_MEM_FENCE);
-    }
 
-    if (local_idx == 0) {
-        dst[grp_idx] = scratch1[0];
+        // Merge work-item sums
+        mine[0] += mine[4];
+        mine[1] += mine[5];
+        mine[2] += mine[6];
+        mine[3] += mine[7];
+        mine[0] += mine[2];
+        mine[1] += mine[3];
+
+        // Load work-item sums into local shared memory
+        scratch1[local_idx] = mine[0] + mine[1];
+
+        // Synchronize work-group
+        barrier(CLK_LOCAL_MEM_FENCE);
+
+        for (unsigned int s = (grp_sz >> 1); s > 1; s >>= 1 ) {
+            if (local_idx < s) {
+                scratch1[local_idx] += scratch1[local_idx + s];
+            }
+
+            // Synchronize work-group
+            barrier(CLK_LOCAL_MEM_FENCE);
+        }
+        if (local_idx == 0) {
+            dst[grp_id] = (scratch1[0] + scratch1[1]) + initVal;
+        }
     }
 }
