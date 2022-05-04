@@ -9,7 +9,7 @@ reducedot(__global real_t* __restrict     src1,
     // Calculate indices
     int  local_idx = get_local_id(0); // Work-item index within workgroup
     int     grp_sz = get_local_size(0); // Total number of work-items in each workgroup
-    int grp_offset = get_num_groups(0) * grp_sz; // Offset for memory access
+    int grp_offset = grp_sz * grp_sz; // Offset for memory access
 
     // loop through groups
     for (int grp_id = get_group_id(0); grp_id < grp_sz; grp_id += get_num_groups(0)) {
