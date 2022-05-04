@@ -46,7 +46,7 @@ func Sum(in *data.Slice) float32 {
 			intEvent = k_reducesum_async(in.DevPtr(0), intermed, 0,
 				in.Len(), reduceintcfg, [](*cl.Event){syncEvent})
 		}
-		event = k_reducesum_async(intermed, out, 0, ClMaxWGSize, reducecfg, [](*cl.Event){intEvent})
+		event = k_reducesum_async(intermed, out, 0, reduceSingleSize, reducecfg, [](*cl.Event){intEvent})
 	}
 	// Must synchronize since out is copied from device back to host
 	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
@@ -99,7 +99,7 @@ func Dot(a, b *data.Slice) float32 {
 					a.Len(), reduceintcfg, nil) // all components add to intermed
 			}
 			eventSync[c] = k_reducesum_async(intermed[c], out[c], 0,
-				ClMaxWGSize, reducecfg, []*cl.Event{barInt}) // all components add to out
+				reduceSingleSize, reducecfg, []*cl.Event{barInt}) // all components add to out
 		}
 		wg.Add(1)
 		go func(idx int, eventList []*cl.Event, bufferChannel chan<- *cl.MemObject, inBufferPtr, outBufferPtr unsafe.Pointer, res *float32) {
@@ -143,7 +143,7 @@ func MaxAbs(in *data.Slice) float32 {
 			intEvent = k_reducemaxabs_async(in.DevPtr(0), intermed, 0,
 				in.Len(), reduceintcfg, [](*cl.Event){syncEvent})
 		}
-		event = k_reducemaxabs_async(intermed, out, 0, ClMaxWGSize, reducecfg, [](*cl.Event){intEvent})
+		event = k_reducemaxabs_async(intermed, out, 0, reduceSingleSize, reducecfg, [](*cl.Event){intEvent})
 	}
 	// Must synchronize since out is copied from device back to host
 	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
@@ -194,7 +194,7 @@ func MaxDiff(a, b *data.Slice) []float32 {
 					a.Len(), reduceintcfg, nil)
 			}
 			eventSync[c] = k_reducemaxabs_async(intermed[c], out[c], 0,
-				ClMaxWGSize, reducecfg, [](*cl.Event){intEvent})
+				reduceSingleSize, reducecfg, [](*cl.Event){intEvent})
 		}
 		wg.Add(1)
 		go func(eventList []*cl.Event, bufferChannel chan<- *cl.MemObject,
@@ -243,7 +243,7 @@ func MaxVecNorm(v *data.Slice) float64 {
 			intEvent = k_reducemaxvecnorm2_async(v.DevPtr(0), v.DevPtr(1), v.DevPtr(2),
 				intermed, 0, v.Len(), reduceintcfg, nil)
 		}
-		event = k_reducemaxabs_async(intermed, out, 0, ClMaxWGSize, reducecfg, [](*cl.Event){intEvent})
+		event = k_reducemaxabs_async(intermed, out, 0, reduceSingleSize, reducecfg, [](*cl.Event){intEvent})
 	}
 	// Must synchronize since out is copied from device back to host
 	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
@@ -295,7 +295,7 @@ func MaxVecDiff(x, y *data.Slice) float64 {
 				y.DevPtr(0), y.DevPtr(1), y.DevPtr(2),
 				intermed, 0, x.Len(), reduceintcfg, nil)
 		}
-		event = k_reducemaxabs_async(intermed, out, 0, ClMaxWGSize, reducecfg, [](*cl.Event){intEvent})
+		event = k_reducemaxabs_async(intermed, out, 0, reduceSingleSize, reducecfg, [](*cl.Event){intEvent})
 	}
 
 	// Must synchronize since out is copied from device back to host
@@ -327,7 +327,7 @@ func reduceBuf(initVal float32) (unsafe.Pointer, unsafe.Pointer) {
 		fmt.Printf("First WaitForEvents in reduceBuf failed: %+v \n", err)
 		return nil, nil
 	}
-	waitEvent, err = ClCmdQueue.EnqueueFillBuffer(interBuf, unsafe.Pointer(&initVal), SIZEOF_FLOAT32, 0, ClMaxWGSize*SIZEOF_FLOAT32, nil)
+	waitEvent, err = ClCmdQueue.EnqueueFillBuffer(interBuf, unsafe.Pointer(&initVal), SIZEOF_FLOAT32, 0, reduceSingleSize*SIZEOF_FLOAT32, nil)
 	if err != nil {
 		fmt.Printf("reduceBuf failed: %+v \n", err)
 		return nil, nil
@@ -355,7 +355,7 @@ func initReduceBuf() {
 	reduceIntBuffers = make(chan *cl.MemObject, N)
 	for i := 0; i < N; i++ {
 		reduceBuffers <- MemAlloc(SIZEOF_FLOAT32)
-		reduceIntBuffers <- MemAlloc(ClMaxWGSize * SIZEOF_FLOAT32)
+		reduceIntBuffers <- MemAlloc(reduceSingleSize * SIZEOF_FLOAT32)
 	}
 }
 
@@ -364,6 +364,7 @@ func initReduceBuf() {
 // could be improved but takes hardly ~1% of execution time
 var reducecfg = &config{Grid: []int{1, 1, 1}, Block: []int{1, 1, 1}}
 var reduceintcfg = &config{Grid: []int{8, 1, 1}, Block: []int{1, 1, 1}}
+var reduceSingleSize int
 
 func UpdateReduceConfigs(c []int) {
 	numItems := c[0] * c[1] * c[2] // total number of items to sum
@@ -372,7 +373,7 @@ func UpdateReduceConfigs(c []int) {
 	reducecfg = &config{Grid: []int{ClMaxWGSize, 1, 1}, Block: []int{ClMaxWGSize, 1, 1}}
 
 	// Find reduce config for intermediate reduce step
-	if numItems <= ClMaxWGSize {
+	if numItems <= reduceSingleSize {
 		reduceintcfg = nil
 	} else {
 		if numItems >= ClMaxWGSize*ClMaxWGNum {

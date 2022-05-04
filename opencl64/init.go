@@ -238,6 +238,7 @@ func Init(gpu int) {
 	reducecfg.Block[0] = ClMaxWGSize
 	reduceintcfg.Grid[0] = ClMaxWGSize * ClMaxWGNum
 	reduceintcfg.Block[0] = ClMaxWGSize
+	reduceSingleSize = 16 * ClMaxWGSize
 	ClPrefWGSz, err = KernList["madd2"].PreferredWorkGroupSizeMultiple(ClDevice)
 	if err != nil {
 		fmt.Printf("PreferredWorkGroupSizeMultiple failed: %+v \n", err)

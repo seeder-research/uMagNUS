@@ -6,19 +6,21 @@ reducesum(__global real_t* __restrict      src,
           __local  real_t*            scratch1){
 
     // Calculate indices
-    int  local_idx = get_local_id(0); // Work-item index within workgroup
+    int  local_idx = get_local_id(0);   // Work-item index within workgroup
     int     grp_sz = get_local_size(0); // Total number of work-items in each workgroup
-    int grp_offset = grp_sz * grp_sz; // Offset for memory access
+    int    grp_cnt = grp_sz << 4;       // Maximum number of workgroups emulated
+    int grp_offset = grp_cnt * grp_sz;  // Offset for memory access
 
     // Loop through groups
-    for (int grp_id = get_group_id(0); grp_id < grp_sz; grp_id += get_num_groups(0)) {
+    for (int grp_id = get_group_id(0); grp_id < grp_cnt; grp_id += get_num_groups(0)) {
         // Early termination if work-group is noop
         int global_idx = grp_id * grp_sz; // Calculate global_idx for work-item 0 of group
         if (global_idx >= n) { // Entire work-group is noop
             break;
         }
 
-        global_idx  += local_idx; // Calculate global index of work-item
+        global_idx += local_idx; // Calculate global index of work-item
+
         // Use 8 local resisters to track work-item sum to reduce truncation errors
         real_t mine[8] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
         uint itr = 0;
