@@ -365,23 +365,3 @@ func initReduceBuf() {
 var reducecfg = &config{Grid: []int{1, 1, 1}, Block: []int{1, 1, 1}}
 var reduceintcfg = &config{Grid: []int{8, 1, 1}, Block: []int{1, 1, 1}}
 var reduceSingleSize int
-
-func UpdateReduceConfigs(c []int) {
-	numItems := c[0] * c[1] * c[2] // total number of items to sum
-
-	// Work-items per Work-group
-	groupSize := 2 * ClPrefWGSz
-
-	// Find reduce config for intermediate reduce step
-	if numItems <= reduceSingleSize {
-		reduceintcfg = nil
-	} else {
-		if numItems >= ClMaxWGSize*ClMaxWGNum {
-			reduceintcfg = &config{Grid: []int{ClMaxWGSize * ClMaxWGNum, 1, 1}, Block: []int{groupSize, 1, 1}}
-		} else {
-			for ii0 := groupSize; ii0 < numItems; ii0 += groupSize {
-				reduceintcfg = &config{Grid: []int{ii0, 1, 1}, Block: []int{groupSize, 1, 1}}
-			}
-		}
-	}
-}
