@@ -237,10 +237,10 @@ func Init(gpu int) {
 
 	// Reduce kernel launch parameters are updated on update to mesh size
 	reduceSingleSize = 16 * 2 * ClPrefWGSz
-	reducecfg.Grid[0] = reduceSingleSize
-	reducecfg.Block[0] = reduceSingleSize
+	reducecfg.Grid[0] = 2 * ClPrefWGSz
+	reducecfg.Block[0] = reducecfg.Grid[0]
 	reduceintcfg.Grid[0] = ClMaxWGSize * ClMaxWGNum
-	reduceintcfg.Block[0] = reduceSingleSize
+	reduceintcfg.Block[0] = 2 * ClPrefWGSz
 
 	data.EnableGPU(memFree, memFree, MemCpy, MemCpyDtoH, MemCpyHtoD)
 

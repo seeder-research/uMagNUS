@@ -12,15 +12,16 @@ reducemaxvecnorm2(__global real_t* __restrict       x,
     int     grp_sz = get_local_size(0); // Total number of work-items in each workgroup
     int    grp_cnt = grp_sz << 4;       // Maximum number of workgroups to emulate
     int grp_offset = grp_sz;            // Offset for memory access (if sole workgroup)
+    int      nGrps = get_num_groups(0); // Total number of workgroups launched
 
     // If this is not the final stage reduction, need to
     // change the stride for memory accesses
-    if (get_num_groups(0) > 1) {
+    if (nGrps > 1) {
         grp_offset *= grp_cnt;
     }
 
     // Loop through groups
-    for (int grp_id = get_group_id(0); grp_id < grp_cnt; grp_id += get_num_groups(0)) {
+    for (int grp_id = get_group_id(0); grp_id < grp_cnt; grp_id += nGrps) {
         // Early termination if work-group is noop
         int global_idx = grp_id * grp_sz; // Calculate global_idx for work-item 0 of group
         if (global_idx >= n) { // Entire work-group is noop
