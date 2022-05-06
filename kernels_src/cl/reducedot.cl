@@ -30,25 +30,55 @@ reducedot(__global real_t* __restrict     src1,
         global_idx += local_idx; // Calculate global index of work-item
 
         // Use 8 local resisters to track work-item sum to reduce truncation errors
-        real_t mine[8] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-        uint itr = 0;
+        real_t4 data1 = {0.0, 0.0, 0.0, 0.0};
+        real_t4 data2 = {0.0, 0.0, 0.0, 0.0};
         while (global_idx < n) {
-            itr = itr & 0x00000007;
-            mine[itr] = fma(src1[global_idx], src2[global_idx], mine[itr]);
+            data1.x = fma(src1[global_idx], src2[global_idx], data1.x);
             global_idx += grp_offset;
-            itr++;
+            if (global_idx >= n) {
+                break;
+            }
+            data1.y = fma(src1[global_idx], src2[global_idx], data1.y);
+            global_idx += grp_offset;
+            if (global_idx >= n) {
+                break;
+            }
+            data1.z = fma(src1[global_idx], src2[global_idx], data1.z);
+            global_idx += grp_offset;
+            if (global_idx >= n) {
+                break;
+            }
+            data1.w = fma(src1[global_idx], src2[global_idx], data1.w);
+            global_idx += grp_offset;
+            if (global_idx >= n) {
+                break;
+            }
+            data2.x = fma(src1[global_idx], src2[global_idx], data2.x);
+            global_idx += grp_offset;
+            if (global_idx >= n) {
+                break;
+            }
+            data2.y = fma(src1[global_idx], src2[global_idx], data2.y);
+            global_idx += grp_offset;
+            if (global_idx >= n) {
+                break;
+            }
+            data2.z = fma(src1[global_idx], src2[global_idx], data2.z);
+            global_idx += grp_offset;
+            if (global_idx >= n) {
+                break;
+            }
+            data2.w = fma(src1[global_idx], src2[global_idx], data2.w);
+            global_idx += grp_offset;
         }
 
         // Merge work-item partial sums
-        mine[0] += mine[4];
-        mine[1] += mine[5];
-        mine[2] += mine[6];
-        mine[3] += mine[7];
-        mine[0] += mine[2];
-        mine[1] += mine[3];
+        data1 += data2;
+        data1.x += data1.z;
+        data1.y += data1.w;
 
         // Load work-item sums into local shared memory
-        scratch1[local_idx] = mine[0] + mine[1];
+        scratch1[local_idx] = data1.x + data1.y;
 
         // Synchronize work-group
         barrier(CLK_LOCAL_MEM_FENCE);
