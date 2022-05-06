@@ -29,9 +29,11 @@ reducedot(__global real_t* __restrict     src1,
 
         global_idx += local_idx; // Calculate global index of work-item
 
-        // Use 8 local resisters to track work-item sum to reduce truncation errors
+        // Use 16 local resisters to track work-item sum to reduce truncation errors
         real_t4 data1 = {0.0, 0.0, 0.0, 0.0};
         real_t4 data2 = {0.0, 0.0, 0.0, 0.0};
+        real_t4 data3 = {0.0, 0.0, 0.0, 0.0};
+        real_t4 data4 = {0.0, 0.0, 0.0, 0.0};
         while (global_idx < n) {
             data1.x = fma(src1[global_idx], src2[global_idx], data1.x);
             global_idx += grp_offset;
@@ -70,9 +72,51 @@ reducedot(__global real_t* __restrict     src1,
             }
             data2.w = fma(src1[global_idx], src2[global_idx], data2.w);
             global_idx += grp_offset;
+            if (global_idx >= n) {
+                break;
+            }
+            data3.x = fma(src1[global_idx], src2[global_idx], data3.x);
+            global_idx += grp_offset;
+            if (global_idx >= n) {
+                break;
+            }
+            data3.y = fma(src1[global_idx], src2[global_idx], data3.y);
+            global_idx += grp_offset;
+            if (global_idx >= n) {
+                break;
+            }
+            data3.z = fma(src1[global_idx], src2[global_idx], data3.z);
+            global_idx += grp_offset;
+            if (global_idx >= n) {
+                break;
+            }
+            data3.w = fma(src1[global_idx], src2[global_idx], data3.w);
+            global_idx += grp_offset;
+            if (global_idx >= n) {
+                break;
+            }
+            data4.x = fma(src1[global_idx], src2[global_idx], data4.x);
+            global_idx += grp_offset;
+            if (global_idx >= n) {
+                break;
+            }
+            data4.y = fma(src1[global_idx], src2[global_idx], data4.y);
+            global_idx += grp_offset;
+            if (global_idx >= n) {
+                break;
+            }
+            data4.z = fma(src1[global_idx], src2[global_idx], data4.z);
+            global_idx += grp_offset;
+            if (global_idx >= n) {
+                break;
+            }
+            data4.w = fma(src1[global_idx], src2[global_idx], data4.w);
+            global_idx += grp_offset;
         }
 
         // Merge work-item partial sums
+        data1 += data3;
+        data2 += data4;
         data1 += data2;
         data1.x += data1.z;
         data1.y += data1.w;

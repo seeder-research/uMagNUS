@@ -28,9 +28,11 @@ reducesum(__global real_t* __restrict      src,
 
         global_idx += local_idx; // Calculate global index of work-item
 
-        // Use 8 local resisters to track work-item sum to reduce truncation errors
+        // Use 16 local resisters to track work-item sum to reduce truncation errors
         real_t4 data1 = {0.0, 0.0, 0.0, 0.0};
         real_t4 data2 = {0.0, 0.0, 0.0, 0.0};
+        real_t4 data3 = {0.0, 0.0, 0.0, 0.0};
+        real_t4 data4 = {0.0, 0.0, 0.0, 0.0};
         while (global_idx < n) {
             data1.x += src[global_idx];
             global_idx += grp_offset;
@@ -69,9 +71,51 @@ reducesum(__global real_t* __restrict      src,
             }
             data2.w += src[global_idx];
             global_idx += grp_offset;
+            if (global_idx >= n) {
+                break;
+            }
+            data3.x += src[global_idx];
+            global_idx += grp_offset;
+            if (global_idx >= n) {
+                break;
+            }
+            data3.y += src[global_idx];
+            global_idx += grp_offset;
+            if (global_idx >= n) {
+                break;
+            }
+            data3.z += src[global_idx];
+            global_idx += grp_offset;
+            if (global_idx >= n) {
+                break;
+            }
+            data3.w += src[global_idx];
+            global_idx += grp_offset;
+            if (global_idx >= n) {
+                break;
+            }
+            data4.x += src[global_idx];
+            global_idx += grp_offset;
+            if (global_idx >= n) {
+                break;
+            }
+            data4.y += src[global_idx];
+            global_idx += grp_offset;
+            if (global_idx >= n) {
+                break;
+            }
+            data4.z += src[global_idx];
+            global_idx += grp_offset;
+            if (global_idx >= n) {
+                break;
+            }
+            data4.w += src[global_idx];
+            global_idx += grp_offset;
         }
 
         // Merge work-item partial sums
+        data1 += data3;
+        data2 += data4;
         data1 += data2;
         data1.x += data1.z;
         data1.y += data1.w;
