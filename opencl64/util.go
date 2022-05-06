@@ -44,15 +44,12 @@ func make3DConf(N [3]int) *config {
 func UpdateLaunchConfigs(c []int) {
 	numItems := c[0] * c[1] * c[2] // total number of size of main data arrays
 
-	// Maximum number of work-item processors available
-	maxNumberWorkitems := ClMaxWGSize * ClMaxWGNum
-
 	// Work-items per Work-group
 	groupSize := 2 * ClPrefWGSz
 
 	// Find first multiple of groupSize larger than numItems
-	if numItems >= maxNumberWorkitems-groupSize {
-		config1DSize = maxNumberWorkitems
+	if numItems >= ClTotalPE-groupSize {
+		config1DSize = ClTotalPE
 	} else {
 		for i0 := groupSize; i0 < numItems; i0 += groupSize {
 			config1DSize = i0
@@ -63,8 +60,8 @@ func UpdateLaunchConfigs(c []int) {
 	if numItems <= reduceSingleSize {
 		reduceintcfg = nil
 	} else {
-		if numItems >= ClMaxWGSize*ClMaxWGNum {
-			reduceintcfg = &config{Grid: []int{ClMaxWGSize * ClMaxWGNum, 1, 1}, Block: []int{groupSize, 1, 1}}
+		if numItems >= ClTotalPE {
+			reduceintcfg = &config{Grid: []int{ClTotalPE, 1, 1}, Block: []int{groupSize, 1, 1}}
 		} else {
 			for ii0 := groupSize; ii0 < numItems; ii0 += groupSize {
 				reduceintcfg = &config{Grid: []int{ii0, 1, 1}, Block: []int{groupSize, 1, 1}}

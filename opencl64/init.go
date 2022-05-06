@@ -40,6 +40,7 @@ var (
 	ClPrefWGSz   int                       // Get preferred work group size of device
 	ClMaxWGSize  int                       // Get maximum number of concurrent work-items that can execute simultaneously
 	ClMaxWGNum   int                       // Get maximum number of max-sized work groups that can execute simultaneously
+	ClTotalPE    int                       // Get total number of processing elements available
 	GPUVend      int                       // 1: nvidia, 2: intel, 3: amd, 4: unknown
 )
 
@@ -227,10 +228,17 @@ func Init(gpu int) {
 	}
 	ClMaxWGNum = ClCUnits
 	if GPUVend == 1 { // Nvidia
-		ClMaxWGNum = (ClWGSize[2] * ClCUnits) / ClMaxWGSize
+		ClTotalPE = ClWGSize[2] * ClCUnits
+		if ClMaxWGSize > ClTotalPE {
+			ClMaxWGNum = ClTotalPE / ClMaxWGSize
+		} else {
+			ClMaxWGNum = 1
+			ClMaxWGSize = ClTotalPE
+		}
 	}
 	if GPUVend == 2 { // Intel
 		ClMaxWGSize = 7 * 32
+		ClTotalPE = ClMaxWGNum * ClMaxWGSize
 	}
 
 	ClPrefWGSz, err = KernList["madd2"].PreferredWorkGroupSizeMultiple(ClDevice)
@@ -238,7 +246,7 @@ func Init(gpu int) {
 		fmt.Printf("PreferredWorkGroupSizeMultiple failed: %+v \n", err)
 	}
 
-	config1DSize = ClMaxWGSize * ClMaxWGNum
+	config1DSize = ClTotalPE
 
 	// Reduce kernel launch parameters are updated on update to mesh size
 	reduceSingleSize = 16 * 2 * ClPrefWGSz
