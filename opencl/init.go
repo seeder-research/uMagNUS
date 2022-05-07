@@ -3,6 +3,7 @@ package opencl
 
 import (
 	"fmt"
+	"regexp"
 	"runtime"
 	"strings"
 
@@ -35,8 +36,12 @@ var (
 	KernList     = map[string]*cl.Kernel{} // Store pointers to all compiled kernels
 	initialized  = false                   // Initial state defaults to false
 	ClCUnits     int                       // Get number of compute units available
-	ClWGSize     int                       // Get maximum size of work group per compute unit
+	ClWGSize     []int                     // Get maximum size of work group in each dimension
 	ClPrefWGSz   int                       // Get preferred work group size of device
+	ClMaxWGSize  int                       // Get maximum number of concurrent work-items that can execute simultaneously
+	ClMaxWGNum   int                       // Get maximum number of max-sized work groups that can execute simultaneously
+	ClTotalPE    int                       // Get total number of processing elements available
+	GPUVend      int                       // 1: nvidia, 2: intel, 3: amd, 4: unknown
 )
 
 // Locks to an OS thread and initializes CUDA for that thread.
@@ -197,15 +202,55 @@ func Init(gpu int) {
 	// Set basic configuration for distributing
 	// work-items across compute units
 	ClCUnits = ClDevice.MaxComputeUnits()
-	ClWGSize = ClDevice.MaxWorkGroupSize()
-	reducecfg.Grid[0] = ClWGSize
-	reducecfg.Block[0] = ClWGSize
-	reduceintcfg.Grid[0] = ClWGSize * ClCUnits
-	reduceintcfg.Block[0] = ClWGSize
+	ClWGSize = ClDevice.MaxWorkItemSizes()
+	ClMaxWGSize = ClDevice.MaxWorkGroupSize()
+
+	nvRegExp := regexp.MustCompile("(?i)nvidia")
+	inRegExp := regexp.MustCompile("(?i)intel")
+	adRegExp0 := regexp.MustCompile("(?i)amd")
+	adRegExp1 := regexp.MustCompile("(?i)micro device")
+	if chk0 := nvRegExp.Match([]byte(GPUInfo)); chk0 {
+		GPUVend = 1
+	} else {
+		if chk1 := inRegExp.Match([]byte(GPUInfo)); chk1 {
+			GPUVend = 2
+		} else {
+			chk2, chk3 := adRegExp0.Match([]byte(GPUInfo)), adRegExp1.Match([]byte(GPUInfo))
+			if (chk2 == true) || (chk3 == true) {
+				GPUVend = 3
+			} else {
+				GPUVend = 4
+			}
+		}
+	}
+	ClMaxWGNum = ClCUnits
+	if GPUVend == 1 { // Nvidia
+		ClTotalPE = ClWGSize[2] * ClCUnits
+		if ClMaxWGSize > ClTotalPE {
+			ClMaxWGNum = ClTotalPE / ClMaxWGSize
+		} else {
+			ClMaxWGNum = 1
+			ClMaxWGSize = ClTotalPE
+		}
+	}
+	if GPUVend == 2 { // Intel
+		ClMaxWGSize = 7 * 32
+		ClTotalPE = ClMaxWGNum * ClMaxWGSize
+	}
+
 	ClPrefWGSz, err = KernList["madd2"].PreferredWorkGroupSizeMultiple(ClDevice)
 	if err != nil {
 		fmt.Printf("PreferredWorkGroupSizeMultiple failed: %+v \n", err)
 	}
+
+	config1DSize = ClTotalPE
+
+	// Reduce kernel launch parameters are updated on update to mesh size
+	reduceSingleSize = 32 * ClPrefWGSz // Each workitem can process 32 data points
+	reducecfg.Grid[0] = ClPrefWGSz
+	reducecfg.Block[0] = reducecfg.Grid[0]
+	reduceintcfg.Grid[0] = ClTotalPE
+	reduceintcfg.Block[0] = ClPrefWGSz
 
 	data.EnableGPU(memFree, memFree, MemCpy, MemCpyDtoH, MemCpyHtoD)
 

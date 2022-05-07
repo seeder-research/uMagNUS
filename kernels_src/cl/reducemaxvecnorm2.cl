@@ -1,34 +1,63 @@
 __kernel void
-reducemaxvecnorm2(__global real_t* __restrict       x, __global real_t* __restrict y, __global real_t* __restrict       z, __global real_t* __restrict dst,
-                                       real_t initVal,                         int n,             __local real_t* scratch) {
-    // Initialize memory
-    int global_idx = get_global_id(0);
-    int  local_idx = get_local_id(0);
-    real_t currVal = initVal;
+reducemaxvecnorm2(__global real_t* __restrict       x,
+                  __global real_t* __restrict       y,
+                  __global real_t* __restrict       z,
+                  __global real_t* __restrict     dst,
+                           real_t             initVal,
+                              int                   n,
+                  __local  real_t*            scratch) {
 
-    // Loop over input elements in chunks and accumulate each chunk into local memory
-    while (global_idx < n) {
-        real_t element = (x[global_idx]*x[global_idx]) + (y[global_idx]*y[global_idx]) + (z[global_idx]*z[global_idx]);
-        currVal = fmax(currVal, element);
-        global_idx += get_global_size(0);
+    // Calculate indices
+    int  local_idx = get_local_id(0);   // Work-item index within workgroup
+    int     grp_sz = get_local_size(0); // Total number of work-items in each workgroup
+    int    grp_cnt = grp_sz << 4;       // Maximum number of workgroups to emulate
+    int grp_offset = grp_sz;            // Offset for memory access (if sole workgroup)
+    int      nGrps = get_num_groups(0); // Total number of workgroups launched
+
+    // If this is not the final stage reduction, need to
+    // change the stride for memory accesses
+    if (nGrps > 1) {
+        grp_offset *= grp_cnt;
     }
 
-    // At this point, accumulated values on chunks are in local memory. Perform parallel reduction
-    scratch[local_idx] = currVal;
-    // Add barrier to sync all threads
-    barrier(CLK_LOCAL_MEM_FENCE);
-
-    for (int offset = get_local_size(0) / 2; offset > 0; offset = offset / 2) {
-        if (local_idx < offset) {
-            real_t other = scratch[local_idx + offset];
-            real_t  mine = scratch[local_idx];
-            scratch[local_idx] = fmax(mine, other);
+    // Loop through groups
+    for (int grp_id = get_group_id(0); grp_id < grp_cnt; grp_id += nGrps) {
+        // Early termination if work-group is noop
+        int global_idx = grp_id * grp_sz; // Calculate global_idx for work-item 0 of group
+        if (global_idx >= n) { // Entire work-group is noop
+            break;
         }
-        // barrier for syncing work group
-        barrier(CLK_LOCAL_MEM_FENCE);
-    }
 
-    if (local_idx == 0) {
-        dst[get_group_id(0)] = scratch[0];
+        global_idx += local_idx; // Calculate global index of work-item
+
+        // Initialize value to track
+        real_t currVal = initVal;
+
+        while (global_idx < n) {
+            real_t element = (x[global_idx]*x[global_idx]) + (y[global_idx]*y[global_idx]) + (z[global_idx]*z[global_idx]);
+            currVal = fmax(currVal, element);
+            global_idx += grp_offset;
+        }
+
+        // At this point, max values on chunks are in local memory. Perform parallel reduction
+        scratch[local_idx] = currVal;
+
+        // Add barrier to sync all threads
+        barrier(CLK_LOCAL_MEM_FENCE);
+
+        for (unsigned int s = (grp_sz >> 1); s > 1; s >>= 1 ) {
+            if (local_idx < s) {
+                real_t other = scratch[local_idx + s];
+                real_t  mine = scratch[local_idx];
+                scratch[local_idx] = fmax(mine, other);
+            }
+
+            // Synchronize work-group
+            barrier(CLK_LOCAL_MEM_FENCE);
+        }
+
+        if (local_idx == 0) {
+            dst[grp_id] = fmax(scratch[0], scratch[1]);
+        }
     }
 }

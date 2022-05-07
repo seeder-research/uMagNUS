@@ -93,6 +93,7 @@ var (
 )
 
 func SetGridSize(Nx, Ny, Nz int) {
+	defer opencl.UpdateLaunchConfigs([]int{Nx, Ny, Nz})
 	lazy_gridsize = []int{Nx, Ny, Nz}
 	if lazy_cellsize != nil {
 		SetMesh(Nx, Ny, Nz, lazy_cellsize[X], lazy_cellsize[Y], lazy_cellsize[Z], lazy_pbc[X], lazy_pbc[Y], lazy_pbc[Z])

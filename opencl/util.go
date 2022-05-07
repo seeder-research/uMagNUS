@@ -17,15 +17,15 @@ type config struct {
 	Grid, Block []int
 }
 
+var config1DSize int
+
 // Make a 1D kernel launch configuration suited for N threads.
 func make1DConf(N int) *config {
-	bl := make([]int, 3)
-	bl[0], bl[1], bl[2] = ClPrefWGSz, 1, 1
 
 	gr := make([]int, 3)
-	gr[0], gr[1], gr[2] = (ClCUnits * bl[0]), 1, 1
+	gr[0], gr[1], gr[2] = config1DSize, 1, 1
 
-	return &config{gr, bl}
+	return &config{Grid: gr, Block: nil}
 }
 
 // Make a 3D kernel launch configuration suited for N threads.
@@ -39,6 +39,35 @@ func make3DConf(N [3]int) *config {
 	gr[0], gr[1], gr[2] = (nx * bl[0]), (ny * bl[1]), (N[Z] * bl[2])
 
 	return &config{gr, bl}
+}
+
+func UpdateLaunchConfigs(c []int) {
+	numItems := c[0] * c[1] * c[2] // total number of size of main data arrays
+
+	// Work-items per Work-group
+	groupSize := ClPrefWGSz
+
+	// Find first multiple of groupSize larger than numItems
+	if numItems >= ClTotalPE-groupSize {
+		config1DSize = ClTotalPE
+	} else {
+		for i0 := groupSize; i0 < numItems; i0 += groupSize {
+			config1DSize = i0
+		}
+	}
+
+	// Find reduce config for intermediate reduce step
+	if numItems <= reduceSingleSize {
+		reduceintcfg = nil
+	} else {
+		if numItems >= ClTotalPE {
+			reduceintcfg = &config{Grid: []int{ClTotalPE, 1, 1}, Block: []int{groupSize, 1, 1}}
+		} else {
+			for ii0 := groupSize; ii0 < numItems; ii0 += groupSize {
+				reduceintcfg = &config{Grid: []int{ii0, 1, 1}, Block: []int{groupSize, 1, 1}}
+			}
+		}
+	}
 }
 
 // integer minimum
