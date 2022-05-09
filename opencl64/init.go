@@ -229,6 +229,7 @@ func Init(gpu int) {
 	ClMaxWGNum = ClCUnits
 	ClTotalPE = ClWGSize[2] * ClCUnits
 	if GPUVend == 1 { // Nvidia
+		ClTotalPE *= 2
 		if ClMaxWGSize > ClTotalPE {
 			ClMaxWGNum = 1
 			ClMaxWGSize = ClTotalPE
