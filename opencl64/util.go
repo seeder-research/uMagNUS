@@ -45,7 +45,7 @@ func UpdateLaunchConfigs(c []int) {
 	numItems := c[0] * c[1] * c[2] // total number of size of main data arrays
 
 	// Work-items per Work-group
-	groupSize := 2 * ClPrefWGSz
+	groupSize := ClPrefWGSz
 
 	// Find first multiple of groupSize larger than numItems
 	if numItems >= ClTotalPE-groupSize {
