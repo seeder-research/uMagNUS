@@ -26,6 +26,9 @@ func main() {
 	log.SetPrefix("")
 	log.SetFlags(0)
 
+	opencl.Synchronous = *engine.Flag_sync
+	opencl.Debug = *engine.Flag_debug
+
 	// Check flag and initialize engine
 	if len(*engine.Flag_gpulist) > 0 {
 		var gpu_arr []int
@@ -63,7 +66,6 @@ func main() {
 		}
 	}
 
-	opencl.Synchronous = *engine.Flag_sync
 	if *engine.Flag_version {
 		printVersion()
 	}

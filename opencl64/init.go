@@ -25,7 +25,7 @@ var (
 	GPUInfo      string                    // Human-readable GPU description
 	GPUList      []GPU                     // List of GPUs available
 	Synchronous  bool                      // for debug: synchronize command queue at every kernel launch
-	Debug        bool                      // for debug: synchronize command queue after every kernel launch
+	Debug        = false                   // for debug: synchronize command queue after every kernel launch
 	ClPlatforms  []*cl.Platform            // list of platforms available
 	ClPlatform   *cl.Platform              // platform the global OpenCL context is attached to
 	ClDevices    []*cl.Device              // list of devices global OpenCL context may be associated with
@@ -212,13 +212,13 @@ func Init(gpu int) {
 	inRegExp := regexp.MustCompile("(?i)intel")
 	adRegExp0 := regexp.MustCompile("(?i)amd")
 	adRegExp1 := regexp.MustCompile("(?i)micro device")
-	if chk0 := nvRegExp.Match([]byte(GPUInfo)); chk0 {
+	if chk0 := nvRegExp.Match([]byte(PlatformInfo)); chk0 {
 		GPUVend = 1
 	} else {
-		if chk1 := inRegExp.Match([]byte(GPUInfo)); chk1 {
+		if chk1 := inRegExp.Match([]byte(PlatformInfo)); chk1 {
 			GPUVend = 2
 		} else {
-			chk2, chk3 := adRegExp0.Match([]byte(GPUInfo)), adRegExp1.Match([]byte(GPUInfo))
+			chk2, chk3 := adRegExp0.Match([]byte(PlatformInfo)), adRegExp1.Match([]byte(PlatformInfo))
 			if (chk2 == true) || (chk3 == true) {
 				GPUVend = 3
 			} else {
@@ -227,13 +227,13 @@ func Init(gpu int) {
 		}
 	}
 	ClMaxWGNum = ClCUnits
+	ClTotalPE = ClWGSize[2] * ClCUnits
 	if GPUVend == 1 { // Nvidia
-		ClTotalPE = ClWGSize[2] * ClCUnits
 		if ClMaxWGSize > ClTotalPE {
-			ClMaxWGNum = ClTotalPE / ClMaxWGSize
-		} else {
 			ClMaxWGNum = 1
 			ClMaxWGSize = ClTotalPE
+		} else {
+			ClMaxWGNum = ClTotalPE / ClMaxWGSize
 		}
 	}
 	if GPUVend == 2 { // Intel
@@ -254,6 +254,16 @@ func Init(gpu int) {
 	reducecfg.Block[0] = reducecfg.Grid[0]
 	reduceintcfg.Grid[0] = ClTotalPE
 	reduceintcfg.Block[0] = ClPrefWGSz
+
+	if Debug {
+		fmt.Printf("    PlatformInfo: \n%+v \n", PlatformInfo)
+		fmt.Printf("    GPUInfo: \n%+v \n", GPUInfo)
+		fmt.Printf("    GPUVend: %+v \n", GPUVend)
+		fmt.Printf("    ClCUnits: %+v ; ClWGSize = %+v \n", ClCUnits, ClWGSize)
+		fmt.Printf("    ClTotalPE = %+v \n", ClTotalPE)
+		fmt.Printf("    ClMaxWGSize = %+v ; ClMaxWGNum = %+v \n", ClMaxWGSize, ClMaxWGNum)
+		fmt.Printf("    ClPrefWGSz = %+v \n", ClPrefWGSz)
+	}
 
 	data.EnableGPU(memFree, memFree, MemCpy, MemCpyDtoH, MemCpyHtoD)
 
