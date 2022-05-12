@@ -22,19 +22,19 @@ func AddDMIBulk(Beff *data.Slice, m *data.Slice, Aex_red, D_red SymmLUT, Msat MS
 	}
 
 	eventWaitList := []*cl.Event{}
-	tmpEvt := Beff.GetEvent(X)
-	if tmpEvt != nil {
-		eventWaitList = append(eventWaitList, tmpEvt)
+	tmpEvtL := Beff.GetAllEvents(X)
+	if len(tmpEvtL) > 0 {
+		eventWaitList = append(eventWaitList, tmpEvtL...)
 	}
-	tmpEvt = Beff.GetEvent(Y)
-	if tmpEvt != nil {
-		eventWaitList = append(eventWaitList, tmpEvt)
+	tmpEvtL = Beff.GetAllEvents(Y)
+	if len(tmpEvtL) > 0 {
+		eventWaitList = append(eventWaitList, tmpEvtL...)
 	}
-	tmpEvt = Beff.GetEvent(Z)
-	if tmpEvt != nil {
-		eventWaitList = append(eventWaitList, tmpEvt)
+	tmpEvtL = Beff.GetAllEvents(Z)
+	if len(tmpEvtL) > 0 {
+		eventWaitList = append(eventWaitList, tmpEvtL...)
 	}
-	tmpEvt = m.GetEvent(X)
+	tmpEvt := m.GetEvent(X)
 	if tmpEvt != nil {
 		eventWaitList = append(eventWaitList, tmpEvt)
 	}
@@ -71,17 +71,29 @@ func AddDMIBulk(Beff *data.Slice, m *data.Slice, Aex_red, D_red SymmLUT, Msat MS
 	Beff.SetEvent(X, event)
 	Beff.SetEvent(Y, event)
 	Beff.SetEvent(Z, event)
-	m.SetEvent(X, event)
-	m.SetEvent(Y, event)
-	m.SetEvent(Z, event)
-	regions.SetEvent(event)
+
+	glist := []GSlice{m}
 	if Msat.GetSlicePtr() != nil {
-		Msat.SetEvent(0, event)
+		glist = append(glist, Msat)
 	}
+	InsertEventIntoGSlices(event, glist)
+	regions.InsertReadEvent(event)
 
 	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in adddmibulk: %+v \n", err)
 		}
+		WaitAndUpdateDataSliceEvents(event, glist, false)
+		regions.RemoveReadEvent(event)
+		return
 	}
+
+	go WaitAndUpdateDataSliceEvents(event, glist, true)
+	go func(ev *cl.Event, b *Bytes) {
+		if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+			fmt.Printf("WaitForEvents failed in adddmibulk: %+v \n", err)
+		}
+		b.RemoveReadEvent(ev)
+	}(event, regions)
+
 }

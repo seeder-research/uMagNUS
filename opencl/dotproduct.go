@@ -17,11 +17,11 @@ func AddDotProduct(dst *data.Slice, prefactor float32, a, b *data.Slice) {
 	cfg := make1DConf(N)
 
 	eventList := []*cl.Event{}
-	tmpEvt := dst.GetEvent(0)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL := dst.GetAllEvents(0)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = a.GetEvent(X)
+	tmpEvt := a.GetEvent(X)
 	if tmpEvt != nil {
 		eventList = append(eventList, tmpEvt)
 	}
@@ -55,16 +55,18 @@ func AddDotProduct(dst *data.Slice, prefactor float32, a, b *data.Slice) {
 		N, cfg, eventList)
 
 	dst.SetEvent(0, event)
-	a.SetEvent(X, event)
-	a.SetEvent(Y, event)
-	a.SetEvent(Z, event)
-	b.SetEvent(X, event)
-	b.SetEvent(Y, event)
-	b.SetEvent(Z, event)
+
+	glist := []GSlice{a, b}
+	InsertEventIntoGSlices(event, glist)
 
 	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in adddotproduct: %+v \n", err)
 		}
+		WaitAndUpdateDataSliceEvents(event, glist, false)
+		return
 	}
+
+	go WaitAndUpdateDataSliceEvents(event, glist, true)
+
 }

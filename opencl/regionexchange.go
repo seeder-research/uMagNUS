@@ -29,19 +29,19 @@ func AddRegionExchangeField(B, m *data.Slice, Msat MSlice, regions *Bytes, regio
 	cfg := make3DConf(N)
 
 	eventsList := []*cl.Event{}
-	tmpEvt := B.GetEvent(X)
-	if tmpEvt != nil {
-		eventsList = append(eventsList, tmpEvt)
+	tmpEvtL := B.GetAllEvents(X)
+	if len(tmpEvtL) > 0 {
+		eventsList = append(eventsList, tmpEvtL...)
 	}
-	tmpEvt = B.GetEvent(Y)
-	if tmpEvt != nil {
-		eventsList = append(eventsList, tmpEvt)
+	tmpEvtL = B.GetAllEvents(Y)
+	if len(tmpEvtL) > 0 {
+		eventsList = append(eventsList, tmpEvtL...)
 	}
-	tmpEvt = B.GetEvent(Z)
-	if tmpEvt != nil {
-		eventsList = append(eventsList, tmpEvt)
+	tmpEvtL = B.GetAllEvents(Z)
+	if len(tmpEvtL) > 0 {
+		eventsList = append(eventsList, tmpEvtL...)
 	}
-	tmpEvt = m.GetEvent(X)
+	tmpEvt := m.GetEvent(X)
 	if tmpEvt != nil {
 		eventsList = append(eventsList, tmpEvt)
 	}
@@ -76,18 +76,31 @@ func AddRegionExchangeField(B, m *data.Slice, Msat MSlice, regions *Bytes, regio
 	B.SetEvent(X, event)
 	B.SetEvent(Y, event)
 	B.SetEvent(Z, event)
-	m.SetEvent(X, event)
-	m.SetEvent(Y, event)
-	m.SetEvent(Z, event)
+
+	glist := []GSlice{m}
 	if Msat.GetSlicePtr() != nil {
-		Msat.SetEvent(0, event)
+		glist = append(glist, Msat)
 	}
+	InsertEventIntoGSlices(event, glist)
+	regions.InsertReadEvent(event)
 
 	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in addtworegionexchange_field: %+v", err)
 		}
+		WaitAndUpdateDataSliceEvents(event, glist, false)
+		regions.RemoveReadEvent(event)
+		return
 	}
+
+	go WaitAndUpdateDataSliceEvents(event, glist, true)
+	go func(ev *cl.Event, b *Bytes) {
+		if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+			fmt.Printf("WaitForEvents failed in addtworegionexchange_field: %+v \n", err)
+		}
+		b.RemoveReadEvent(ev)
+	}(event, regions)
+
 }
 
 func AddRegionExchangeEdens(Edens, m *data.Slice, Msat MSlice, regions *Bytes, regionA, regionB uint8, sX, sY, sZ int, sig, sig2 float32, mesh *data.Mesh) {
@@ -106,11 +119,11 @@ func AddRegionExchangeEdens(Edens, m *data.Slice, Msat MSlice, regions *Bytes, r
 	cfg := make3DConf(N)
 
 	eventsList := []*cl.Event{}
-	tmpEvt := Edens.GetEvent(0)
-	if tmpEvt != nil {
-		eventsList = append(eventsList, tmpEvt)
+	tmpEvtL := Edens.GetAllEvents(0)
+	if len(tmpEvtL) > 0 {
+		eventsList = append(eventsList, tmpEvtL...)
 	}
-	tmpEvt = m.GetEvent(X)
+	tmpEvt := m.GetEvent(X)
 	if tmpEvt != nil {
 		eventsList = append(eventsList, tmpEvt)
 	}
@@ -147,16 +160,29 @@ func AddRegionExchangeEdens(Edens, m *data.Slice, Msat MSlice, regions *Bytes, r
 		eventsList)
 
 	Edens.SetEvent(0, event)
-	m.SetEvent(X, event)
-	m.SetEvent(Y, event)
-	m.SetEvent(Z, event)
+
+	glist := []GSlice{m}
 	if Msat.GetSlicePtr() != nil {
-		Msat.SetEvent(0, event)
+		glist = append(glist, Msat)
 	}
+	InsertEventIntoGSlices(event, glist)
+	regions.InsertReadEvent(event)
 
 	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in addtworegionexchange_edens: %+v", err)
 		}
+		WaitAndUpdateDataSliceEvents(event, glist, false)
+		regions.RemoveReadEvent(event)
+		return
 	}
+
+	go WaitAndUpdateDataSliceEvents(event, glist, true)
+	go func(ev *cl.Event, b *Bytes) {
+		if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+			fmt.Printf("WaitForEvents failed in addtworegionexchange_edens: %+v \n", err)
+		}
+		b.RemoveReadEvent(ev)
+	}(event, regions)
+
 }

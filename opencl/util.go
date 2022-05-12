@@ -2,6 +2,9 @@ package opencl
 
 import (
 	"fmt"
+
+	"github.com/seeder-research/uMagNUS/cl"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // OpenCL Launch parameters.
@@ -66,6 +69,43 @@ func UpdateLaunchConfigs(c []int) {
 			for ii0 := groupSize; ii0 < numItems; ii0 += groupSize {
 				reduceintcfg = &config{Grid: []int{ii0, 1, 1}, Block: []int{groupSize, 1, 1}}
 			}
+		}
+	}
+}
+
+// special type for data.Slice and MSlice
+type GSlice interface {
+	NComp() int
+	SetEvent(int, *cl.Event)
+	GetEvent(int) *cl.Event
+	SetReadEvents(int, []*cl.Event)
+	GetReadEvents(int) []*cl.Event
+	InsertReadEvent(int, *cl.Event)
+	RemoveReadEvent(int, *cl.Event)
+	GetAllEvents(int) []*cl.Event
+}
+
+func WaitAndUpdateDataSliceEvents(e *cl.Event, slist []GSlice, wait bool) {
+	// Wait on the event...
+	if wait {
+		if err := cl.WaitForEvents([]*cl.Event{e}); err != nil {
+			util.PanicErr(err)
+		}
+	}
+	// Event to wait for guaranteed to have completed here.
+	// Iterate through all slices to remove references to
+	// the event in their rdEvent map
+	for _, s := range slist {
+		for idx := 0; idx < s.NComp(); idx++ {
+			s.RemoveReadEvent(idx, e)
+		}
+	}
+}
+
+func InsertEventIntoGSlices(e *cl.Event, slist []GSlice) {
+	for _, s := range slist {
+		for idx := 0; idx < s.NComp(); idx++ {
+			s.InsertReadEvent(idx, e)
 		}
 	}
 }

@@ -226,3 +226,23 @@ func GetElem(s *data.Slice, comp int, index int) float64 {
 func GetCell(s *data.Slice, comp, ix, iy, iz int) float64 {
 	return GetElem(s, comp, s.Index(ix, iy, iz))
 }
+
+func updateSlicesWithRdEvent(s []*data.Slice, e *cl.Event) {
+	for _, ds := range s {
+		if ds != nil {
+			for idx := 0; idx < ds.NComp(); idx++ {
+				ds.InsertReadEvent(idx, e)
+			}
+		}
+	}
+}
+
+func removeRdEventFromSlices(s []*data.Slice, e *cl.Event) {
+	for _, ds := range s {
+		if ds != nil {
+			for idx := 0; idx < ds.NComp(); idx++ {
+				ds.RemoveReadEvent(idx, e)
+			}
+		}
+	}
+}

@@ -17,11 +17,11 @@ func copyUnPad(dst, src *data.Slice, dstsize, srcsize [3]int) {
 	cfg := make3DConf(dstsize)
 
 	eventList := []*cl.Event{}
-	tmpEvt := dst.GetEvent(0)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL := dst.GetAllEvents(0)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = src.GetEvent(0)
+	tmpEvt := src.GetEvent(0)
 	if tmpEvt != nil {
 		eventList = append(eventList, tmpEvt)
 	}
@@ -34,13 +34,20 @@ func copyUnPad(dst, src *data.Slice, dstsize, srcsize [3]int) {
 		eventList)
 
 	dst.SetEvent(0, event)
-	src.SetEvent(0, event)
+
+	glist := []GSlice{src}
+	InsertEventIntoGSlices(event, glist)
 
 	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in copyunpad: %+v \n", err)
 		}
+		WaitAndUpdateDataSliceEvents(event, glist, false)
+		return
 	}
+
+	go WaitAndUpdateDataSliceEvents(event, glist, true)
+
 }
 
 // Copies src into dst, which is larger, and multiplies by vol*Bsat.
@@ -53,11 +60,11 @@ func copyPadMul(dst, src, vol *data.Slice, dstsize, srcsize [3]int, Msat MSlice)
 	cfg := make3DConf(srcsize)
 
 	eventList := []*cl.Event{}
-	tmpEvent := dst.GetEvent(0)
-	if tmpEvent != nil {
-		eventList = append(eventList, tmpEvent)
+	tmpEvtL := dst.GetAllEvents(0)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvent = src.GetEvent(0)
+	tmpEvent := src.GetEvent(0)
 	if tmpEvent != nil {
 		eventList = append(eventList, tmpEvent)
 	}
@@ -81,15 +88,21 @@ func copyPadMul(dst, src, vol *data.Slice, dstsize, srcsize [3]int, Msat MSlice)
 		eventList)
 
 	dst.SetEvent(0, event)
-	src.SetEvent(0, event)
-	vol.SetEvent(0, event)
+
+	glist := []GSlice{src, vol}
 	if Msat.GetSlicePtr() != nil {
-		Msat.SetEvent(0, event)
+		glist = append(glist, Msat)
 	}
+	InsertEventIntoGSlices(event, glist)
 
 	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in copypadmul: %+v \n", err)
 		}
+		WaitAndUpdateDataSliceEvents(event, glist, false)
+		return
 	}
+
+	go WaitAndUpdateDataSliceEvents(event, glist, true)
+
 }

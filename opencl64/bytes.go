@@ -7,14 +7,16 @@ import (
 	"unsafe"
 
 	cl "github.com/seeder-research/uMagNUS/cl"
+	data "github.com/seeder-research/uMagNUS/data64"
 	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // 3D byte slice, used for region lookup.
 type Bytes struct {
-	Ptr unsafe.Pointer
-	Len int
-	Evt *cl.Event
+	Ptr   unsafe.Pointer
+	Len   int
+	Evt   *cl.Event
+	RdEvt *data.SliceEventMap
 }
 
 // Construct new byte slice with given length,
@@ -35,7 +37,9 @@ func NewBytes(Len int) *Bytes {
 			log.Panic("WaitForEvents failed in NewBytes:", err)
 		}
 	}
-	return &Bytes{unsafe.Pointer(ptr), Len, event}
+	emptyMap := new(data.SliceEventMap)
+	emptyMap.Init()
+	return &Bytes{unsafe.Pointer(ptr), Len, event, emptyMap}
 }
 
 // Upload src (host) to dst (gpu).
@@ -54,11 +58,11 @@ func (dst *Bytes) Upload(src []byte) {
 func (dst *Bytes) Copy(src *Bytes) {
 	util.Argument(dst.Len == src.Len)
 	eventWaitList := []*cl.Event{}
-	tmpEvt := dst.GetEvent()
-	if tmpEvt != nil {
-		eventWaitList = append(eventWaitList, tmpEvt)
+	tmpEvtL := dst.GetAllEvents()
+	if len(tmpEvtL) > 0 {
+		eventWaitList = append(eventWaitList, tmpEvtL...)
 	}
-	tmpEvt = src.GetEvent()
+	tmpEvt := src.GetEvent()
 	if tmpEvt != nil {
 		eventWaitList = append(eventWaitList, tmpEvt)
 	}
@@ -126,7 +130,6 @@ func (src *Bytes) Get(index int) byte {
 	if err != nil {
 		panic(err)
 	}
-	src.SetEvent(event)
 	// Must synchronize
 	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		log.Panic("WaitForEvents failed in Bytes.Set():", err)
@@ -153,4 +156,55 @@ func (b *Bytes) SetEvent(e *cl.Event) {
 // Get the event to synchonize the buffer of bytes
 func (b *Bytes) GetEvent() *cl.Event {
 	return b.Evt
+}
+
+// Sets the rdEvent of the slice
+func (b *Bytes) SetReadEvents(eventList []*cl.Event) {
+	b.RdEvt.Lock()
+	defer b.RdEvt.Unlock()
+	for _, e := range eventList {
+		if _, ok := b.RdEvt.ReadEvents[e]; ok == false {
+			b.RdEvt.ReadEvents[e] = 1
+		}
+	}
+}
+
+// Insert a cl.Event to rdEvent of the slice
+func (b *Bytes) InsertReadEvent(event *cl.Event) {
+	b.RdEvt.Lock()
+	defer b.RdEvt.Unlock()
+	if _, ok := b.RdEvt.ReadEvents[event]; ok == false {
+		b.RdEvt.ReadEvents[event] = 1
+	}
+}
+
+// Remove a cl.Event from rdEvent of the slice
+func (b *Bytes) RemoveReadEvent(event *cl.Event) {
+	b.RdEvt.Lock()
+	defer b.RdEvt.Unlock()
+	if _, ok := b.RdEvt.ReadEvents[event]; ok == false {
+		delete(b.RdEvt.ReadEvents, event)
+	}
+}
+
+// Returns rdEvent of the slice as a slice
+func (b *Bytes) GetReadEvents() []*cl.Event {
+	b.RdEvt.RLock()
+	defer b.RdEvt.RUnlock()
+	evList := []*cl.Event{}
+	for k, _ := range b.RdEvt.ReadEvents {
+		if k != nil {
+			evList = append(evList, k)
+		}
+	}
+	return evList
+}
+
+// Returns all events of the slice (for syncing kernels writing to the slice)
+func (b *Bytes) GetAllEvents() []*cl.Event {
+	eventList := b.GetReadEvents()
+	if b.Evt != nil {
+		eventList = append(eventList, b.Evt)
+	}
+	return eventList
 }

@@ -15,19 +15,19 @@ func AddSlonczewskiTorque2(torque, m *data.Slice, Msat, J, fixedP, alpha, pol, �
 	meshThickness := mesh.WorldSize()[Z]
 
 	eventList := [](*cl.Event){}
-	tmpEvt := torque.GetEvent(X)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL := torque.GetAllEvents(X)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = torque.GetEvent(Y)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL = torque.GetAllEvents(Y)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = torque.GetEvent(Z)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL = torque.GetAllEvents(Z)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = m.GetEvent(X)
+	tmpEvt := m.GetEvent(X)
 	if tmpEvt != nil {
 		eventList = append(eventList, tmpEvt)
 	}
@@ -119,39 +119,42 @@ func AddSlonczewskiTorque2(torque, m *data.Slice, Msat, J, fixedP, alpha, pol, �
 	torque.SetEvent(X, event)
 	torque.SetEvent(Y, event)
 	torque.SetEvent(Z, event)
-	m.SetEvent(X, event)
-	m.SetEvent(Y, event)
-	m.SetEvent(Z, event)
+
+	glist := []GSlice{m}
 	if J.GetSlicePtr() != nil {
-		J.SetEvent(Z, event)
+		glist = append(glist, J)
 	}
 	if fixedP.GetSlicePtr != nil {
-		fixedP.SetEvent(X, event)
-		fixedP.SetEvent(Y, event)
-		fixedP.SetEvent(Z, event)
+		glist = append(glist, fixedP)
 	}
 	if alpha.GetSlicePtr() != nil {
-		alpha.SetEvent(0, event)
+		glist = append(glist, alpha)
 	}
 	if ε_prime.GetSlicePtr() != nil {
-		ε_prime.SetEvent(0, event)
+		glist = append(glist, ε_prime)
 	}
 	if Msat.GetSlicePtr() != nil {
-		Msat.SetEvent(0, event)
+		glist = append(glist, Msat)
 	}
 	if pol.GetSlicePtr() != nil {
-		pol.SetEvent(0, event)
+		glist = append(glist, pol)
 	}
 	if λ.GetSlicePtr() != nil {
-		λ.SetEvent(0, event)
+		glist = append(glist, λ)
 	}
 	if thickness.GetSlicePtr() != nil {
-		thickness.SetEvent(0, event)
+		glist = append(glist, thickness)
 	}
+	InsertEventIntoGSlices(event, glist)
 
 	if Debug {
 		if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 			fmt.Printf("WaitForEvents failed in addslonczewskitorque2: %+v \n", err)
 		}
+		WaitAndUpdateDataSliceEvents(event, glist, false)
+		return
 	}
+
+	go WaitAndUpdateDataSliceEvents(event, glist, true)
+
 }

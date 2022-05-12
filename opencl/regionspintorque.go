@@ -26,19 +26,19 @@ func AddRegionSpinTorque(torque, m *data.Slice, Msat MSlice, regions *Bytes, reg
 	cfg := make3DConf(N)
 
 	eventsList := []*cl.Event{}
-	tmpEvt := torque.GetEvent(X)
-	if tmpEvt != nil {
-		eventsList = append(eventsList, tmpEvt)
+	tmpEvtL := torque.GetAllEvents(X)
+	if len(tmpEvtL) > 0 {
+		eventsList = append(eventsList, tmpEvtL...)
 	}
-	tmpEvt = torque.GetEvent(Y)
-	if tmpEvt != nil {
-		eventsList = append(eventsList, tmpEvt)
+	tmpEvtL = torque.GetAllEvents(Y)
+	if len(tmpEvtL) > 0 {
+		eventsList = append(eventsList, tmpEvtL...)
 	}
-	tmpEvt = torque.GetEvent(Z)
-	if tmpEvt != nil {
-		eventsList = append(eventsList, tmpEvt)
+	tmpEvtL = torque.GetAllEvents(Z)
+	if len(tmpEvtL) > 0 {
+		eventsList = append(eventsList, tmpEvtL...)
 	}
-	tmpEvt = m.GetEvent(X)
+	tmpEvt := m.GetEvent(X)
 	if tmpEvt != nil {
 		eventsList = append(eventsList, tmpEvt)
 	}
@@ -76,17 +76,29 @@ func AddRegionSpinTorque(torque, m *data.Slice, Msat MSlice, regions *Bytes, reg
 	torque.SetEvent(X, event)
 	torque.SetEvent(Y, event)
 	torque.SetEvent(Z, event)
-	m.SetEvent(X, event)
-	m.SetEvent(Y, event)
-	m.SetEvent(Z, event)
+
+	glist := []GSlice{m}
 	if Msat.GetSlicePtr() != nil {
-		Msat.SetEvent(0, event)
+		glist = append(glist, Msat)
 	}
-	regions.SetEvent(event)
+	InsertEventIntoGSlices(event, glist)
+	regions.InsertReadEvent(event)
 
 	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in addtworegionoommfslonczewskitorque: %+v", err)
 		}
+		WaitAndUpdateDataSliceEvents(event, glist, false)
+		regions.RemoveReadEvent(event)
+		return
 	}
+
+	go WaitAndUpdateDataSliceEvents(event, glist, true)
+	go func(ev *cl.Event, b *Bytes) {
+		if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+			fmt.Printf("WaitForEvents failed in addtworegionoommfslonczewskitorque: %+v \n", err)
+		}
+		b.RemoveReadEvent(ev)
+	}(event, regions)
+
 }

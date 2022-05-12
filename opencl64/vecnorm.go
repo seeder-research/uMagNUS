@@ -17,11 +17,11 @@ func VecNorm(dst *data.Slice, a *data.Slice) {
 	cfg := make1DConf(N)
 
 	eventsList := []*cl.Event{}
-	tmpEvt := dst.GetEvent(0)
-	if tmpEvt != nil {
-		eventsList = append(eventsList, tmpEvt)
+	tmpEvtL := dst.GetAllEvents(0)
+	if len(tmpEvtL) > 0 {
+		eventsList = append(eventsList, tmpEvtL...)
 	}
-	tmpEvt = a.GetEvent(X)
+	tmpEvt := a.GetEvent(X)
 	if tmpEvt != nil {
 		eventsList = append(eventsList, tmpEvt)
 	}
@@ -42,13 +42,18 @@ func VecNorm(dst *data.Slice, a *data.Slice) {
 		N, cfg, eventsList)
 
 	dst.SetEvent(0, event)
-	a.SetEvent(X, event)
-	a.SetEvent(Y, event)
-	a.SetEvent(Z, event)
+
+	glist := []GSlice{a}
+	InsertEventIntoGSlices(event, glist)
 
 	if Debug {
 		if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 			fmt.Printf("WaitForEvents failed in vecnorm: %+v \n", err)
 		}
+		WaitAndUpdateDataSliceEvents(event, glist, false)
+		return
 	}
+
+	go WaitAndUpdateDataSliceEvents(event, glist, true)
+
 }

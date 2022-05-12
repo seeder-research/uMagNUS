@@ -22,19 +22,19 @@ func Resize(dst, src *data.Slice, layer int) {
 	cfg := make3DConf(dstsize)
 
 	eventsList := []*cl.Event{}
-	tmpEvt := dst.GetEvent(X)
-	if tmpEvt != nil {
-		eventsList = append(eventsList, tmpEvt)
+	tmpEvtL := dst.GetAllEvents(X)
+	if len(tmpEvtL) > 0 {
+		eventsList = append(eventsList, tmpEvtL...)
 	}
-	tmpEvt = dst.GetEvent(Y)
-	if tmpEvt != nil {
-		eventsList = append(eventsList, tmpEvt)
+	tmpEvtL = dst.GetAllEvents(Y)
+	if len(tmpEvtL) > 0 {
+		eventsList = append(eventsList, tmpEvtL...)
 	}
-	tmpEvt = dst.GetEvent(Z)
-	if tmpEvt != nil {
-		eventsList = append(eventsList, tmpEvt)
+	tmpEvtL = dst.GetAllEvents(Z)
+	if len(tmpEvtL) > 0 {
+		eventsList = append(eventsList, tmpEvtL...)
 	}
-	tmpEvt = src.GetEvent(X)
+	tmpEvt := src.GetEvent(X)
 	if tmpEvt != nil {
 		eventsList = append(eventsList, tmpEvt)
 	}
@@ -57,12 +57,13 @@ func Resize(dst, src *data.Slice, layer int) {
 	dst.SetEvent(X, event)
 	dst.SetEvent(Y, event)
 	dst.SetEvent(Z, event)
-	src.SetEvent(X, event)
-	src.SetEvent(Y, event)
-	src.SetEvent(Z, event)
+
+	glist := []GSlice{src}
+	InsertEventIntoGSlices(event, glist)
 
 	// Synchronize for resize
 	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in resize: %+v \n", err)
+		WaitAndUpdateDataSliceEvents(event, glist, false)
 	}
 }

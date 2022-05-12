@@ -14,6 +14,18 @@ func Minimize(m, m0, torque *data.Slice, dt float64) {
 	cfg := make1DConf(N)
 
 	eventList := [](*cl.Event){}
+	tmpEvtL := m.GetAllEvents(X)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
+	}
+	tmpEvtL = m.GetAllEvents(Y)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
+	}
+	tmpEvtL = m.GetAllEvents(Z)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
+	}
 	tmpEvt := torque.GetEvent(X)
 	if tmpEvt != nil {
 		eventList = append(eventList, tmpEvt)
@@ -23,18 +35,6 @@ func Minimize(m, m0, torque *data.Slice, dt float64) {
 		eventList = append(eventList, tmpEvt)
 	}
 	tmpEvt = torque.GetEvent(Z)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvt = m.GetEvent(X)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvt = m.GetEvent(Y)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvt = m.GetEvent(Z)
 	if tmpEvt != nil {
 		eventList = append(eventList, tmpEvt)
 	}
@@ -62,16 +62,18 @@ func Minimize(m, m0, torque *data.Slice, dt float64) {
 	m.SetEvent(X, event)
 	m.SetEvent(Y, event)
 	m.SetEvent(Z, event)
-	m0.SetEvent(X, event)
-	m0.SetEvent(Y, event)
-	m0.SetEvent(Z, event)
-	torque.SetEvent(X, event)
-	torque.SetEvent(Y, event)
-	torque.SetEvent(Z, event)
+
+	glist := []GSlice{m0, torque}
+	InsertEventIntoGSlices(event, glist)
 
 	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in minimize: %+v \n", err)
 		}
+		WaitAndUpdateDataSliceEvents(event, glist, false)
+		return
 	}
+
+	go WaitAndUpdateDataSliceEvents(event, glist, true)
+
 }

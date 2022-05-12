@@ -32,6 +32,10 @@ func (m MSlice) Len() int {
 	return m.arr.Len()
 }
 
+func (m MSlice) NComp() int {
+	return m.arr.NComp()
+}
+
 func (m MSlice) DevPtr(c int) unsafe.Pointer {
 	return m.arr.DevPtr(c)
 }
@@ -61,6 +65,31 @@ func (m MSlice) SetEvent(index int, event *cl.Event) {
 
 func (m MSlice) GetEvent(index int) *cl.Event {
 	return m.arr.GetEvent(index)
+}
+
+// Sets the rdEvent of the slice
+func (m MSlice) SetReadEvents(index int, eventList []*cl.Event) {
+	m.arr.SetReadEvents(index, eventList)
+}
+
+// Insert a cl.Event to rdEvent of the slice
+func (m MSlice) InsertReadEvent(index int, event *cl.Event) {
+	m.arr.InsertReadEvent(index, event)
+}
+
+// Remove a cl.Event from rdEvent of the slice
+func (m MSlice) RemoveReadEvent(index int, event *cl.Event) {
+	m.arr.RemoveReadEvent(index, event)
+}
+
+// Returns rdEvent of the slice as a slice
+func (m MSlice) GetReadEvents(index int) []*cl.Event {
+	return m.arr.GetReadEvents(index)
+}
+
+// Returns all events of the slice (for syncing kernels writing to the slice)
+func (m MSlice) GetAllEvents(index int) []*cl.Event {
+	return m.arr.GetAllEvents(index)
 }
 
 var _ones = [4]float64{1, 1, 1, 1}

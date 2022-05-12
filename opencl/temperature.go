@@ -27,9 +27,9 @@ func SetTemperature(Bth, noise *data.Slice, k2mu0_Mu0VgammaDt float64, Msat, Tem
 
 	if Bth != nil {
 		Beff = Bth.DevPtr(0)
-		tmpEvt = Bth.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
+		tmpEvtL := Bth.GetAllEvents(0)
+		if len(tmpEvtL) > 0 {
+			eventList = append(eventList, tmpEvtL...)
 		}
 	} else {
 		panic("ERROR (SetTemperature): Bth pointer cannot be nil")
@@ -76,19 +76,27 @@ func SetTemperature(Bth, noise *data.Slice, k2mu0_Mu0VgammaDt float64, Msat, Tem
 		eventList)
 
 	Bth.SetEvent(0, event)
-	noise.SetEvent(0, event)
+
+	glist := []GSlice{noise}
 	if Msat_X != nil {
-		Msat.SetEvent(0, event)
+		glist = append(glist, Msat)
 	}
 	if Temp_X != nil {
-		Temp.SetEvent(0, event)
+		glist = append(glist, Temp)
 	}
 	if Alpha_X != nil {
-		Alpha.SetEvent(0, event)
+		glist = append(glist, Alpha)
 	}
+	InsertEventIntoGSlices(event, glist)
+
 	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in settemperature: %+v \n", err)
 		}
+		WaitAndUpdateDataSliceEvents(event, glist, false)
+		return
 	}
+
+	go WaitAndUpdateDataSliceEvents(event, glist, true)
+
 }
