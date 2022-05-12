@@ -22,7 +22,7 @@ type Slice struct {
 	size    [3]int
 	memType int8
 	event   []*cl.Event
-	rdEvent [][]*cl.Event
+	rdEvent []map[*cl.Event]int8
 }
 
 // this package must not depend on OpenCL.
