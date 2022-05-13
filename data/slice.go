@@ -80,10 +80,9 @@ func SliceFromPtrs(size [3]int, memType int8, ptrs []unsafe.Pointer) *Slice {
 	s.ptrs = make([]unsafe.Pointer, nComp)
 	s.size = size
 	s.event = make([]*cl.Event, nComp)
-	s.rdEvent = make([][]*cl.Event, nComp)
+	s.rdEvent = make([]map[*cl.Event]int8, nComp)
 	for idx := 0; idx < nComp; idx++ {
-		tmpEvent := []*cl.Event{}
-		s.rdEvent[idx] = append(s.rdEvent[idx], tmpEvent...)
+		s.rdEvent[idx] = make(map[*cl.Event]int8)
 	}
 	for c := range ptrs {
 		s.ptrs[c] = ptrs[c]
@@ -177,7 +176,8 @@ func (s *Slice) Comp(i int) *Slice {
 	sl.size = s.size
 	sl.memType = s.memType
 	sl.event = []*cl.Event{s.event[i]}
-	sl.rdEvent = [][]*cl.Event{s.rdEvent[i]}
+	sl.rdEvent = make([]map[*cl.Event]int8, 1)
+	sl.rdEvent[0] = s.rdEvent[i]
 	return sl
 }
 
@@ -231,7 +231,7 @@ func (s *Slice) SetEvents(events []*cl.Event) {
 // Associate a cl.Event to the slice (for events that are writing into slice)
 func (s *Slice) SetEvent(index int, event *cl.Event) {
 	s.event[index] = event
-	s.rdEvent[index] = []*cl.Event{}
+	s.rdEvent[index] = make(map[*cl.Event]int8)
 }
 
 // Returns cl.Event associated with the slice (for events that are writing into slice)
@@ -241,17 +241,24 @@ func (s *Slice) GetEvent(index int) *cl.Event {
 
 // Sets the rdEvent of the slice
 func (s *Slice) SetReadEvents(index int, eventList []*cl.Event) {
-	s.rdEvent[index] = eventList
+	for _, e := range eventList {
+		s.rdEvent[index][e] = 1
+	}
 }
 
 // Insert a cl.Event to rdEvent of the slice
 func (s *Slice) InsertReadEvent(index int, event *cl.Event) {
-	s.rdEvent[index] = append(s.rdEvent[index], event)
+	s.rdEvent[index][event] = 1
 }
 
-// Returns rdEvent of the slice
+// Returns rdEvent of the slice as a slice
 func (s *Slice) GetReadEvents(index int) []*cl.Event {
-	return s.rdEvent[index]
+	a := s.rdEvent[index]
+	evList := []*cl.Event{}
+	for k, _ := range a {
+		evList = append(evList, k)
+	}
+	return evList
 }
 
 // Returns all events of the slice (for syncing kernels writing to the slice)
@@ -260,8 +267,9 @@ func (s *Slice) GetAllEvents(index int) []*cl.Event {
 	if s.event[index] != nil {
 		eventList = append(eventList, s.event[index])
 	}
-	if len(s.rdEvent[index]) > 0 {
-		eventList = append(eventList, s.rdEvent[index]...)
+	a := s.rdEvent[index]
+	for k, _ := range a {
+		eventList = append(eventList, k)
 	}
 	return eventList
 }
