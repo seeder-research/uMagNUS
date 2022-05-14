@@ -251,6 +251,11 @@ func (s *Slice) InsertReadEvent(index int, event *cl.Event) {
 	s.rdEvent[index][event] = 1
 }
 
+// Remove a cl.Event from rdEvent of the slice
+func (s *Slice) RemoveReadEvent(index int, event *cl.Event) {
+	delete(s.rdEvent[index], event)
+}
+
 // Returns rdEvent of the slice as a slice
 func (s *Slice) GetReadEvents(index int) []*cl.Event {
 	a := s.rdEvent[index]
