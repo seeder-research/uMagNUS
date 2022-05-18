@@ -2,6 +2,10 @@ package opencl64
 
 import (
 	"fmt"
+
+	"github.com/seeder-research/uMagNUS/cl"
+	data "github.com/seeder-research/uMagNUS/data"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // OpenCL Launch parameters.
@@ -66,6 +70,21 @@ func UpdateLaunchConfigs(c []int) {
 			for ii0 := groupSize; ii0 < numItems; ii0 += groupSize {
 				reduceintcfg = &config{Grid: []int{ii0, 1, 1}, Block: []int{groupSize, 1, 1}}
 			}
+		}
+	}
+}
+
+func WaitAndUpdateDataSliceEvents(e *cl.Event, slist []*data.Slice) {
+	// Wait on the event...
+	if err := cl.WaitForEvents([]*cl.Event{e}); err != nil {
+		util.PanicErr(err)
+	}
+	// Event to wait for guaranteed to have completed here.
+	// Iterate through all slices to remove references to
+	// the event in their rdEvent map
+	for _, s := range slist {
+		for idx := 0; idx < s.NComp(); idx++ {
+			s.RemoveReadEvent(idx, e)
 		}
 	}
 }
