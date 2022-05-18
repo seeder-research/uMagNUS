@@ -32,6 +32,10 @@ func (m MSlice) Len() int {
 	return m.arr.Len()
 }
 
+func (m MSlice) NComp() int {
+	return m.arr.NComp()
+}
+
 func (m MSlice) DevPtr(c int) unsafe.Pointer {
 	return m.arr.DevPtr(c)
 }

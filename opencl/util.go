@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/seeder-research/uMagNUS/cl"
-	data "github.com/seeder-research/uMagNUS/data"
 	util "github.com/seeder-research/uMagNUS/util"
 )
 
@@ -74,7 +73,19 @@ func UpdateLaunchConfigs(c []int) {
 	}
 }
 
-func WaitAndUpdateDataSliceEvents(e *cl.Event, slist []*data.Slice) {
+// special type for data.Slice and MSlice
+type GSlice interface {
+	NComp() int
+	SetEvent(int, *cl.Event)
+	GetEvent(int) *cl.Event
+	SetReadEvents(int, []*cl.Event)
+	GetReadEvents(int) []*cl.Event
+	InsertReadEvent(int, *cl.Event)
+	RemoveReadEvent(int, *cl.Event)
+	GetAllEvents(int) []*cl.Event
+}
+
+func WaitAndUpdateDataSliceEvents(e *cl.Event, slist []GSlice) {
 	// Wait on the event...
 	if err := cl.WaitForEvents([]*cl.Event{e}); err != nil {
 		util.PanicErr(err)
