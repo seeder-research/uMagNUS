@@ -15,19 +15,19 @@ func CrossProduct(dst, a, b *data.Slice) {
 	N := dst.Len()
 	cfg := make1DConf(N)
 	eventWaitList := []*cl.Event{}
-	tmpEvent := dst.GetEvent(X)
-	if tmpEvent != nil {
-		eventWaitList = append(eventWaitList, tmpEvent)
+	tmpEventL := dst.GetAllEvents(X)
+	if len(tmpEventL) > 0 {
+		eventWaitList = append(eventWaitList, tmpEventL...)
 	}
-	tmpEvent = dst.GetEvent(Y)
-	if tmpEvent != nil {
-		eventWaitList = append(eventWaitList, tmpEvent)
+	tmpEventL = dst.GetAllEvents(Y)
+	if len(tmpEventL) > 0 {
+		eventWaitList = append(eventWaitList, tmpEventL...)
 	}
-	tmpEvent = dst.GetEvent(Z)
-	if tmpEvent != nil {
-		eventWaitList = append(eventWaitList, tmpEvent)
+	tmpEventL = dst.GetAllEvents(Z)
+	if len(tmpEventL) > 0 {
+		eventWaitList = append(eventWaitList, tmpEventL...)
 	}
-	tmpEvent = a.GetEvent(X)
+	tmpEvent := a.GetEvent(X)
 	if tmpEvent != nil {
 		eventWaitList = append(eventWaitList, tmpEvent)
 	}
@@ -63,15 +63,18 @@ func CrossProduct(dst, a, b *data.Slice) {
 	dst.SetEvent(X, event)
 	dst.SetEvent(Y, event)
 	dst.SetEvent(Z, event)
-	a.SetEvent(X, event)
-	a.SetEvent(Y, event)
-	a.SetEvent(Z, event)
-	b.SetEvent(X, event)
-	b.SetEvent(Y, event)
-	b.SetEvent(Z, event)
+
+	glist := []GSlice{a, b}
+	InsertEventIntoGSlices(event, glist)
+
 	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in crossproduct: %+v \n", err)
 		}
+		WaitAndUpdateDataSliceEvents(event, glist, false)
+		return
 	}
+
+	go WaitAndUpdateDataSliceEvents(event, glist, true)
+
 }

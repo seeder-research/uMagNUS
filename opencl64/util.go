@@ -85,10 +85,12 @@ type GSlice interface {
 	GetAllEvents(int) []*cl.Event
 }
 
-func WaitAndUpdateDataSliceEvents(e *cl.Event, slist []GSlice) {
+func WaitAndUpdateDataSliceEvents(e *cl.Event, slist []GSlice, wait bool) {
 	// Wait on the event...
-	if err := cl.WaitForEvents([]*cl.Event{e}); err != nil {
-		util.PanicErr(err)
+	if wait {
+		if err := cl.WaitForEvents([]*cl.Event{e}); err != nil {
+			util.PanicErr(err)
+		}
 	}
 	// Event to wait for guaranteed to have completed here.
 	// Iterate through all slices to remove references to

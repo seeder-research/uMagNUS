@@ -140,11 +140,11 @@ func AddCubicAnisotropy2(Beff, m *data.Slice, Msat, k1, k2, k3, c1, c2 MSlice) {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in addcubicanisotropy: %+v \n", err)
 		}
-		WaitAndUpdateDataSliceEvents(nil, glist)
+		WaitAndUpdateDataSliceEvents(event, glist, false)
 		return
 	}
 
-	go WaitAndUpdateDataSliceEvents(event, glist)
+	go WaitAndUpdateDataSliceEvents(event, glist, true)
 
 }
 
@@ -251,11 +251,11 @@ func AddUniaxialAnisotropy2(Beff, m *data.Slice, Msat, k1, k2, u MSlice) {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in addcubicanisotropy2: %+v \n", err)
 		}
-		WaitAndUpdateDataSliceEvents(nil, glist)
+		WaitAndUpdateDataSliceEvents(event, glist, false)
 		return
 	}
 
-	go WaitAndUpdateDataSliceEvents(event, glist)
+	go WaitAndUpdateDataSliceEvents(event, glist, true)
 
 }
 
@@ -352,11 +352,11 @@ func AddUniaxialAnisotropy(Beff, m *data.Slice, Msat, k1, u MSlice) {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in addcubicanisotropy: %+v \n", err)
 		}
-		WaitAndUpdateDataSliceEvents(nil, glist)
+		WaitAndUpdateDataSliceEvents(event, glist, false)
 		return
 	}
 
-	go WaitAndUpdateDataSliceEvents(event, glist)
+	go WaitAndUpdateDataSliceEvents(event, glist, true)
 
 }
 
@@ -465,10 +465,10 @@ func AddVoltageControlledAnisotropy(Beff, m *data.Slice, Msat, vcmaCoeff, voltag
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in addvoltagecontrolledanisotropy: %+v \n", err)
 		}
-		WaitAndUpdateDataSliceEvents(nil, glist)
+		WaitAndUpdateDataSliceEvents(event, glist, false)
 		return
 	}
 
-	go WaitAndUpdateDataSliceEvents(event, glist)
+	go WaitAndUpdateDataSliceEvents(event, glist, true)
 
 }
