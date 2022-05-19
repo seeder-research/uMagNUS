@@ -12,9 +12,10 @@ import (
 
 // 3D byte slice, used for region lookup.
 type Bytes struct {
-	Ptr unsafe.Pointer
-	Len int
-	Evt *cl.Event
+	Ptr   unsafe.Pointer
+	Len   int
+	Evt   *cl.Event
+	RdEvt map[*cl.Event]int8
 }
 
 // Construct new byte slice with given length,
@@ -35,7 +36,8 @@ func NewBytes(Len int) *Bytes {
 			log.Panic("WaitForEvents failed in NewBytes:", err)
 		}
 	}
-	return &Bytes{unsafe.Pointer(ptr), Len, event}
+	evMap := make(map[*cl.Event]int8)
+	return &Bytes{unsafe.Pointer(ptr), Len, event, evMap}
 }
 
 // Upload src (host) to dst (gpu).
@@ -126,11 +128,12 @@ func (src *Bytes) Get(index int) byte {
 	if err != nil {
 		panic(err)
 	}
-	src.SetEvent(event)
+	src.InsertReadEvent(event)
 	// Must synchronize
 	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		log.Panic("WaitForEvents failed in Bytes.Set():", err)
 	}
+	src.RemoveReadEvent(event)
 	return dst[0]
 }
 
@@ -143,6 +146,7 @@ func (b *Bytes) Free() {
 	b.Ptr = nil
 	b.Len = 0
 	b.Evt = nil
+	b.RdEvt = nil
 }
 
 // Set the event to synchonize the buffer of bytes
@@ -153,4 +157,44 @@ func (b *Bytes) SetEvent(e *cl.Event) {
 // Get the event to synchonize the buffer of bytes
 func (b *Bytes) GetEvent() *cl.Event {
 	return b.Evt
+}
+
+// Sets the rdEvent of the slice
+func (b *Bytes) SetReadEvents(eventList []*cl.Event) {
+	for _, e := range eventList {
+		b.RdEvt[e] = 1
+	}
+}
+
+// Insert a cl.Event to rdEvent of the slice
+func (b *Bytes) InsertReadEvent(event *cl.Event) {
+	b.RdEvt[event] = 1
+}
+
+// Remove a cl.Event from rdEvent of the slice
+func (b *Bytes) RemoveReadEvent(event *cl.Event) {
+	delete(b.RdEvt, event)
+}
+
+// Returns rdEvent of the slice as a slice
+func (b *Bytes) GetReadEvents() []*cl.Event {
+	a := b.RdEvt
+	evList := []*cl.Event{}
+	for k, _ := range a {
+		evList = append(evList, k)
+	}
+	return evList
+}
+
+// Returns all events of the slice (for syncing kernels writing to the slice)
+func (b *Bytes) GetAllEvents() []*cl.Event {
+	eventList := []*cl.Event{}
+	if b.Evt != nil {
+		eventList = append(eventList, b.Evt)
+	}
+	a := b.RdEvt
+	for k, _ := range a {
+		eventList = append(eventList, k)
+	}
+	return eventList
 }
