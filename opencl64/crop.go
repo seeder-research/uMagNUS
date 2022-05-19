@@ -36,7 +36,13 @@ func Crop(dst, src *data.Slice, offX, offY, offZ int) {
 			src.DevPtr(c), S[X], S[Y], S[Z],
 			offX, offY, offZ, cfg, eventWaitList)
 		dst.SetEvent(c, eventList[c])
-		src.SetEvent(c, eventList[c])
+		src.InsertReadEvent(c, eventList[c])
+		go func(ev *cl.Event, idx int, sl *data.Slice) {
+			if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+				fmt.Printf("WaitForEvents failed in crop: %+v \n", err)
+			}
+			src.RemoveReadEvent(idx, ev)
+		}(eventList[c], c, src)
 	}
 	if Debug {
 		if err := cl.WaitForEvents(eventList); err != nil {
