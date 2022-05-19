@@ -100,6 +100,14 @@ func WaitAndUpdateDataSliceEvents(e *cl.Event, slist []GSlice) {
 	}
 }
 
+func InsertEventIntoGSlices(e *cl.Event, slist []GSlice) {
+	for _, s := range slist {
+		for idx := 0; idx < s.NComp(); idx++ {
+			s.InsertReadEvent(idx, e)
+		}
+	}
+}
+
 // integer minimum
 func iMin(a, b int) int {
 	if a < b {

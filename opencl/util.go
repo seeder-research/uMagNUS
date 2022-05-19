@@ -87,8 +87,10 @@ type GSlice interface {
 
 func WaitAndUpdateDataSliceEvents(e *cl.Event, slist []GSlice) {
 	// Wait on the event...
-	if err := cl.WaitForEvents([]*cl.Event{e}); err != nil {
-		util.PanicErr(err)
+	if e != nil {
+		if err := cl.WaitForEvents([]*cl.Event{e}); err != nil {
+			util.PanicErr(err)
+		}
 	}
 	// Event to wait for guaranteed to have completed here.
 	// Iterate through all slices to remove references to
@@ -96,6 +98,14 @@ func WaitAndUpdateDataSliceEvents(e *cl.Event, slist []GSlice) {
 	for _, s := range slist {
 		for idx := 0; idx < s.NComp(); idx++ {
 			s.RemoveReadEvent(idx, e)
+		}
+	}
+}
+
+func InsertEventIntoGSlices(e *cl.Event, slist []GSlice) {
+	for _, s := range slist {
+		for idx := 0; idx < s.NComp(); idx++ {
+			s.InsertReadEvent(idx, e)
 		}
 	}
 }
