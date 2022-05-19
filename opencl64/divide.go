@@ -20,8 +20,16 @@ func Divide(dst, a, b *data.Slice) {
 		eventList[c] = k_divide_async(dst.DevPtr(c), a.DevPtr(c), b.DevPtr(c), N, cfg,
 			[](*cl.Event){dst.GetEvent(c), a.GetEvent(c), b.GetEvent(c)})
 		dst.SetEvent(c, eventList[c])
-		a.SetEvent(c, eventList[c])
-		b.SetEvent(c, eventList[c])
+		a.InsertReadEvent(c, eventList[c])
+		b.InsertReadEvent(c, eventList[c])
+		go func(ev *cl.Event, idx int, sl []*data.Slice) {
+			if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+				fmt.Printf("WaitForEvents failed in crop: %+v \n", err)
+			}
+			for _, sa := range sl {
+				sa.RemoveReadEvent(idx, ev)
+			}
+		}(eventList[c], c, []*data.Slice{a, b})
 	}
 	if err := cl.WaitForEvents(eventList); err != nil {
 		fmt.Printf("WaitForEvents failed in divide: %+v \n", err)
