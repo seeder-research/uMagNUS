@@ -91,7 +91,7 @@ func AddDMIBulk(Beff *data.Slice, m *data.Slice, Aex_red, D_red SymmLUT, Msat MS
 	go WaitAndUpdateDataSliceEvents(event, glist, true)
 	go func(ev *cl.Event, b *Bytes) {
 		if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
-			fmt.Printf("WaitForEvents failed in adddmibulk:: %+v \n", err)
+			fmt.Printf("WaitForEvents failed in adddmibulk: %+v \n", err)
 		}
 		b.RemoveReadEvent(ev)
 	}(event, regions)
