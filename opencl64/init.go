@@ -241,6 +241,10 @@ func Init(gpu int) {
 		ClMaxWGSize = 7 * 32
 		ClTotalPE = ClMaxWGNum * ClMaxWGSize
 	}
+	if GPUVend == 3 { // AMD
+		ClMaxWGSize = 64
+		ClTotalPE = ClMaxWGNum * ClMaxWGSize
+	}
 
 	ClPrefWGSz, err = KernList["madd2"].PreferredWorkGroupSizeMultiple(ClDevice)
 	if err != nil {
