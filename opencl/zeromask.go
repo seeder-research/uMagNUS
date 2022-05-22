@@ -30,7 +30,14 @@ func ZeroMask(dst *data.Slice, mask LUTPtr, regions *Bytes) {
 		eventList[c] = k_zeromask_async(dst.DevPtr(c), unsafe.Pointer(mask), regions.Ptr, N, cfg, intEventList)
 
 		dst.SetEvent(c, eventList[c])
-		regions.SetEvent(eventList[c])
+
+		regions.InsertReadEvent(eventList[c])
+		go func(ev *cl.Event, b *Bytes) {
+			if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+				fmt.Printf("WaitForEvents failed in zeromask: %+v \n", err)
+			}
+			b.RemoveReadEvent(ev)
+		}(eventList[c], regions)
 	}
 
 	if Debug {
