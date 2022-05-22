@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+	"sync"
 	"unsafe"
 
 	cl "github.com/seeder-research/uMagNUS/cl"
@@ -16,13 +17,18 @@ import (
 const SIZEOF_FLOAT32 = 4
 const SIZEOF_FLOAT64 = 8
 
+type SliceEventMap struct {
+	ReadEvents map[*cl.Event]int8
+	sync.RWMutex
+}
+
 // Slice is like a [][]float64, but may be stored in GPU or host memory.
 type Slice struct {
 	ptrs    []unsafe.Pointer
 	size    [3]int
 	memType int8
 	event   []*cl.Event
-	rdEvent []map[*cl.Event]int8
+	rdEvent []SliceEventMap
 }
 
 // this package must not depend on OpenCL.
@@ -80,10 +86,7 @@ func SliceFromPtrs(size [3]int, memType int8, ptrs []unsafe.Pointer) *Slice {
 	s.ptrs = make([]unsafe.Pointer, nComp)
 	s.size = size
 	s.event = make([]*cl.Event, nComp)
-	s.rdEvent = make([]map[*cl.Event]int8, nComp)
-	for idx := 0; idx < nComp; idx++ {
-		s.rdEvent[idx] = make(map[*cl.Event]int8)
-	}
+	s.rdEvent = make([]SliceEventMap, nComp)
 	for c := range ptrs {
 		s.ptrs[c] = ptrs[c]
 		s.event[c] = nil
@@ -176,7 +179,7 @@ func (s *Slice) Comp(i int) *Slice {
 	sl.size = s.size
 	sl.memType = s.memType
 	sl.event = []*cl.Event{s.event[i]}
-	sl.rdEvent = make([]map[*cl.Event]int8, 1)
+	sl.rdEvent = make([]SliceEventMap, 1)
 	sl.rdEvent[0] = s.rdEvent[i]
 	return sl
 }
@@ -225,13 +228,18 @@ func (s *Slice) SetEvents(events []*cl.Event) {
 	s.event = make([]*cl.Event, len(events))
 	for idx, event := range events {
 		s.event[idx] = event
+		s.rdEvent[idx].Lock()
+		s.rdEvent[idx].ReadEvents = make(map[*cl.Event]int8)
+		s.rdEvent[idx].Unlock()
 	}
 }
 
 // Associate a cl.Event to the slice (for events that are writing into slice)
 func (s *Slice) SetEvent(index int, event *cl.Event) {
 	s.event[index] = event
-	s.rdEvent[index] = make(map[*cl.Event]int8)
+	s.rdEvent[index].Lock()
+	s.rdEvent[index].ReadEvents = make(map[*cl.Event]int8)
+	s.rdEvent[index].Unlock()
 }
 
 // Returns cl.Event associated with the slice (for events that are writing into slice)
@@ -241,27 +249,41 @@ func (s *Slice) GetEvent(index int) *cl.Event {
 
 // Sets the rdEvent of the slice
 func (s *Slice) SetReadEvents(index int, eventList []*cl.Event) {
+	s.rdEvent[index].Lock()
+	defer s.rdEvent[index].Unlock()
+	s.rdEvent[index].ReadEvents = make(map[*cl.Event]int8)
 	for _, e := range eventList {
-		s.rdEvent[index][e] = 1
+		s.rdEvent[index].ReadEvents[e] = 1
 	}
 }
 
 // Insert a cl.Event to rdEvent of the slice
 func (s *Slice) InsertReadEvent(index int, event *cl.Event) {
-	s.rdEvent[index][event] = 1
+	s.rdEvent[index].Lock()
+	defer s.rdEvent[index].Unlock()
+	if _, ok := s.rdEvent[index].ReadEvents[event]; ok == false {
+		s.rdEvent[index].ReadEvents[event] = 1
+	}
 }
 
 // Remove a cl.Event from rdEvent of the slice
 func (s *Slice) RemoveReadEvent(index int, event *cl.Event) {
-	delete(s.rdEvent[index], event)
+	s.rdEvent[index].Lock()
+	defer s.rdEvent[index].Unlock()
+	if _, ok := s.rdEvent[index].ReadEvents[event]; ok {
+		delete(s.rdEvent[index].ReadEvents, event)
+	}
 }
 
 // Returns rdEvent of the slice as a slice
 func (s *Slice) GetReadEvents(index int) []*cl.Event {
-	a := s.rdEvent[index]
+	s.rdEvent[index].RLock()
+	defer s.rdEvent[index].RUnlock()
 	evList := []*cl.Event{}
-	for k, _ := range a {
-		evList = append(evList, k)
+	for k, _ := range s.rdEvent[index].ReadEvents {
+		if k != nil {
+			evList = append(evList, k)
+		}
 	}
 	return evList
 }
@@ -272,9 +294,12 @@ func (s *Slice) GetAllEvents(index int) []*cl.Event {
 	if s.event[index] != nil {
 		eventList = append(eventList, s.event[index])
 	}
-	a := s.rdEvent[index]
-	for k, _ := range a {
-		eventList = append(eventList, k)
+	s.rdEvent[index].RLock()
+	defer s.rdEvent[index].RUnlock()
+	for k, _ := range s.rdEvent[index].ReadEvents {
+		if k != nil {
+			eventList = append(eventList, k)
+		}
 	}
 	return eventList
 }
