@@ -81,16 +81,25 @@ func AddRegionExchangeField(B, m *data.Slice, Msat MSlice, regions *Bytes, regio
 	if Msat.GetSlicePtr() != nil {
 		glist = append(glist, Msat)
 	}
+	InsertEventIntoGSlices(event, glist)
+	regions.InsertReadEvent(event)
 
 	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in addtworegionexchange_field: %+v", err)
 		}
 		WaitAndUpdateDataSliceEvents(event, glist, false)
+		regions.RemoveReadEvent(event)
 		return
 	}
 
 	go WaitAndUpdateDataSliceEvents(event, glist, true)
+	go func(ev *cl.Event, b *Bytes) {
+		if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+			fmt.Printf("WaitForEvents failed in adddmi: %+v \n", err)
+		}
+		b.RemoveReadEvent(ev)
+	}(event, regions)
 
 }
 
@@ -156,15 +165,24 @@ func AddRegionExchangeEdens(Edens, m *data.Slice, Msat MSlice, regions *Bytes, r
 	if Msat.GetSlicePtr() != nil {
 		glist = append(glist, Msat)
 	}
+	InsertEventIntoGSlices(event, glist)
+	regions.InsertReadEvent(event)
 
 	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in addtworegionexchange_edens: %+v", err)
 		}
 		WaitAndUpdateDataSliceEvents(event, glist, false)
+		regions.RemoveReadEvent(event)
 		return
 	}
 
 	go WaitAndUpdateDataSliceEvents(event, glist, true)
+	go func(ev *cl.Event, b *Bytes) {
+		if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+			fmt.Printf("WaitForEvents failed in adddmi: %+v \n", err)
+		}
+		b.RemoveReadEvent(ev)
+	}(event, regions)
 
 }

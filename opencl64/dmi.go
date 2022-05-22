@@ -70,6 +70,7 @@ func AddDMI(Beff *data.Slice, m *data.Slice, Aex_red, Dex_red SymmLUT, Msat MSli
 	if Msat.GetSlicePtr() != nil {
 		glist = append(glist, Msat)
 	}
+	InsertEventIntoGSlices(event, glist)
 	regions.InsertReadEvent(event)
 
 	if Debug {

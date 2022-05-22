@@ -64,6 +64,7 @@ func Minimize(m, m0, torque *data.Slice, dt float64) {
 	m.SetEvent(Z, event)
 
 	glist := []GSlice{m0, torque}
+	InsertEventIntoGSlices(event, glist)
 
 	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {

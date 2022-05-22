@@ -48,6 +48,7 @@ func SetMaxAngle(dst, m *data.Slice, Aex_red SymmLUT, regions *Bytes, mesh *data
 	dst.SetEvent(0, event)
 
 	glist := []GSlice{m}
+	InsertEventIntoGSlices(event, glist)
 	regions.InsertReadEvent(event)
 
 	if Debug {
