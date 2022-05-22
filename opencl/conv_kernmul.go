@@ -64,18 +64,20 @@ func kernMulRSymm3D_async(fftM [3]*data.Slice, Kxx, Kyy, Kzz, Kyz, Kxz, Kxy *dat
 	fftM[X].SetEvent(0, event)
 	fftM[Y].SetEvent(0, event)
 	fftM[Z].SetEvent(0, event)
-	Kxx.SetEvent(0, event)
-	Kyy.SetEvent(0, event)
-	Kzz.SetEvent(0, event)
-	Kyz.SetEvent(0, event)
-	Kxz.SetEvent(0, event)
-	Kxy.SetEvent(0, event)
+
+	glist := []GSlice{Kxx, Kyy, Kzz, Kyz, Kxz, Kxy}
+	InsertEventIntoGSlices(event, glist)
 
 	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in kernmulrsymm3d_async: %+v \n", err)
 		}
+		WaitAndUpdateDataSliceEvents(event, glist, false)
+		return
 	}
+
+	go WaitAndUpdateDataSliceEvents(event, glist, true)
+
 }
 
 // kernel multiplication for 2D demag convolution on X and Y, exploiting full kernel symmetry.
@@ -116,15 +118,20 @@ func kernMulRSymm2Dxy_async(fftMx, fftMy, Kxx, Kyy, Kxy *data.Slice, Nx, Ny int)
 
 	fftMx.SetEvent(0, event)
 	fftMy.SetEvent(0, event)
-	Kxx.SetEvent(0, event)
-	Kyy.SetEvent(0, event)
-	Kxy.SetEvent(0, event)
+
+	glist := []GSlice{Kxx, Kyy, Kxy}
+	InsertEventIntoGSlices(event, glist)
 
 	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in kernmulrsymm2dxy_async: %+v \n", err)
 		}
+		WaitAndUpdateDataSliceEvents(event, glist, false)
+		return
 	}
+
+	go WaitAndUpdateDataSliceEvents(event, glist, true)
+
 }
 
 // kernel multiplication for 2D demag convolution on Z, exploiting full kernel symmetry.
@@ -149,13 +156,20 @@ func kernMulRSymm2Dz_async(fftMz, Kzz *data.Slice, Nx, Ny int) {
 		eventList)
 
 	fftMz.SetEvent(0, event)
-	Kzz.SetEvent(0, event)
+
+	glist := []GSlice{Kzz}
+	InsertEventIntoGSlices(event, glist)
 
 	if Debug {
 		if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 			fmt.Printf("WaitForEvents failed in kernmulrsymm2dz_async: %+v \n", err)
 		}
+		WaitAndUpdateDataSliceEvents(event, glist, false)
+		return
 	}
+
+	go WaitAndUpdateDataSliceEvents(event, glist, true)
+
 }
 
 // kernel multiplication for general 1D convolution. Does not assume any symmetry.
@@ -181,11 +195,18 @@ func kernMulC_async(fftM, K *data.Slice, Nx, Ny int) {
 		eventList)
 
 	fftM.SetEvent(0, event)
-	K.SetEvent(0, event)
+
+	glist := []GSlice{K}
+	InsertEventIntoGSlices(event, glist)
 
 	if Debug {
 		if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 			fmt.Printf("WaitForEvents failed in kernmulC_async: %+v \n", err)
 		}
+		WaitAndUpdateDataSliceEvents(event, glist, false)
+		return
 	}
+
+	go WaitAndUpdateDataSliceEvents(event, glist, true)
+
 }
