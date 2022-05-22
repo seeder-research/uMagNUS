@@ -57,6 +57,12 @@ func AddZhangLiTorque(torque, m *data.Slice, Msat, J, alpha, xi, pol MSlice, mes
 			eventList = append(eventList, tmpEvt)
 		}
 	}
+	if xi.GetSlicePtr() != nil {
+		tmpEvt = xi.GetEvent(0)
+		if tmpEvt != nil {
+			eventList = append(eventList, tmpEvt)
+		}
+	}
 	if pol.GetSlicePtr() != nil {
 		tmpEvt = pol.GetEvent(0)
 		if tmpEvt != nil {
@@ -84,27 +90,33 @@ func AddZhangLiTorque(torque, m *data.Slice, Msat, J, alpha, xi, pol MSlice, mes
 	torque.SetEvent(X, event)
 	torque.SetEvent(Y, event)
 	torque.SetEvent(Z, event)
-	m.SetEvent(X, event)
-	m.SetEvent(Y, event)
-	m.SetEvent(Z, event)
+
+	glist := []GSlice{m}
 	if J.GetSlicePtr() != nil {
-		J.SetEvent(X, event)
-		J.SetEvent(Y, event)
-		J.SetEvent(Z, event)
+		glist = append(glist, J)
 	}
 	if Msat.GetSlicePtr() != nil {
-		Msat.SetEvent(0, event)
+		glist = append(glist, Msat)
 	}
 	if alpha.GetSlicePtr() != nil {
-		alpha.SetEvent(0, event)
+		glist = append(glist, alpha)
+	}
+	if xi.GetSlicePtr() != nil {
+		glist = append(glist, xi)
 	}
 	if pol.GetSlicePtr() != nil {
-		pol.SetEvent(0, event)
+		glist = append(glist, pol)
 	}
+	InsertEventIntoGSlices(event, glist)
 
 	if Debug {
 		if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 			fmt.Printf("WaitForEvents failed in addzhanglitorque: %+v \n", err)
 		}
+		WaitAndUpdateDataSliceEvents(event, glist, false)
+		return
 	}
+
+	go WaitAndUpdateDataSliceEvents(event, glist, true)
+
 }
