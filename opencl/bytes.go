@@ -7,6 +7,7 @@ import (
 	"unsafe"
 
 	cl "github.com/seeder-research/uMagNUS/cl"
+	data "github.com/seeder-research/uMagNUS/data"
 	util "github.com/seeder-research/uMagNUS/util"
 )
 
@@ -15,7 +16,7 @@ type Bytes struct {
 	Ptr   unsafe.Pointer
 	Len   int
 	Evt   *cl.Event
-	RdEvt map[*cl.Event]int8
+	RdEvt data.SliceEventMap
 }
 
 // Construct new byte slice with given length,
@@ -36,8 +37,7 @@ func NewBytes(Len int) *Bytes {
 			log.Panic("WaitForEvents failed in NewBytes:", err)
 		}
 	}
-	evMap := make(map[*cl.Event]int8)
-	return &Bytes{unsafe.Pointer(ptr), Len, event, evMap}
+	return &Bytes{Ptr: unsafe.Pointer(ptr), Len: Len, Evt: event}
 }
 
 // Upload src (host) to dst (gpu).
@@ -146,7 +146,6 @@ func (b *Bytes) Free() {
 	b.Ptr = nil
 	b.Len = 0
 	b.Evt = nil
-	b.RdEvt = nil
 }
 
 // Set the event to synchonize the buffer of bytes
@@ -161,27 +160,42 @@ func (b *Bytes) GetEvent() *cl.Event {
 
 // Sets the rdEvent of the slice
 func (b *Bytes) SetReadEvents(eventList []*cl.Event) {
+	b.RdEvt.Lock()
+	defer b.RdEvt.Unlock()
 	for _, e := range eventList {
-		b.RdEvt[e] = 1
+		if _, ok := b.RdEvt.ReadEvents[e]; ok == false {
+			b.RdEvt.ReadEvents[e] = 1
+		}
 	}
 }
 
 // Insert a cl.Event to rdEvent of the slice
 func (b *Bytes) InsertReadEvent(event *cl.Event) {
-	b.RdEvt[event] = 1
+	b.RdEvt.Lock()
+	defer b.RdEvt.Unlock()
+	if _, ok := b.RdEvt.ReadEvents[event]; ok == false {
+		b.RdEvt.ReadEvents[event] = 1
+	}
 }
 
 // Remove a cl.Event from rdEvent of the slice
 func (b *Bytes) RemoveReadEvent(event *cl.Event) {
-	delete(b.RdEvt, event)
+	b.RdEvt.Lock()
+	defer b.RdEvt.Unlock()
+	if _, ok := b.RdEvt.ReadEvents[event]; ok == false {
+		delete(b.RdEvt.ReadEvents, event)
+	}
 }
 
 // Returns rdEvent of the slice as a slice
 func (b *Bytes) GetReadEvents() []*cl.Event {
-	a := b.RdEvt
+	b.RdEvt.RLock()
+	defer b.RdEvt.RUnlock()
 	evList := []*cl.Event{}
-	for k, _ := range a {
-		evList = append(evList, k)
+	for k, _ := range b.RdEvt.ReadEvents {
+		if k != nil {
+			evList = append(evList, k)
+		}
 	}
 	return evList
 }
@@ -192,9 +206,9 @@ func (b *Bytes) GetAllEvents() []*cl.Event {
 	if b.Evt != nil {
 		eventList = append(eventList, b.Evt)
 	}
-	a := b.RdEvt
-	for k, _ := range a {
-		eventList = append(eventList, k)
+	k := b.GetReadEvents()
+	if len(k) > 0 {
+		eventList = append(eventList, k...)
 	}
 	return eventList
 }
