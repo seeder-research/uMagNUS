@@ -44,13 +44,18 @@ func SetTopologicalCharge(s *data.Slice, m *data.Slice, mesh *data.Mesh) {
 		eventList)
 
 	s.SetEvent(X, event)
-	m.SetEvent(X, event)
-	m.SetEvent(Y, event)
-	m.SetEvent(Z, event)
+
+	glist := []GSlice{m}
+	InsertEventIntoGSlices(event, glist)
 
 	if Debug {
 		if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 			fmt.Printf("WaitForEvents failed in settopologicalcharge: %+v \n", err)
 		}
+		WaitAndUpdateDataSliceEvents(event, glist, false)
+		return
 	}
+
+	go WaitAndUpdateDataSliceEvents(event, glist, true)
+
 }
