@@ -46,14 +46,25 @@ func SetMaxAngle(dst, m *data.Slice, Aex_red SymmLUT, regions *Bytes, mesh *data
 		N[X], N[Y], N[Z], pbc, cfg, eventList)
 
 	dst.SetEvent(0, event)
-	m.SetEvent(X, event)
-	m.SetEvent(Y, event)
-	m.SetEvent(Z, event)
-	regions.SetEvent(event)
+
+	glist := []GSlice{m}
+	regions.InsertReadEvent(event)
 
 	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in setmaxangle: %+v \n", err)
 		}
+		WaitAndUpdateDataSliceEvents(event, glist, false)
+		regions.RemoveReadEvent(event)
+		return
 	}
+
+	go WaitAndUpdateDataSliceEvents(event, glist, true)
+	go func(ev *cl.Event, b *Bytes) {
+		if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+			fmt.Printf("WaitForEvents failed in setmaxangle: %+v \n", err)
+		}
+		b.RemoveReadEvent(ev)
+	}(event, regions)
+
 }
