@@ -81,6 +81,7 @@ func AddRegionSpinTorque(torque, m *data.Slice, Msat MSlice, regions *Bytes, reg
 	if Msat.GetSlicePtr() != nil {
 		glist = append(glist, Msat)
 	}
+	InsertEventIntoGSlices(event, glist)
 	regions.InsertReadEvent(event)
 
 	if Debug {
