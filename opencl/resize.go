@@ -57,12 +57,13 @@ func Resize(dst, src *data.Slice, layer int) {
 	dst.SetEvent(X, event)
 	dst.SetEvent(Y, event)
 	dst.SetEvent(Z, event)
-	src.SetEvent(X, event)
-	src.SetEvent(Y, event)
-	src.SetEvent(Z, event)
+
+	glist := []GSlice{src}
+	InsertEventIntoGSlices(event, glist)
 
 	// Synchronize for resize
 	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in resize: %+v \n", err)
+		WaitAndUpdateDataSliceEvents(event, glist, false)
 	}
 }
