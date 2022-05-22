@@ -42,13 +42,25 @@ func Normalize(vec, vol *data.Slice) {
 	vec.SetEvent(X, event)
 	vec.SetEvent(Y, event)
 	vec.SetEvent(Z, event)
+
+	glist := []GSlice{}
 	if vol != nil {
-		vol.SetEvent(0, event)
+		glist = append(glist, vol)
+		InsertEventIntoGSlices(event, glist)
 	}
 
 	if Debug {
 		if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 			fmt.Printf("WaitForEvents failed in normalize: %+v \n", err)
 		}
+		if len(glist) > 0 {
+			WaitAndUpdateDataSliceEvents(event, glist, false)
+		}
+		return
 	}
+
+	if len(glist) > 0 {
+		go WaitAndUpdateDataSliceEvents(event, glist, true)
+	}
+
 }
