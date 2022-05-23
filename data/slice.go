@@ -91,6 +91,9 @@ func SliceFromPtrs(size [3]int, memType int8, ptrs []unsafe.Pointer) *Slice {
 		s.ptrs[c] = ptrs[c]
 		s.event[c] = nil
 	}
+	for _, sem := range s.rdEvent {
+		sem.Init()
+	}
 	s.memType = memType
 	return s
 }
@@ -261,6 +264,9 @@ func (s *Slice) SetReadEvents(index int, eventList []*cl.Event) {
 func (s *Slice) InsertReadEvent(index int, event *cl.Event) {
 	s.rdEvent[index].Lock()
 	defer s.rdEvent[index].Unlock()
+	if s.rdEvent[index].ReadEvents == nil {
+		s.rdEvent[index].ReadEvents = make(map[*cl.Event]int8)
+	}
 	if _, ok := s.rdEvent[index].ReadEvents[event]; ok == false {
 		s.rdEvent[index].ReadEvents[event] = 1
 	}
@@ -417,6 +423,10 @@ func (s *Slice) checkComp(comp int) {
 
 func (s *Slice) Index(ix, iy, iz int) int {
 	return Index(s.Size(), ix, iy, iz)
+}
+
+func (sem *SliceEventMap) Init() {
+	sem.ReadEvents = make(map[*cl.Event]int8)
 }
 
 func Index(size [3]int, ix, iy, iz int) int {

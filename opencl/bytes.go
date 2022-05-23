@@ -173,6 +173,9 @@ func (b *Bytes) SetReadEvents(eventList []*cl.Event) {
 func (b *Bytes) InsertReadEvent(event *cl.Event) {
 	b.RdEvt.Lock()
 	defer b.RdEvt.Unlock()
+	if b.RdEvt.ReadEvents == nil {
+		b.RdEvt.ReadEvents = make(map[*cl.Event]int8)
+	}
 	if _, ok := b.RdEvt.ReadEvents[event]; ok == false {
 		b.RdEvt.ReadEvents[event] = 1
 	}
