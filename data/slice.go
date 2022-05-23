@@ -87,12 +87,10 @@ func SliceFromPtrs(size [3]int, memType int8, ptrs []unsafe.Pointer) *Slice {
 	s.size = size
 	s.event = make([]*cl.Event, nComp)
 	s.rdEvent = make([]SliceEventMap, nComp)
-	for _, sem := range s.rdEvent {
-		sem.ReadEvents = make(map[*cl.Event]int8)
-	}
 	for c := range ptrs {
 		s.ptrs[c] = ptrs[c]
 		s.event[c] = nil
+		s.rdEvent[c].ReadEvents = make(map[*cl.Event]int8)
 	}
 	s.memType = memType
 	return s
@@ -313,12 +311,12 @@ func Copy(dst, src *Slice) {
 		for c := 0; c < dst.NComp(); c++ {
 			eventsList := memCpy(dst.DevPtr(c), src.DevPtr(c), bytes)
 			dst.SetEvent(c, eventsList[0])
-			src.SetEvent(c, eventsList[1])
+			src.InsertReadEvent(c, eventsList[1])
 		}
 	case s && !d:
 		for c := 0; c < dst.NComp(); c++ {
 			eventsList := memCpyDtoH(dst.ptrs[c], src.DevPtr(c), bytes)
-			src.SetEvent(c, eventsList[0])
+			src.InsertReadEvent(c, eventsList[0])
 		}
 	case !s && d:
 		for c := 0; c < dst.NComp(); c++ {

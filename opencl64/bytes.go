@@ -37,7 +37,8 @@ func NewBytes(Len int) *Bytes {
 			log.Panic("WaitForEvents failed in NewBytes:", err)
 		}
 	}
-	emptyMap := make(map[*cl.Event]int8)
+	emptyMap := data.SliceEventMap{}
+	emptyMap.ReadEvents = make(map[*cl.Event]int8)
 	return &Bytes{unsafe.Pointer(ptr), Len, event, emptyMap}
 }
 
