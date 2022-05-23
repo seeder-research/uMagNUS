@@ -87,12 +87,12 @@ func SliceFromPtrs(size [3]int, memType int8, ptrs []unsafe.Pointer) *Slice {
 	s.size = size
 	s.event = make([]*cl.Event, nComp)
 	s.rdEvent = make([]SliceEventMap, nComp)
+	for _, sem := range s.rdEvent {
+		sem.ReadEvents = make(map[*cl.Event]int8)
+	}
 	for c := range ptrs {
 		s.ptrs[c] = ptrs[c]
 		s.event[c] = nil
-	}
-	for _, sem := range s.rdEvent {
-		sem.Init()
 	}
 	s.memType = memType
 	return s
@@ -264,9 +264,6 @@ func (s *Slice) SetReadEvents(index int, eventList []*cl.Event) {
 func (s *Slice) InsertReadEvent(index int, event *cl.Event) {
 	s.rdEvent[index].Lock()
 	defer s.rdEvent[index].Unlock()
-	if s.rdEvent[index].ReadEvents == nil {
-		s.rdEvent[index].ReadEvents = make(map[*cl.Event]int8)
-	}
 	if _, ok := s.rdEvent[index].ReadEvents[event]; ok == false {
 		s.rdEvent[index].ReadEvents[event] = 1
 	}
@@ -296,16 +293,9 @@ func (s *Slice) GetReadEvents(index int) []*cl.Event {
 
 // Returns all events of the slice (for syncing kernels writing to the slice)
 func (s *Slice) GetAllEvents(index int) []*cl.Event {
-	eventList := []*cl.Event{}
+	eventList := s.GetReadEvents(index)
 	if s.event[index] != nil {
 		eventList = append(eventList, s.event[index])
-	}
-	s.rdEvent[index].RLock()
-	defer s.rdEvent[index].RUnlock()
-	for k, _ := range s.rdEvent[index].ReadEvents {
-		if k != nil {
-			eventList = append(eventList, k)
-		}
 	}
 	return eventList
 }

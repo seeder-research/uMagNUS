@@ -37,7 +37,8 @@ func NewBytes(Len int) *Bytes {
 			log.Panic("WaitForEvents failed in NewBytes:", err)
 		}
 	}
-	return &Bytes{Ptr: unsafe.Pointer(ptr), Len: Len, Evt: event}
+	emptyMap := make(map[*cl.Event]int8)
+	return &Bytes{unsafe.Pointer(ptr), Len, event, emptyMap}
 }
 
 // Upload src (host) to dst (gpu).
@@ -128,12 +129,10 @@ func (src *Bytes) Get(index int) byte {
 	if err != nil {
 		panic(err)
 	}
-	src.InsertReadEvent(event)
 	// Must synchronize
 	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		log.Panic("WaitForEvents failed in Bytes.Set():", err)
 	}
-	src.RemoveReadEvent(event)
 	return dst[0]
 }
 
@@ -173,9 +172,6 @@ func (b *Bytes) SetReadEvents(eventList []*cl.Event) {
 func (b *Bytes) InsertReadEvent(event *cl.Event) {
 	b.RdEvt.Lock()
 	defer b.RdEvt.Unlock()
-	if b.RdEvt.ReadEvents == nil {
-		b.RdEvt.ReadEvents = make(map[*cl.Event]int8)
-	}
 	if _, ok := b.RdEvt.ReadEvents[event]; ok == false {
 		b.RdEvt.ReadEvents[event] = 1
 	}
@@ -205,13 +201,9 @@ func (b *Bytes) GetReadEvents() []*cl.Event {
 
 // Returns all events of the slice (for syncing kernels writing to the slice)
 func (b *Bytes) GetAllEvents() []*cl.Event {
-	eventList := []*cl.Event{}
+	eventList := b.GetReadEvents()
 	if b.Evt != nil {
 		eventList = append(eventList, b.Evt)
-	}
-	k := b.GetReadEvents()
-	if len(k) > 0 {
-		eventList = append(eventList, k...)
 	}
 	return eventList
 }
