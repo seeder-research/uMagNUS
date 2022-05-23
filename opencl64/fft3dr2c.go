@@ -73,16 +73,16 @@ func (p *fft3DR2CPlan) ExecAsync(src, dst *data.Slice) error {
 	dst.SetEvent(0, tmpEvt)
 	src.InsertReadEvent(0, tmpEvt)
 	if Debug {
-		if err = cl.WaitForEvents(eventList); err != nil {
-			log.Printf("WaitForEvents failed before returning fwPlan.ExecAsync: %+v \n", err)
+		if err0 := cl.WaitForEvents([]*cl.Event{tmpEvt}); err0 != nil {
+			log.Printf("WaitForEvents failed before returning fwPlan.ExecAsync: %+v \n", err0)
 		}
 		src.RemoveReadEvent(0, tmpEvt)
 	} else {
 		go func(evt *cl.Event, sl *data.Slice) {
-			if err = cl.WaitForEvents(eventList); err != nil {
-				log.Printf("WaitForEvents failed before returning fwPlan.ExecAsync: %+v \n", err)
+			if err1 := cl.WaitForEvents([]*cl.Event{evt}); err1 != nil {
+				log.Printf("WaitForEvents failed before returning fwPlan.ExecAsync: %+v \n", err1)
 			}
-			src.RemoveReadEvent(0, tmpEvt)
+			sl.RemoveReadEvent(0, evt)
 		}(tmpEvt, src)
 	}
 	return err

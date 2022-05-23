@@ -139,12 +139,12 @@ func Madd2(dst, src1, src2 *data.Slice, factor1, factor2 float32) {
 		dst.SetEvent(c, eventList[c])
 		src1.InsertReadEvent(c, eventList[c])
 		src2.InsertReadEvent(c, eventList[c])
-		go func(ev *cl.Event, idx int, sl []*data.Slice) {
-			if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+		go func(evt *cl.Event, idx int, sl []*data.Slice) {
+			if err := cl.WaitForEvents([]*cl.Event{evt}); err != nil {
 				fmt.Printf("WaitForEvents failed in madd2: %+v \n", err)
 			}
 			for _, ds := range sl {
-				ds.RemoveReadEvent(idx, ev)
+				ds.RemoveReadEvent(idx, evt)
 			}
 		}(eventList[c], c, []*data.Slice{src1, src2})
 	}

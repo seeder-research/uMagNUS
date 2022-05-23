@@ -91,9 +91,6 @@ func SliceFromPtrs(size [3]int, memType int8, ptrs []unsafe.Pointer) *Slice {
 		s.ptrs[c] = ptrs[c]
 		s.event[c] = nil
 	}
-	for _, sem := range s.rdEvent {
-		sem.Init()
-	}
 	s.memType = memType
 	return s
 }
