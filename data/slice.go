@@ -90,6 +90,7 @@ func SliceFromPtrs(size [3]int, memType int8, ptrs []unsafe.Pointer) *Slice {
 	for c := range ptrs {
 		s.ptrs[c] = ptrs[c]
 		s.event[c] = nil
+		s.rdEvent[c] = new(SliceEventMap)
 		s.rdEvent[c].Init()
 	}
 	s.memType = memType
