@@ -14,6 +14,18 @@ func Minimize(m, m0, torque *data.Slice, dt float32) {
 	cfg := make1DConf(N)
 
 	eventList := [](*cl.Event){}
+	tmpEvtL := m.GetAllEvents(X)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
+	}
+	tmpEvtL = m.GetAllEvents(Y)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
+	}
+	tmpEvtL = m.GetAllEvents(Z)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
+	}
 	tmpEvt := torque.GetEvent(X)
 	if tmpEvt != nil {
 		eventList = append(eventList, tmpEvt)
@@ -23,18 +35,6 @@ func Minimize(m, m0, torque *data.Slice, dt float32) {
 		eventList = append(eventList, tmpEvt)
 	}
 	tmpEvt = torque.GetEvent(Z)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvt = m.GetEvent(X)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvt = m.GetEvent(Y)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvt = m.GetEvent(Z)
 	if tmpEvt != nil {
 		eventList = append(eventList, tmpEvt)
 	}

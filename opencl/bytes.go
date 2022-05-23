@@ -56,11 +56,11 @@ func (dst *Bytes) Upload(src []byte) {
 func (dst *Bytes) Copy(src *Bytes) {
 	util.Argument(dst.Len == src.Len)
 	eventWaitList := []*cl.Event{}
-	tmpEvt := dst.GetEvent()
-	if tmpEvt != nil {
-		eventWaitList = append(eventWaitList, tmpEvt)
+	tmpEvtL := dst.GetAllEvents()
+	if len(tmpEvtL) > 0 {
+		eventWaitList = append(eventWaitList, tmpEvtL...)
 	}
-	tmpEvt = src.GetEvent()
+	tmpEvt := src.GetEvent()
 	if tmpEvt != nil {
 		eventWaitList = append(eventWaitList, tmpEvt)
 	}

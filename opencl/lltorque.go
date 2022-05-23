@@ -18,19 +18,19 @@ func LLTorque(torque, m, B *data.Slice, alpha MSlice) {
 	cfg := make1DConf(N)
 
 	eventList := []*cl.Event{}
-	tmpEvt := torque.GetEvent(X)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL := torque.GetAllEvents(X)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = torque.GetEvent(Y)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL = torque.GetAllEvents(Y)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = torque.GetEvent(Z)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL = torque.GetAllEvents(Z)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = m.GetEvent(X)
+	tmpEvt := m.GetEvent(X)
 	if tmpEvt != nil {
 		eventList = append(eventList, tmpEvt)
 	}
@@ -73,21 +73,23 @@ func LLTorque(torque, m, B *data.Slice, alpha MSlice) {
 	torque.SetEvent(X, event)
 	torque.SetEvent(Y, event)
 	torque.SetEvent(Z, event)
-	m.SetEvent(X, event)
-	m.SetEvent(Y, event)
-	m.SetEvent(Z, event)
-	B.SetEvent(X, event)
-	B.SetEvent(Y, event)
-	B.SetEvent(Z, event)
+
+	glist := []GSlice{m, B}
 	if alpha.GetSlicePtr() != nil {
-		alpha.SetEvent(0, event)
+		glist = append(glist, alpha)
 	}
+	InsertEventIntoGSlices(event, glist)
 
 	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in lltorque: %+v \n", err)
 		}
+		WaitAndUpdateDataSliceEvents(event, glist, false)
+		return
 	}
+
+	go WaitAndUpdateDataSliceEvents(event, glist, true)
+
 }
 
 // Landau-Lifshitz torque with precession disabled.
@@ -96,23 +98,65 @@ func LLNoPrecess(torque, m, B *data.Slice) {
 	N := torque.Len()
 	cfg := make1DConf(N)
 
+	eventList := []*cl.Event{}
+	tmpEvtL := torque.GetAllEvents(X)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
+	}
+	tmpEvtL = torque.GetAllEvents(Y)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
+	}
+	tmpEvtL = torque.GetAllEvents(Z)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
+	}
+	tmpEvt := m.GetEvent(X)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = m.GetEvent(Y)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = m.GetEvent(Z)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = B.GetEvent(X)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = B.GetEvent(Y)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	tmpEvt = B.GetEvent(Z)
+	if tmpEvt != nil {
+		eventList = append(eventList, tmpEvt)
+	}
+	if len(eventList) == 0 {
+		eventList = nil
+	}
+
 	event := k_llnoprecess_async(torque.DevPtr(X), torque.DevPtr(Y), torque.DevPtr(Z),
 		m.DevPtr(X), m.DevPtr(Y), m.DevPtr(Z),
 		B.DevPtr(X), B.DevPtr(Y), B.DevPtr(Z), N, cfg,
-		[](*cl.Event){torque.GetEvent(X), torque.GetEvent(Y), torque.GetEvent(Z),
-			m.GetEvent(X), m.GetEvent(Y), m.GetEvent(Z),
-			B.GetEvent(X), B.GetEvent(Y), B.GetEvent(Z)})
+		eventList)
 
 	torque.SetEvent(X, event)
 	torque.SetEvent(Y, event)
 	torque.SetEvent(Z, event)
-	m.SetEvent(X, event)
-	m.SetEvent(Y, event)
-	m.SetEvent(Z, event)
-	B.SetEvent(X, event)
-	B.SetEvent(Y, event)
-	B.SetEvent(Z, event)
+
+	glist := []GSlice{m, B}
+	InsertEventIntoGSlices(event, glist)
+
 	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in llnoprecess: %+v \n", err)
+		WaitAndUpdateDataSliceEvents(event, glist, false)
+		return
 	}
+
+	go WaitAndUpdateDataSliceEvents(event, glist, true)
+
 }

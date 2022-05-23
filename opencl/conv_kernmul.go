@@ -17,19 +17,19 @@ func kernMulRSymm3D_async(fftM [3]*data.Slice, Kxx, Kyy, Kzz, Kyz, Kxz, Kxy *dat
 	cfg := make3DConf([3]int{Nx, Ny, Nz})
 
 	eventList := []*cl.Event{}
-	tmpEvt := fftM[X].GetEvent(0)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL := fftM[X].GetAllEvents(0)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = fftM[Y].GetEvent(0)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL = fftM[Y].GetAllEvents(0)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = fftM[Z].GetEvent(0)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL = fftM[Z].GetAllEvents(0)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = Kxx.GetEvent(0)
+	tmpEvt := Kxx.GetEvent(0)
 	if tmpEvt != nil {
 		eventList = append(eventList, tmpEvt)
 	}
@@ -86,15 +86,15 @@ func kernMulRSymm2Dxy_async(fftMx, fftMy, Kxx, Kyy, Kxy *data.Slice, Nx, Ny int)
 	cfg := make3DConf([3]int{Nx, Ny, 1})
 
 	eventList := []*cl.Event{}
-	tmpEvt := fftMx.GetEvent(0)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL := fftMx.GetAllEvents(0)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = fftMy.GetEvent(0)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL = fftMy.GetAllEvents(0)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = Kxx.GetEvent(0)
+	tmpEvt := Kxx.GetEvent(0)
 	if tmpEvt != nil {
 		eventList = append(eventList, tmpEvt)
 	}
@@ -140,11 +140,11 @@ func kernMulRSymm2Dz_async(fftMz, Kzz *data.Slice, Nx, Ny int) {
 	cfg := make3DConf([3]int{Nx, Ny, 1})
 
 	eventList := []*cl.Event{}
-	tmpEvt := fftMz.GetEvent(0)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL := fftMz.GetAllEvents(0)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = Kzz.GetEvent(0)
+	tmpEvt := Kzz.GetEvent(0)
 	if tmpEvt != nil {
 		eventList = append(eventList, tmpEvt)
 	}
@@ -179,11 +179,11 @@ func kernMulC_async(fftM, K *data.Slice, Nx, Ny int) {
 	cfg := make3DConf([3]int{Nx, Ny, 1})
 
 	eventList := []*cl.Event{}
-	tmpEvt := fftM.GetEvent(0)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL := fftM.GetAllEvents(0)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = K.GetEvent(0)
+	tmpEvt := K.GetEvent(0)
 	if tmpEvt != nil {
 		eventList = append(eventList, tmpEvt)
 	}

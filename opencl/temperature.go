@@ -27,9 +27,9 @@ func SetTemperature(Bth, noise *data.Slice, k2mu0_Mu0VgammaDt float64, Msat, Tem
 
 	if Bth != nil {
 		Beff = Bth.DevPtr(0)
-		tmpEvt = Bth.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
+		tmpEvtL := Bth.GetAllEvents(0)
+		if len(tmpEvtL) > 0 {
+			eventList = append(eventList, tmpEvtL...)
 		}
 	} else {
 		panic("ERROR (SetTemperature): Bth pointer cannot be nil")

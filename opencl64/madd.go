@@ -18,11 +18,11 @@ func Mul(dst, a, b *data.Slice) {
 	eventList := make([]*cl.Event, nComp)
 	for c := 0; c < nComp; c++ {
 		intEventList := []*cl.Event{}
-		tmpEvt := dst.GetEvent(c)
-		if tmpEvt != nil {
-			intEventList = append(intEventList, tmpEvt)
+		tmpEvtL := dst.GetAllEvents(c)
+		if len(tmpEvtL) > 0 {
+			intEventList = append(intEventList, tmpEvtL...)
 		}
-		tmpEvt = a.GetEvent(c)
+		tmpEvt := a.GetEvent(c)
 		if tmpEvt != nil {
 			intEventList = append(intEventList, tmpEvt)
 		}
@@ -37,8 +37,16 @@ func Mul(dst, a, b *data.Slice) {
 			intEventList)
 
 		dst.SetEvent(c, eventList[c])
-		a.SetEvent(c, eventList[c])
-		b.SetEvent(c, eventList[c])
+		a.InsertReadEvent(c, eventList[c])
+		b.InsertReadEvent(c, eventList[c])
+		go func(ev *cl.Event, idx int, sl []*data.Slice) {
+			if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+				fmt.Printf("WaitForEvents failed in mul: %+v \n", err)
+			}
+			for _, ds := range sl {
+				ds.RemoveReadEvent(idx, ev)
+			}
+		}(eventList[c], c, []*data.Slice{a, b})
 	}
 	if Debug {
 		if err := cl.WaitForEvents(eventList); err != nil {
@@ -57,11 +65,11 @@ func Div(dst, a, b *data.Slice) {
 	eventList := make([]*cl.Event, nComp)
 	for c := 0; c < nComp; c++ {
 		intEventList := []*cl.Event{}
-		tmpEvt := dst.GetEvent(c)
-		if tmpEvt != nil {
-			intEventList = append(intEventList, tmpEvt)
+		tmpEvtL := dst.GetAllEvents(c)
+		if len(tmpEvtL) > 0 {
+			intEventList = append(intEventList, tmpEvtL...)
 		}
-		tmpEvt = a.GetEvent(c)
+		tmpEvt := a.GetEvent(c)
 		if tmpEvt != nil {
 			intEventList = append(intEventList, tmpEvt)
 		}
@@ -76,8 +84,16 @@ func Div(dst, a, b *data.Slice) {
 			intEventList)
 
 		dst.SetEvent(c, eventList[c])
-		a.SetEvent(c, eventList[c])
-		b.SetEvent(c, eventList[c])
+		a.InsertReadEvent(c, eventList[c])
+		b.InsertReadEvent(c, eventList[c])
+		go func(ev *cl.Event, idx int, sl []*data.Slice) {
+			if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+				fmt.Printf("WaitForEvents failed in div: %+v \n", err)
+			}
+			for _, ds := range sl {
+				ds.RemoveReadEvent(idx, ev)
+			}
+		}(eventList[c], c, []*data.Slice{a, b})
 	}
 	if Debug {
 		if err := cl.WaitForEvents(eventList); err != nil {
@@ -101,11 +117,11 @@ func Madd2(dst, src1, src2 *data.Slice, factor1, factor2 float64) {
 	eventList := make([]*cl.Event, nComp)
 	for c := 0; c < nComp; c++ {
 		intEventList := []*cl.Event{}
-		tmpEvt := dst.GetEvent(c)
-		if tmpEvt != nil {
-			intEventList = append(intEventList, tmpEvt)
+		tmpEvtL := dst.GetAllEvents(c)
+		if len(tmpEvtL) > 0 {
+			intEventList = append(intEventList, tmpEvtL...)
 		}
-		tmpEvt = src1.GetEvent(c)
+		tmpEvt := src1.GetEvent(c)
 		if tmpEvt != nil {
 			intEventList = append(intEventList, tmpEvt)
 		}
@@ -121,8 +137,16 @@ func Madd2(dst, src1, src2 *data.Slice, factor1, factor2 float64) {
 			intEventList)
 
 		dst.SetEvent(c, eventList[c])
-		src1.SetEvent(c, eventList[c])
-		src2.SetEvent(c, eventList[c])
+		src1.InsertReadEvent(c, eventList[c])
+		src2.InsertReadEvent(c, eventList[c])
+		go func(ev *cl.Event, idx int, sl []*data.Slice) {
+			if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+				fmt.Printf("WaitForEvents failed in madd2: %+v \n", err)
+			}
+			for _, ds := range sl {
+				ds.RemoveReadEvent(idx, ev)
+			}
+		}(eventList[c], c, []*data.Slice{src1, src2})
 	}
 	if Debug {
 		if err := cl.WaitForEvents(eventList); err != nil {
@@ -141,11 +165,11 @@ func Madd3(dst, src1, src2, src3 *data.Slice, factor1, factor2, factor3 float64)
 	eventList := make([]*cl.Event, nComp)
 	for c := 0; c < nComp; c++ {
 		intEventList := []*cl.Event{}
-		tmpEvt := dst.GetEvent(c)
-		if tmpEvt != nil {
-			intEventList = append(intEventList, tmpEvt)
+		tmpEvtL := dst.GetAllEvents(c)
+		if len(tmpEvtL) > 0 {
+			intEventList = append(intEventList, tmpEvtL...)
 		}
-		tmpEvt = src1.GetEvent(c)
+		tmpEvt := src1.GetEvent(c)
 		if tmpEvt != nil {
 			intEventList = append(intEventList, tmpEvt)
 		}
@@ -165,9 +189,17 @@ func Madd3(dst, src1, src2, src3 *data.Slice, factor1, factor2, factor3 float64)
 			intEventList)
 
 		dst.SetEvent(c, eventList[c])
-		src1.SetEvent(c, eventList[c])
-		src2.SetEvent(c, eventList[c])
-		src3.SetEvent(c, eventList[c])
+		src1.InsertReadEvent(c, eventList[c])
+		src2.InsertReadEvent(c, eventList[c])
+		src3.InsertReadEvent(c, eventList[c])
+		go func(ev *cl.Event, idx int, sl []*data.Slice) {
+			if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+				fmt.Printf("WaitForEvents failed in madd3: %+v \n", err)
+			}
+			for _, ds := range sl {
+				ds.RemoveReadEvent(idx, ev)
+			}
+		}(eventList[c], c, []*data.Slice{src1, src2, src3})
 	}
 	if Debug {
 		if err := cl.WaitForEvents(eventList); err != nil {
@@ -186,11 +218,11 @@ func Madd4(dst, src1, src2, src3, src4 *data.Slice, factor1, factor2, factor3, f
 	eventList := make([]*cl.Event, nComp)
 	for c := 0; c < nComp; c++ {
 		intEventList := []*cl.Event{}
-		tmpEvt := dst.GetEvent(c)
-		if tmpEvt != nil {
-			intEventList = append(intEventList, tmpEvt)
+		tmpEvtL := dst.GetAllEvents(c)
+		if len(tmpEvtL) > 0 {
+			intEventList = append(intEventList, tmpEvtL...)
 		}
-		tmpEvt = src1.GetEvent(c)
+		tmpEvt := src1.GetEvent(c)
 		if tmpEvt != nil {
 			intEventList = append(intEventList, tmpEvt)
 		}
@@ -217,10 +249,18 @@ func Madd4(dst, src1, src2, src3, src4 *data.Slice, factor1, factor2, factor3, f
 			intEventList)
 
 		dst.SetEvent(c, eventList[c])
-		src1.SetEvent(c, eventList[c])
-		src2.SetEvent(c, eventList[c])
-		src3.SetEvent(c, eventList[c])
-		src4.SetEvent(c, eventList[c])
+		src1.InsertReadEvent(c, eventList[c])
+		src2.InsertReadEvent(c, eventList[c])
+		src3.InsertReadEvent(c, eventList[c])
+		src4.InsertReadEvent(c, eventList[c])
+		go func(ev *cl.Event, idx int, sl []*data.Slice) {
+			if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+				fmt.Printf("WaitForEvents failed in madd4: %+v \n", err)
+			}
+			for _, ds := range sl {
+				ds.RemoveReadEvent(idx, ev)
+			}
+		}(eventList[c], c, []*data.Slice{src1, src2, src3, src4})
 	}
 	if Debug {
 		if err := cl.WaitForEvents(eventList); err != nil {
@@ -239,11 +279,11 @@ func Madd5(dst, src1, src2, src3, src4, src5 *data.Slice, factor1, factor2, fact
 	eventList := make([]*cl.Event, nComp)
 	for c := 0; c < nComp; c++ {
 		intEventList := []*cl.Event{}
-		tmpEvt := dst.GetEvent(c)
-		if tmpEvt != nil {
-			intEventList = append(intEventList, tmpEvt)
+		tmpEvtL := dst.GetAllEvents(c)
+		if len(tmpEvtL) > 0 {
+			intEventList = append(intEventList, tmpEvtL...)
 		}
-		tmpEvt = src1.GetEvent(c)
+		tmpEvt := src1.GetEvent(c)
 		if tmpEvt != nil {
 			intEventList = append(intEventList, tmpEvt)
 		}
@@ -275,11 +315,19 @@ func Madd5(dst, src1, src2, src3, src4, src5 *data.Slice, factor1, factor2, fact
 			intEventList)
 
 		dst.SetEvent(c, eventList[c])
-		src1.SetEvent(c, eventList[c])
-		src2.SetEvent(c, eventList[c])
-		src3.SetEvent(c, eventList[c])
-		src4.SetEvent(c, eventList[c])
-		src5.SetEvent(c, eventList[c])
+		src1.InsertReadEvent(c, eventList[c])
+		src2.InsertReadEvent(c, eventList[c])
+		src3.InsertReadEvent(c, eventList[c])
+		src4.InsertReadEvent(c, eventList[c])
+		src5.InsertReadEvent(c, eventList[c])
+		go func(ev *cl.Event, idx int, sl []*data.Slice) {
+			if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+				fmt.Printf("WaitForEvents failed in madd5: %+v \n", err)
+			}
+			for _, ds := range sl {
+				ds.RemoveReadEvent(idx, ev)
+			}
+		}(eventList[c], c, []*data.Slice{src1, src2, src3, src4, src5})
 	}
 	if Debug {
 		if err := cl.WaitForEvents(eventList); err != nil {
@@ -339,12 +387,20 @@ func Madd6(dst, src1, src2, src3, src4, src5, src6 *data.Slice, factor1, factor2
 			intEventList)
 
 		dst.SetEvent(c, eventList[c])
-		src1.SetEvent(c, eventList[c])
-		src2.SetEvent(c, eventList[c])
-		src3.SetEvent(c, eventList[c])
-		src4.SetEvent(c, eventList[c])
-		src5.SetEvent(c, eventList[c])
-		src6.SetEvent(c, eventList[c])
+		src1.InsertReadEvent(c, eventList[c])
+		src2.InsertReadEvent(c, eventList[c])
+		src3.InsertReadEvent(c, eventList[c])
+		src4.InsertReadEvent(c, eventList[c])
+		src5.InsertReadEvent(c, eventList[c])
+		src6.InsertReadEvent(c, eventList[c])
+		go func(ev *cl.Event, idx int, sl []*data.Slice) {
+			if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+				fmt.Printf("WaitForEvents failed in madd6: %+v \n", err)
+			}
+			for _, ds := range sl {
+				ds.RemoveReadEvent(idx, ev)
+			}
+		}(eventList[c], c, []*data.Slice{src1, src2, src3, src4, src5, src6})
 	}
 	if Debug {
 		if err := cl.WaitForEvents(eventList); err != nil {
@@ -363,11 +419,11 @@ func Madd7(dst, src1, src2, src3, src4, src5, src6, src7 *data.Slice, factor1, f
 	eventList := make([]*cl.Event, nComp)
 	for c := 0; c < nComp; c++ {
 		intEventList := []*cl.Event{}
-		tmpEvt := dst.GetEvent(c)
-		if tmpEvt != nil {
-			intEventList = append(intEventList, tmpEvt)
+		tmpEvtL := dst.GetAllEvents(c)
+		if len(tmpEvtL) > 0 {
+			intEventList = append(intEventList, tmpEvtL...)
 		}
-		tmpEvt = src1.GetEvent(c)
+		tmpEvt := src1.GetEvent(c)
 		if tmpEvt != nil {
 			intEventList = append(intEventList, tmpEvt)
 		}
@@ -409,13 +465,21 @@ func Madd7(dst, src1, src2, src3, src4, src5, src6, src7 *data.Slice, factor1, f
 			intEventList)
 
 		dst.SetEvent(c, eventList[c])
-		src1.SetEvent(c, eventList[c])
-		src2.SetEvent(c, eventList[c])
-		src3.SetEvent(c, eventList[c])
-		src4.SetEvent(c, eventList[c])
-		src5.SetEvent(c, eventList[c])
-		src6.SetEvent(c, eventList[c])
-		src7.SetEvent(c, eventList[c])
+		src1.InsertReadEvent(c, eventList[c])
+		src2.InsertReadEvent(c, eventList[c])
+		src3.InsertReadEvent(c, eventList[c])
+		src4.InsertReadEvent(c, eventList[c])
+		src5.InsertReadEvent(c, eventList[c])
+		src6.InsertReadEvent(c, eventList[c])
+		src7.InsertReadEvent(c, eventList[c])
+		go func(ev *cl.Event, idx int, sl []*data.Slice) {
+			if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+				fmt.Printf("WaitForEvents failed in madd7: %+v \n", err)
+			}
+			for _, ds := range sl {
+				ds.RemoveReadEvent(idx, ev)
+			}
+		}(eventList[c], c, []*data.Slice{src1, src2, src3, src4, src5, src6, src7})
 	}
 	if Debug {
 		if err := cl.WaitForEvents(eventList); err != nil {
