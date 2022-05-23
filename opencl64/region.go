@@ -16,19 +16,19 @@ func RegionAddV(dst *data.Slice, lut LUTPtrs, regions *Bytes) {
 	cfg := make1DConf(N)
 
 	eventsList := []*cl.Event{}
-	tmpEvt := dst.GetEvent(X)
-	if tmpEvt != nil {
-		eventsList = append(eventsList, tmpEvt)
+	tmpEvtL := dst.GetAllEvents(X)
+	if len(tmpEvtL) > 0 {
+		eventsList = append(eventsList, tmpEvtL...)
 	}
-	tmpEvt = dst.GetEvent(Y)
-	if tmpEvt != nil {
-		eventsList = append(eventsList, tmpEvt)
+	tmpEvtL = dst.GetAllEvents(Y)
+	if len(tmpEvtL) > 0 {
+		eventsList = append(eventsList, tmpEvtL...)
 	}
-	tmpEvt = dst.GetEvent(Z)
-	if tmpEvt != nil {
-		eventsList = append(eventsList, tmpEvt)
+	tmpEvtL = dst.GetAllEvents(Z)
+	if len(tmpEvtL) > 0 {
+		eventsList = append(eventsList, tmpEvtL...)
 	}
-	tmpEvt = regions.GetEvent()
+	tmpEvt := regions.GetEvent()
 	if tmpEvt != nil {
 		eventsList = append(eventsList, tmpEvt)
 	}
@@ -42,13 +42,24 @@ func RegionAddV(dst *data.Slice, lut LUTPtrs, regions *Bytes) {
 	dst.SetEvent(X, event)
 	dst.SetEvent(Y, event)
 	dst.SetEvent(Z, event)
-	regions.SetEvent(event)
+
+	regions.InsertReadEvent(event)
 
 	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents in regionaddv failed: %+v \n", err)
 		}
+		regions.RemoveReadEvent(event)
+		return
 	}
+
+	go func(ev *cl.Event, b *Bytes) {
+		if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+			fmt.Printf("WaitForEvents failed in regionaddv: %+v \n", err)
+		}
+		b.RemoveReadEvent(ev)
+	}(event, regions)
+
 }
 
 // dst += LUT[region], for scalar. Used to add terms to scalar excitation.
@@ -58,11 +69,11 @@ func RegionAddS(dst *data.Slice, lut LUTPtr, regions *Bytes) {
 	cfg := make1DConf(N)
 
 	eventsList := []*cl.Event{}
-	tmpEvt := dst.GetEvent(0)
-	if tmpEvt != nil {
-		eventsList = append(eventsList, tmpEvt)
+	tmpEvtL := dst.GetAllEvents(0)
+	if len(tmpEvtL) > 0 {
+		eventsList = append(eventsList, tmpEvtL...)
 	}
-	tmpEvt = regions.GetEvent()
+	tmpEvt := regions.GetEvent()
 	if tmpEvt != nil {
 		eventsList = append(eventsList, tmpEvt)
 	}
@@ -74,13 +85,23 @@ func RegionAddS(dst *data.Slice, lut LUTPtr, regions *Bytes) {
 		eventsList)
 
 	dst.SetEvent(0, event)
-	regions.SetEvent(event)
+	regions.InsertReadEvent(event)
 
 	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents in regionadds failed: %+v \n", err)
 		}
+		regions.RemoveReadEvent(event)
+		return
 	}
+
+	go func(ev *cl.Event, b *Bytes) {
+		if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+			fmt.Printf("WaitForEvents in regionadds failed: %+v \n", err)
+		}
+		b.RemoveReadEvent(ev)
+	}(event, regions)
+
 }
 
 // decode the regions+LUT pair into an uncompressed array
@@ -89,11 +110,11 @@ func RegionDecode(dst *data.Slice, lut LUTPtr, regions *Bytes) {
 	cfg := make1DConf(N)
 
 	eventsList := []*cl.Event{}
-	tmpEvt := dst.GetEvent(0)
-	if tmpEvt != nil {
-		eventsList = append(eventsList, tmpEvt)
+	tmpEvtL := dst.GetAllEvents(0)
+	if len(tmpEvtL) > 0 {
+		eventsList = append(eventsList, tmpEvtL...)
 	}
-	tmpEvt = regions.GetEvent()
+	tmpEvt := regions.GetEvent()
 	if tmpEvt != nil {
 		eventsList = append(eventsList, tmpEvt)
 	}
@@ -105,13 +126,23 @@ func RegionDecode(dst *data.Slice, lut LUTPtr, regions *Bytes) {
 		eventsList)
 
 	dst.SetEvent(0, event)
-	regions.SetEvent(event)
+	regions.InsertReadEvent(event)
 
 	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents in regiondecode failed: %+v \n", err)
 		}
+		regions.RemoveReadEvent(event)
+		return
 	}
+
+	go func(ev *cl.Event, b *Bytes) {
+		if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+			fmt.Printf("WaitForEvents in regiondecode failed: %+v \n", err)
+		}
+		b.RemoveReadEvent(ev)
+	}(event, regions)
+
 }
 
 // select the part of src within the specified region, set 0's everywhere else.
@@ -123,11 +154,15 @@ func RegionSelect(dst, src *data.Slice, regions *Bytes, region byte) {
 	eventList := make([]*cl.Event, dst.NComp())
 	for c := 0; c < dst.NComp(); c++ {
 		intWaitList := []*cl.Event{}
-		tmpEvt := dst.GetEvent(c)
+		tmpEvtL := dst.GetAllEvents(c)
+		if len(tmpEvtL) > 0 {
+			intWaitList = append(intWaitList, tmpEvtL...)
+		}
+		tmpEvt := src.GetEvent(c)
 		if tmpEvt != nil {
 			intWaitList = append(intWaitList, tmpEvt)
 		}
-		tmpEvt = src.GetEvent(c)
+		tmpEvt = regions.GetEvent()
 		if tmpEvt != nil {
 			intWaitList = append(intWaitList, tmpEvt)
 		}
@@ -139,7 +174,16 @@ func RegionSelect(dst, src *data.Slice, regions *Bytes, region byte) {
 			intWaitList)
 
 		dst.SetEvent(c, eventList[c])
-		src.SetEvent(c, eventList[c])
+		src.InsertReadEvent(c, eventList[c])
+		regions.InsertReadEvent(eventList[c])
+		go func(ev *cl.Event, id int, b *Bytes, sl *data.Slice) {
+			if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+				fmt.Printf("WaitForEvents failed in regionselect: %+v \n", err)
+			}
+			b.RemoveReadEvent(ev)
+			sl.RemoveReadEvent(id, ev)
+		}(eventList[c], c, regions, src)
+
 	}
 	if Debug {
 		if err := cl.WaitForEvents(eventList); err != nil {

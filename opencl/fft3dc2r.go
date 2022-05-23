@@ -66,19 +66,19 @@ func (p *fft3DC2RPlan) ExecAsync(src, dst *data.Slice) error {
 	}
 	tmpEvt, err = ClCmdQueue.EnqueueMarkerWithWaitList(nil)
 	if err != nil {
-		log.Printf("Failed to enqueue marker in bwPlan.ExecAsync: %+v \n", err)
+		fmt.Printf("Failed to enqueue marker in bwPlan.ExecAsync: %+v \n", err)
 	}
 	dst.SetEvent(0, tmpEvt)
 	src.InsertReadEvent(0, tmpEvt)
 	if Debug {
 		if err = cl.WaitForEvents(eventList); err != nil {
-			log.Printf("WaitForEvents failed before returning bwPlan.ExecAsync: %+v \n", err)
+			fmt.Printf("WaitForEvents failed before returning bwPlan.ExecAsync: %+v \n", err)
 		}
 		src.RemoveReadEvent(0, tmpEvt)
 	} else {
-		go func(evt *c.lEvent, sl *data.Slice) {
+		go func(evt *cl.Event, sl *data.Slice) {
 			if err = cl.WaitForEvents(eventList); err != nil {
-				log.Printf("WaitForEvents failed before returning bwPlan.ExecAsync: %+v \n", err)
+				fmt.Printf("WaitForEvents failed before returning bwPlan.ExecAsync: %+v \n", err)
 			}
 			src.RemoveReadEvent(0, tmpEvt)
 		}(tmpEvt, src)
