@@ -23,19 +23,19 @@ func AddExchange(B, m *data.Slice, Aex_red SymmLUT, Msat MSlice, regions *Bytes,
 	cfg := make3DConf(N)
 
 	eventList := []*cl.Event{}
-	tmpEvt := B.GetEvent(X)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL := B.GetAllEvents(X)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = B.GetEvent(Y)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL = B.GetAllEvents(Y)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = B.GetEvent(Z)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL = B.GetAllEvents(Z)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = m.GetEvent(X)
+	tmpEvt := m.GetEvent(X)
 	if tmpEvt != nil {
 		eventList = append(eventList, tmpEvt)
 	}
@@ -109,11 +109,11 @@ func ExchangeDecode(dst *data.Slice, Aex_red SymmLUT, regions *Bytes, mesh *data
 	cfg := make3DConf(N)
 
 	eventList := []*cl.Event{}
-	tmpEvt := dst.GetEvent(0)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL := dst.GetAllEvents(0)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = regions.GetEvent()
+	tmpEvt := regions.GetEvent()
 	if tmpEvt != nil {
 		eventList = append(eventList, tmpEvt)
 	}

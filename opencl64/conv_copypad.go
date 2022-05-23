@@ -17,11 +17,11 @@ func copyUnPad(dst, src *data.Slice, dstsize, srcsize [3]int) {
 	cfg := make3DConf(dstsize)
 
 	eventList := []*cl.Event{}
-	tmpEvt := dst.GetEvent(0)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL := dst.GetAllEvents(0)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = src.GetEvent(0)
+	tmpEvt := src.GetEvent(0)
 	if tmpEvt != nil {
 		eventList = append(eventList, tmpEvt)
 	}
@@ -60,11 +60,11 @@ func copyPadMul(dst, src, vol *data.Slice, dstsize, srcsize [3]int, Msat MSlice)
 	cfg := make3DConf(srcsize)
 
 	eventList := []*cl.Event{}
-	tmpEvent := dst.GetEvent(0)
-	if tmpEvent != nil {
-		eventList = append(eventList, tmpEvent)
+	tmpEvtL := dst.GetAllEvents(0)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvent = src.GetEvent(0)
+	tmpEvent := src.GetEvent(0)
 	if tmpEvent != nil {
 		eventList = append(eventList, tmpEvent)
 	}

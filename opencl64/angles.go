@@ -14,7 +14,10 @@ func SetPhi(s *data.Slice, m *data.Slice) {
 	cfg := make3DConf(N)
 
 	waitEvents := []*cl.Event{m.GetEvent(X), m.GetEvent(Y)}
-	waitEvents = append(waitEvents, s.GetAllEvents(0)...)
+	tmpEvtL := s.GetAllEvents(0)
+	if len(tmpEvtL) > 0 {
+		waitEvents = append(waitEvents, tmpEvtL...)
+	}
 	event := k_setPhi_async(s.DevPtr(0),
 		m.DevPtr(X), m.DevPtr(Y),
 		N[X], N[Y], N[Z],
@@ -38,8 +41,11 @@ func SetTheta(s *data.Slice, m *data.Slice) {
 	util.Argument(m.Size() == N)
 	cfg := make3DConf(N)
 
-	waitEvents := s.GetAllEvents(0)
-	waitEvents = append(waitEvents, m.GetEvent(Z))
+	waitEvents := []*cl.Event{m.GetEvent(Z)}
+	tmpEvtL := s.GetAllEvents(0)
+	if len(tmpEvtL) > 0 {
+		waitEvents = append(waitEvents, tmpEvtL...)
+	}
 	event := k_setTheta_async(s.DevPtr(0), m.DevPtr(Z),
 		N[X], N[Y], N[Z],
 		cfg, waitEvents)

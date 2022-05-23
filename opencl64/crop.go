@@ -21,11 +21,11 @@ func Crop(dst, src *data.Slice, offX, offY, offZ int) {
 	eventList := make([](*cl.Event), dst.NComp())
 	for c := 0; c < dst.NComp(); c++ {
 		eventWaitList := []*cl.Event{}
-		tmpEvent := dst.GetEvent(c)
-		if tmpEvent != nil {
-			eventWaitList = append(eventWaitList, tmpEvent)
+		tmpEvtL := dst.GetAllEvents(c)
+		if len(tmpEvtL) > 0 {
+			eventWaitList = append(eventWaitList, tmpEvtL...)
 		}
-		tmpEvent = src.GetEvent(c)
+		tmpEvent := src.GetEvent(c)
 		if tmpEvent != nil {
 			eventWaitList = append(eventWaitList, tmpEvent)
 		}

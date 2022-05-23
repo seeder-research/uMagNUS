@@ -16,17 +16,17 @@ func Normalize(vec, vol *data.Slice) {
 	cfg := make1DConf(N)
 
 	eventList := []*cl.Event{}
-	tmpEvt := vec.GetEvent(X)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL := vec.GetAllEvents(X)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = vec.GetEvent(Y)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL = vec.GetAllEvents(Y)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = vec.GetEvent(Z)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL = vec.GetAllEvents(Z)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
 	volPtr := (unsafe.Pointer)(nil)
 	if vol != nil {

@@ -16,11 +16,11 @@ func ZeroMask(dst *data.Slice, mask LUTPtr, regions *Bytes) {
 	eventList := make([]*cl.Event, dst.NComp())
 	for c := 0; c < dst.NComp(); c++ {
 		intEventList := []*cl.Event{}
-		tmpEvt := dst.GetEvent(c)
-		if tmpEvt != nil {
-			intEventList = append(intEventList, tmpEvt)
+		tmpEvtL := dst.GetAllEvents(c)
+		if len(tmpEvtL) > 0 {
+			intEventList = append(intEventList, tmpEvtL...)
 		}
-		tmpEvt = regions.GetEvent()
+		tmpEvt := regions.GetEvent()
 		if tmpEvt != nil {
 			intEventList = append(intEventList, tmpEvt)
 		}

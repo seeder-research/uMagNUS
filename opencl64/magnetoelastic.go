@@ -23,19 +23,19 @@ func AddMagnetoelasticField(Beff, m *data.Slice, exx, eyy, ezz, exy, exz, eyz, B
 	cfg := make1DConf(N)
 
 	eventList := [](*cl.Event){}
-	tmpEvt := Beff.GetEvent(X)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL := Beff.GetAllEvents(X)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = Beff.GetEvent(Y)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL = Beff.GetAllEvents(Y)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = Beff.GetEvent(Z)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL = Beff.GetAllEvents(Z)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = m.GetEvent(X)
+	tmpEvt := m.GetEvent(X)
 	if tmpEvt != nil {
 		eventList = append(eventList, tmpEvt)
 	}
@@ -173,19 +173,19 @@ func GetMagnetoelasticForceDensity(out, m *data.Slice, B1, B2 MSlice, mesh *data
 	rcsz := float64(1.0 / cellsize[Z])
 
 	eventList := [](*cl.Event){}
-	tmpEvt := out.GetEvent(X)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL := out.GetAllEvents(X)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = out.GetEvent(Y)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL = out.GetAllEvents(Y)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = out.GetEvent(Z)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL = out.GetAllEvents(Z)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = m.GetEvent(X)
+	tmpEvt := m.GetEvent(X)
 	if tmpEvt != nil {
 		eventList = append(eventList, tmpEvt)
 	}

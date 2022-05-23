@@ -17,11 +17,11 @@ func VecNorm(dst *data.Slice, a *data.Slice) {
 	cfg := make1DConf(N)
 
 	eventsList := []*cl.Event{}
-	tmpEvt := dst.GetEvent(0)
-	if tmpEvt != nil {
-		eventsList = append(eventsList, tmpEvt)
+	tmpEvtL := dst.GetAllEvents(0)
+	if len(tmpEvtL) > 0 {
+		eventsList = append(eventsList, tmpEvtL...)
 	}
-	tmpEvt = a.GetEvent(X)
+	tmpEvt := a.GetEvent(X)
 	if tmpEvt != nil {
 		eventsList = append(eventsList, tmpEvt)
 	}

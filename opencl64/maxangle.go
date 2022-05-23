@@ -16,11 +16,11 @@ func SetMaxAngle(dst, m *data.Slice, Aex_red SymmLUT, regions *Bytes, mesh *data
 	cfg := make3DConf(N)
 
 	eventList := [](*cl.Event){}
-	tmpEvt := dst.GetEvent(0)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL := dst.GetAllEvents(0)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = m.GetEvent(X)
+	tmpEvt := m.GetEvent(X)
 	if tmpEvt != nil {
 		eventList = append(eventList, tmpEvt)
 	}

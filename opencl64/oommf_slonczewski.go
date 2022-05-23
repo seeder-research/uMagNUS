@@ -15,19 +15,19 @@ func AddOommfSlonczewskiTorque(torque, m *data.Slice, Msat, J, fixedP, alpha, pf
 	flt := float64(mesh.WorldSize()[Z])
 
 	eventList := [](*cl.Event){}
-	tmpEvt := torque.GetEvent(X)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL := torque.GetAllEvents(X)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = torque.GetEvent(Y)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL = torque.GetAllEvents(Y)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = torque.GetEvent(Z)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
+	tmpEvtL = torque.GetAllEvents(Z)
+	if len(tmpEvtL) > 0 {
+		eventList = append(eventList, tmpEvtL...)
 	}
-	tmpEvt = m.GetEvent(X)
+	tmpEvt := m.GetEvent(X)
 	if tmpEvt != nil {
 		eventList = append(eventList, tmpEvt)
 	}

@@ -346,11 +346,11 @@ func Madd6(dst, src1, src2, src3, src4, src5, src6 *data.Slice, factor1, factor2
 	eventList := make([]*cl.Event, nComp)
 	for c := 0; c < nComp; c++ {
 		intEventList := []*cl.Event{}
-		tmpEvt := dst.GetEvent(c)
-		if tmpEvt != nil {
-			intEventList = append(intEventList, tmpEvt)
+		tmpEvtL := dst.GetAllEvents(c)
+		if len(tmpEvtL) > 0 {
+			intEventList = append(intEventList, tmpEvtL...)
 		}
-		tmpEvt = src1.GetEvent(c)
+		tmpEvt := src1.GetEvent(c)
 		if tmpEvt != nil {
 			intEventList = append(intEventList, tmpEvt)
 		}

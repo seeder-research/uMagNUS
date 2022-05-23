@@ -17,8 +17,24 @@ func Divide(dst, a, b *data.Slice) {
 	cfg := make1DConf(N)
 	eventList := make([]*cl.Event, nComp)
 	for c := 0; c < nComp; c++ {
+		waitList := []*cl.Event{}
+		tmpEvtL := dst.GetAllEvents(c)
+		if len(tmpEvtL) > 0 {
+			waitList = append(waitList, tmpEvtL...)
+		}
+		tmpEvt := a.GetEvent(c)
+		if tmpEvt != nil {
+			waitList = append(waitList, tmpEvt)
+		}
+		tmpEvt = b.GetEvent(c)
+		if tmpEvt != nil {
+			waitList = append(waitList, tmpEvt)
+		}
+		if len(waitList) == 0 {
+			waitList = nil
+		}
 		eventList[c] = k_divide_async(dst.DevPtr(c), a.DevPtr(c), b.DevPtr(c), N, cfg,
-			[](*cl.Event){dst.GetEvent(c), a.GetEvent(c), b.GetEvent(c)})
+			waitList)
 		dst.SetEvent(c, eventList[c])
 		a.InsertReadEvent(c, eventList[c])
 		b.InsertReadEvent(c, eventList[c])
