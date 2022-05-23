@@ -16,7 +16,7 @@ type Bytes struct {
 	Ptr   unsafe.Pointer
 	Len   int
 	Evt   *cl.Event
-	RdEvt data.SliceEventMap
+	RdEvt *data.SliceEventMap
 }
 
 // Construct new byte slice with given length,
@@ -37,8 +37,8 @@ func NewBytes(Len int) *Bytes {
 			log.Panic("WaitForEvents failed in NewBytes:", err)
 		}
 	}
-	emptyMap := data.SliceEventMap{}
-	emptyMap.ReadEvents = make(map[*cl.Event]int8)
+	emptyMap := &data.SliceEventMap{}
+	emptyMap.Init()
 	return &Bytes{unsafe.Pointer(ptr), Len, event, emptyMap}
 }
 
@@ -161,42 +161,42 @@ func (b *Bytes) GetEvent() *cl.Event {
 // Sets the rdEvent of the slice
 func (b *Bytes) SetReadEvents(eventList []*cl.Event) {
 	b.RdEvt.Lock()
-	defer b.RdEvt.Unlock()
 	for _, e := range eventList {
 		if _, ok := b.RdEvt.ReadEvents[e]; ok == false {
 			b.RdEvt.ReadEvents[e] = 1
 		}
 	}
+	b.RdEvt.Unlock()
 }
 
 // Insert a cl.Event to rdEvent of the slice
 func (b *Bytes) InsertReadEvent(event *cl.Event) {
 	b.RdEvt.Lock()
-	defer b.RdEvt.Unlock()
 	if _, ok := b.RdEvt.ReadEvents[event]; ok == false {
 		b.RdEvt.ReadEvents[event] = 1
 	}
+	b.RdEvt.Unlock()
 }
 
 // Remove a cl.Event from rdEvent of the slice
 func (b *Bytes) RemoveReadEvent(event *cl.Event) {
 	b.RdEvt.Lock()
-	defer b.RdEvt.Unlock()
 	if _, ok := b.RdEvt.ReadEvents[event]; ok == false {
 		delete(b.RdEvt.ReadEvents, event)
 	}
+	b.RdEvt.Unlock()
 }
 
 // Returns rdEvent of the slice as a slice
 func (b *Bytes) GetReadEvents() []*cl.Event {
 	b.RdEvt.RLock()
-	defer b.RdEvt.RUnlock()
 	evList := []*cl.Event{}
 	for k, _ := range b.RdEvt.ReadEvents {
 		if k != nil {
 			evList = append(evList, k)
 		}
 	}
+	b.RdEvt.RUnlock()
 	return evList
 }
 

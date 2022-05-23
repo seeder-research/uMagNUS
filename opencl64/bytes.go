@@ -16,7 +16,7 @@ type Bytes struct {
 	Ptr   unsafe.Pointer
 	Len   int
 	Evt   *cl.Event
-	RdEvt data.SliceEventMap
+	RdEvt *data.SliceEventMap
 }
 
 // Construct new byte slice with given length,
@@ -37,8 +37,8 @@ func NewBytes(Len int) *Bytes {
 			log.Panic("WaitForEvents failed in NewBytes:", err)
 		}
 	}
-	emptyMap := data.SliceEventMap{}
-	emptyMap.ReadEvents = make(map[*cl.Event]int8)
+	emptyMap := &data.SliceEventMap{}
+	emptyMap.Init()
 	return &Bytes{unsafe.Pointer(ptr), Len, event, emptyMap}
 }
 

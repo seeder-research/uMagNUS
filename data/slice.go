@@ -28,7 +28,7 @@ type Slice struct {
 	size    [3]int
 	memType int8
 	event   []*cl.Event
-	rdEvent []SliceEventMap
+	rdEvent []*SliceEventMap
 }
 
 // this package must not depend on OpenCL.
@@ -86,11 +86,11 @@ func SliceFromPtrs(size [3]int, memType int8, ptrs []unsafe.Pointer) *Slice {
 	s.ptrs = make([]unsafe.Pointer, nComp)
 	s.size = size
 	s.event = make([]*cl.Event, nComp)
-	s.rdEvent = make([]SliceEventMap, nComp)
+	s.rdEvent = make([]*SliceEventMap, nComp)
 	for c := range ptrs {
 		s.ptrs[c] = ptrs[c]
 		s.event[c] = nil
-		s.rdEvent[c].ReadEvents = make(map[*cl.Event]int8)
+		s.rdEvent[c].Init()
 	}
 	s.memType = memType
 	return s
@@ -180,7 +180,7 @@ func (s *Slice) Comp(i int) *Slice {
 	sl.size = s.size
 	sl.memType = s.memType
 	sl.event = []*cl.Event{s.event[i]}
-	sl.rdEvent = make([]SliceEventMap, 1)
+	sl.rdEvent = make([]*SliceEventMap, 1)
 	sl.rdEvent[0] = s.rdEvent[i]
 	return sl
 }
@@ -251,41 +251,41 @@ func (s *Slice) GetEvent(index int) *cl.Event {
 // Sets the rdEvent of the slice
 func (s *Slice) SetReadEvents(index int, eventList []*cl.Event) {
 	s.rdEvent[index].Lock()
-	defer s.rdEvent[index].Unlock()
 	s.rdEvent[index].ReadEvents = make(map[*cl.Event]int8)
 	for _, e := range eventList {
 		s.rdEvent[index].ReadEvents[e] = 1
 	}
+	s.rdEvent[index].Unlock()
 }
 
 // Insert a cl.Event to rdEvent of the slice
 func (s *Slice) InsertReadEvent(index int, event *cl.Event) {
 	s.rdEvent[index].Lock()
-	defer s.rdEvent[index].Unlock()
 	if _, ok := s.rdEvent[index].ReadEvents[event]; ok == false {
 		s.rdEvent[index].ReadEvents[event] = 1
 	}
+	s.rdEvent[index].Unlock()
 }
 
 // Remove a cl.Event from rdEvent of the slice
 func (s *Slice) RemoveReadEvent(index int, event *cl.Event) {
 	s.rdEvent[index].Lock()
-	defer s.rdEvent[index].Unlock()
 	if _, ok := s.rdEvent[index].ReadEvents[event]; ok {
 		delete(s.rdEvent[index].ReadEvents, event)
 	}
+	s.rdEvent[index].Unlock()
 }
 
 // Returns rdEvent of the slice as a slice
 func (s *Slice) GetReadEvents(index int) []*cl.Event {
 	s.rdEvent[index].RLock()
-	defer s.rdEvent[index].RUnlock()
 	evList := []*cl.Event{}
 	for k, _ := range s.rdEvent[index].ReadEvents {
 		if k != nil {
 			evList = append(evList, k)
 		}
 	}
+	s.rdEvent[index].RUnlock()
 	return evList
 }
 
