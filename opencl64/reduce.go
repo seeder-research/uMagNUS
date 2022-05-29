@@ -25,34 +25,21 @@ possibly small work-groups.
 // Sum of all elements.
 func Sum(in *data.Slice) float64 {
 	util.Argument(in.NComp() == 1)
-	out, intermed := reduceBuf(0)
+	out := reduceBuf(0)
 	// check input slice for event to synchronize (if any)
-	var intEvent *cl.Event
 	var event *cl.Event
 	syncEvent := in.GetEvent(0)
-	if reduceintcfg == nil {
-		if syncEvent == nil {
-			event = k_reducesum_async(in.DevPtr(0), out, 0,
-				in.Len(), reducecfg, nil)
-		} else {
-			event = k_reducesum_async(in.DevPtr(0), out, 0,
-				in.Len(), reducecfg, []*cl.Event{syncEvent})
-		}
+	if syncEvent == nil {
+		event = k_reducesum_async(in.DevPtr(0), out, 0,
+			in.Len(), reducecfg, nil)
 	} else {
-		if syncEvent == nil {
-			intEvent = k_reducesum_async(in.DevPtr(0), intermed, 0,
-				in.Len(), reduceintcfg, nil)
-		} else {
-			intEvent = k_reducesum_async(in.DevPtr(0), intermed, 0,
-				in.Len(), reduceintcfg, [](*cl.Event){syncEvent})
-		}
-		event = k_reducesum_async(intermed, out, 0, reduceSingleSize, reducecfg, [](*cl.Event){intEvent})
+		event = k_reducesum_async(in.DevPtr(0), out, 0,
+			in.Len(), reducecfg, []*cl.Event{syncEvent})
 	}
 	// Must synchronize since out is copied from device back to host
 	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in sum: %+v \n", err)
 	}
-	reduceIntBuffers <- (*cl.MemObject)(intermed)
 	return copyback(out)
 }
 
@@ -63,9 +50,8 @@ func Dot(a, b *data.Slice) float64 {
 	result := float64(0)
 	numComp := a.NComp()
 	out := make([]unsafe.Pointer, numComp)
-	intermed := make([]unsafe.Pointer, numComp)
 	for c := 0; c < numComp; c++ {
-		out[c], intermed[c] = reduceBuf(0)
+		out[c] = reduceBuf(0)
 	}
 	eventSync := make([]*cl.Event, numComp)
 	hostResult := make([]float64, numComp)
@@ -81,35 +67,21 @@ func Dot(a, b *data.Slice) float64 {
 		if tmpEvt != nil {
 			eventIntList = append(eventIntList, tmpEvt)
 		}
-		if reduceintcfg == nil {
-			if len(eventIntList) > 0 {
-				eventSync[c] = k_reducedot_async(a.DevPtr(c), b.DevPtr(c), out[c], 0,
-					a.Len(), reducecfg, eventIntList) // all components add to out
-			} else {
-				eventSync[c] = k_reducedot_async(a.DevPtr(c), b.DevPtr(c), out[c], 0,
-					a.Len(), reducecfg, nil) // all components add to out
-			}
+		if len(eventIntList) > 0 {
+			eventSync[c] = k_reducedot_async(a.DevPtr(c), b.DevPtr(c), out[c], 0,
+				a.Len(), reducecfg, eventIntList) // all components add to out
 		} else {
-			var barInt *cl.Event
-			if len(eventIntList) > 0 {
-				barInt = k_reducedot_async(a.DevPtr(c), b.DevPtr(c), intermed[c], 0,
-					a.Len(), reduceintcfg, eventIntList) // all components add to intermed
-			} else {
-				barInt = k_reducedot_async(a.DevPtr(c), b.DevPtr(c), intermed[c], 0,
-					a.Len(), reduceintcfg, nil) // all components add to intermed
-			}
-			eventSync[c] = k_reducesum_async(intermed[c], out[c], 0,
-				reduceSingleSize, reducecfg, []*cl.Event{barInt}) // all components add to out
+			eventSync[c] = k_reducedot_async(a.DevPtr(c), b.DevPtr(c), out[c], 0,
+				a.Len(), reducecfg, nil) // all components add to out
 		}
 		wg.Add(1)
-		go func(idx int, eventList []*cl.Event, bufferChannel chan<- *cl.MemObject, inBufferPtr, outBufferPtr unsafe.Pointer, res *float64) {
+		go func(idx int, eventList []*cl.Event, outBufferPtr unsafe.Pointer, res *float64) {
 			defer wg.Done()
 			if err := cl.WaitForEvents(eventList); err != nil {
 				fmt.Printf("WaitForEvents failed at index %d in dot: %+v \n", idx, err)
 			}
-			bufferChannel <- (*cl.MemObject)(inBufferPtr)
 			*res = copyback(outBufferPtr)
-		}(c, []*cl.Event{eventSync[c]}, reduceIntBuffers, intermed[c], out[c], &hostResult[c])
+		}(c, []*cl.Event{eventSync[c]}, out[c], &hostResult[c])
 	}
 	// Must synchronize since result is copied from device back to host
 	wg.Wait()
@@ -122,34 +94,21 @@ func Dot(a, b *data.Slice) float64 {
 // Maximum of absolute values of all elements.
 func MaxAbs(in *data.Slice) float64 {
 	util.Argument(in.NComp() == 1)
-	out, intermed := reduceBuf(0)
+	out := reduceBuf(0)
 	// check input slice for event to synchronize (if any)
-	var intEvent *cl.Event
 	var event *cl.Event
 	syncEvent := in.GetEvent(0)
-	if reduceintcfg == nil {
-		if syncEvent == nil {
-			event = k_reducemaxabs_async(in.DevPtr(0), out, 0,
-				in.Len(), reducecfg, nil)
-		} else {
-			event = k_reducemaxabs_async(in.DevPtr(0), out, 0,
-				in.Len(), reducecfg, [](*cl.Event){syncEvent})
-		}
+	if syncEvent == nil {
+		event = k_reducemaxabs_async(in.DevPtr(0), out, 0,
+			in.Len(), reducecfg, nil)
 	} else {
-		if syncEvent == nil {
-			intEvent = k_reducemaxabs_async(in.DevPtr(0), intermed, 0,
-				in.Len(), reduceintcfg, nil)
-		} else {
-			intEvent = k_reducemaxabs_async(in.DevPtr(0), intermed, 0,
-				in.Len(), reduceintcfg, [](*cl.Event){syncEvent})
-		}
-		event = k_reducemaxabs_async(intermed, out, 0, reduceSingleSize, reducecfg, [](*cl.Event){intEvent})
+		event = k_reducemaxabs_async(in.DevPtr(0), out, 0,
+			in.Len(), reducecfg, [](*cl.Event){syncEvent})
 	}
 	// Must synchronize since out is copied from device back to host
 	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in maxabs: %+v \n", err)
 	}
-	reduceIntBuffers <- (*cl.MemObject)(intermed)
 	return copyback(out)
 }
 
@@ -160,9 +119,8 @@ func MaxDiff(a, b *data.Slice) []float64 {
 	numComp := a.NComp()
 	returnVal := make([]float64, numComp)
 	out := make([]unsafe.Pointer, numComp)
-	intermed := make([]unsafe.Pointer, numComp)
 	for c := 0; c < numComp; c++ {
-		out[c], intermed[c] = reduceBuf(0)
+		out[c] = reduceBuf(0)
 	}
 	eventSync := make([]*cl.Event, numComp)
 	var wg sync.WaitGroup
@@ -176,36 +134,21 @@ func MaxDiff(a, b *data.Slice) []float64 {
 		if tmpEvent != nil {
 			eventIntList = append(eventIntList, tmpEvent)
 		}
-		if reduceintcfg == nil {
-			if len(eventIntList) > 0 {
-				eventSync[c] = k_reducemaxdiff_async(a.DevPtr(c), b.DevPtr(c), out[c], 0,
-					a.Len(), reducecfg, eventIntList)
-			} else {
-				eventSync[c] = k_reducemaxdiff_async(a.DevPtr(c), b.DevPtr(c), out[c], 0,
-					a.Len(), reducecfg, nil)
-			}
+		if len(eventIntList) > 0 {
+			eventSync[c] = k_reducemaxdiff_async(a.DevPtr(c), b.DevPtr(c), out[c], 0,
+				a.Len(), reducecfg, eventIntList)
 		} else {
-			var intEvent *cl.Event
-			if len(eventIntList) > 0 {
-				intEvent = k_reducemaxdiff_async(a.DevPtr(c), b.DevPtr(c), intermed[c], 0,
-					a.Len(), reduceintcfg, eventIntList)
-			} else {
-				intEvent = k_reducemaxdiff_async(a.DevPtr(c), b.DevPtr(c), intermed[c], 0,
-					a.Len(), reduceintcfg, nil)
-			}
-			eventSync[c] = k_reducemaxabs_async(intermed[c], out[c], 0,
-				reduceSingleSize, reducecfg, [](*cl.Event){intEvent})
+			eventSync[c] = k_reducemaxdiff_async(a.DevPtr(c), b.DevPtr(c), out[c], 0,
+				a.Len(), reducecfg, nil)
 		}
 		wg.Add(1)
-		go func(eventList []*cl.Event, bufferChannel chan<- *cl.MemObject,
-			inBufferPtr, outBufferPtr unsafe.Pointer, res *float64) {
+		go func(eventList []*cl.Event, outBufferPtr unsafe.Pointer, res *float64) {
 			defer wg.Done()
 			if err := cl.WaitForEvents(eventList); err != nil {
 				fmt.Printf("WaitForEvents failed in maxabs: %+v \n", err)
 			}
-			bufferChannel <- (*cl.MemObject)(inBufferPtr)
 			*res = copyback(outBufferPtr)
-		}([]*cl.Event{eventSync[c]}, reduceIntBuffers, intermed[c], out[c], &returnVal[c])
+		}([]*cl.Event{eventSync[c]}, out[c], &returnVal[c])
 	}
 	// Must synchronize since returnVal is copied from device back to host
 	wg.Wait()
@@ -216,9 +159,8 @@ func MaxDiff(a, b *data.Slice) []float64 {
 // 	max_i sqrt( x[i]*x[i] + y[i]*y[i] + z[i]*z[i] )
 func MaxVecNorm(v *data.Slice) float64 {
 	util.Argument(v.NComp() == 3)
-	out, intermed := reduceBuf(0)
+	out := reduceBuf(0)
 	// check input slice for events to synchronize (if any)
-	var intEvent *cl.Event
 	var event *cl.Event
 	syncEvent := []*cl.Event{}
 	for c := 0; c < v.NComp(); c++ {
@@ -227,29 +169,17 @@ func MaxVecNorm(v *data.Slice) float64 {
 			syncEvent = append(syncEvent, tmpEvent)
 		}
 	}
-	if reduceintcfg == nil {
-		if len(syncEvent) > 0 {
-			event = k_reducemaxvecnorm2_async(v.DevPtr(0), v.DevPtr(1), v.DevPtr(2),
-				out, 0, v.Len(), reducecfg, syncEvent)
-		} else {
-			event = k_reducemaxvecnorm2_async(v.DevPtr(0), v.DevPtr(1), v.DevPtr(2),
-				out, 0, v.Len(), reducecfg, nil)
-		}
+	if len(syncEvent) > 0 {
+		event = k_reducemaxvecnorm2_async(v.DevPtr(0), v.DevPtr(1), v.DevPtr(2),
+			out, 0, v.Len(), reducecfg, syncEvent)
 	} else {
-		if len(syncEvent) > 0 {
-			intEvent = k_reducemaxvecnorm2_async(v.DevPtr(0), v.DevPtr(1), v.DevPtr(2),
-				intermed, 0, v.Len(), reduceintcfg, syncEvent)
-		} else {
-			intEvent = k_reducemaxvecnorm2_async(v.DevPtr(0), v.DevPtr(1), v.DevPtr(2),
-				intermed, 0, v.Len(), reduceintcfg, nil)
-		}
-		event = k_reducemaxabs_async(intermed, out, 0, reduceSingleSize, reducecfg, [](*cl.Event){intEvent})
+		event = k_reducemaxvecnorm2_async(v.DevPtr(0), v.DevPtr(1), v.DevPtr(2),
+			out, 0, v.Len(), reducecfg, nil)
 	}
 	// Must synchronize since out is copied from device back to host
 	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in maxvecnorm: %+v \n", err)
 	}
-	reduceIntBuffers <- (*cl.MemObject)(intermed)
 	return math.Sqrt(float64(copyback(out)))
 }
 
@@ -260,9 +190,8 @@ func MaxVecDiff(x, y *data.Slice) float64 {
 	util.Argument(x.Len() == y.Len())
 	util.Argument(x.NComp() == 3)
 	util.Argument(y.NComp() == 3)
-	out, intermed := reduceBuf(0)
+	out := reduceBuf(0)
 	// check input slice for event to synchronize (if any)
-	var intEvent *cl.Event
 	var event *cl.Event
 	syncEvent := []*cl.Event{}
 	for c := 0; c < 3; c++ {
@@ -275,48 +204,31 @@ func MaxVecDiff(x, y *data.Slice) float64 {
 			syncEvent = append(syncEvent, tmpEvent)
 		}
 	}
-	if reduceintcfg == nil {
-		if len(syncEvent) > 0 {
-			event = k_reducemaxvecdiff2_async(x.DevPtr(0), x.DevPtr(1), x.DevPtr(2),
-				y.DevPtr(0), y.DevPtr(1), y.DevPtr(2),
-				out, 0, x.Len(), reducecfg, syncEvent)
-		} else {
-			event = k_reducemaxvecdiff2_async(x.DevPtr(0), x.DevPtr(1), x.DevPtr(2),
-				y.DevPtr(0), y.DevPtr(1), y.DevPtr(2),
-				out, 0, x.Len(), reducecfg, nil)
-		}
+	if len(syncEvent) > 0 {
+		event = k_reducemaxvecdiff2_async(x.DevPtr(0), x.DevPtr(1), x.DevPtr(2),
+			y.DevPtr(0), y.DevPtr(1), y.DevPtr(2),
+			out, 0, x.Len(), reducecfg, syncEvent)
 	} else {
-		if len(syncEvent) > 0 {
-			intEvent = k_reducemaxvecdiff2_async(x.DevPtr(0), x.DevPtr(1), x.DevPtr(2),
-				y.DevPtr(0), y.DevPtr(1), y.DevPtr(2),
-				intermed, 0, x.Len(), reduceintcfg, syncEvent)
-		} else {
-			intEvent = k_reducemaxvecdiff2_async(x.DevPtr(0), x.DevPtr(1), x.DevPtr(2),
-				y.DevPtr(0), y.DevPtr(1), y.DevPtr(2),
-				intermed, 0, x.Len(), reduceintcfg, nil)
-		}
-		event = k_reducemaxabs_async(intermed, out, 0, reduceSingleSize, reducecfg, [](*cl.Event){intEvent})
+		event = k_reducemaxvecdiff2_async(x.DevPtr(0), x.DevPtr(1), x.DevPtr(2),
+			y.DevPtr(0), y.DevPtr(1), y.DevPtr(2),
+			out, 0, x.Len(), reducecfg, nil)
 	}
-
 	// Must synchronize since out is copied from device back to host
 	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in maxvecdiff: %+v \n", err)
 	}
-	reduceIntBuffers <- (*cl.MemObject)(intermed)
 	return math.Sqrt(float64(copyback(out)))
 }
 
-var reduceBuffers chan (*cl.MemObject)    // pool of 1-float OpenCL buffers for reduce
-var reduceIntBuffers chan (*cl.MemObject) // pool of 1-float OpenCL buffers for reduce
+var reduceBuffers chan (*cl.MemObject) // pool of 1-float OpenCL buffers for reduce
 
 // return a 1-float and an N-float OPENCL reduction buffer from a pool
 // initialized to initVal
-func reduceBuf(initVal float64) (unsafe.Pointer, unsafe.Pointer) {
+func reduceBuf(initVal float64) unsafe.Pointer {
 	if reduceBuffers == nil {
 		initReduceBuf()
 	}
 	buf := <-reduceBuffers
-	interBuf := <-reduceIntBuffers
 	waitEvent, err := ClCmdQueue.EnqueueFillBuffer(buf, unsafe.Pointer(&initVal), SIZEOF_FLOAT64, 0, SIZEOF_FLOAT64, nil)
 	if err != nil {
 		fmt.Printf("reduceBuf failed: %+v \n", err)
@@ -327,17 +239,7 @@ func reduceBuf(initVal float64) (unsafe.Pointer, unsafe.Pointer) {
 		fmt.Printf("First WaitForEvents in reduceBuf failed: %+v \n", err)
 		return nil, nil
 	}
-	waitEvent, err = ClCmdQueue.EnqueueFillBuffer(interBuf, unsafe.Pointer(&initVal), SIZEOF_FLOAT64, 0, ClMaxWGSize*SIZEOF_FLOAT64, nil)
-	if err != nil {
-		fmt.Printf("reduceBuf failed: %+v \n", err)
-		return nil, nil
-	}
-	err = cl.WaitForEvents([]*cl.Event{waitEvent})
-	if err != nil {
-		fmt.Printf("Second WaitForEvents in reduceBuf failed: %+v \n", err)
-		return nil, nil
-	}
-	return (unsafe.Pointer)(buf), (unsafe.Pointer)(interBuf)
+	return (unsafe.Pointer)(buf)
 }
 
 // copy back single float result from GPU and recycle buffer
@@ -352,10 +254,8 @@ func copyback(buf unsafe.Pointer) float64 {
 func initReduceBuf() {
 	const N = 128
 	reduceBuffers = make(chan *cl.MemObject, N)
-	reduceIntBuffers = make(chan *cl.MemObject, N)
 	for i := 0; i < N; i++ {
 		reduceBuffers <- MemAlloc(SIZEOF_FLOAT64)
-		reduceIntBuffers <- MemAlloc(reduceSingleSize * SIZEOF_FLOAT64)
 	}
 }
 
@@ -364,4 +264,3 @@ func initReduceBuf() {
 // could be improved but takes hardly ~1% of execution time
 var reducecfg = &config{Grid: []int{1, 1, 1}, Block: []int{1, 1, 1}}
 var reduceintcfg = &config{Grid: []int{8, 1, 1}, Block: []int{1, 1, 1}}
-var reduceSingleSize int

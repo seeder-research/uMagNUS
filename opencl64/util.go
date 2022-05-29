@@ -58,19 +58,6 @@ func UpdateLaunchConfigs(c []int) {
 			config1DSize = i0
 		}
 	}
-
-	// Find reduce config for intermediate reduce step
-	if numItems <= reduceSingleSize {
-		reduceintcfg = nil
-	} else {
-		if numItems >= ClTotalPE {
-			reduceintcfg = &config{Grid: []int{ClTotalPE, 1, 1}, Block: []int{groupSize, 1, 1}}
-		} else {
-			for ii0 := groupSize; ii0 < numItems; ii0 += groupSize {
-				reduceintcfg = &config{Grid: []int{ii0, 1, 1}, Block: []int{groupSize, 1, 1}}
-			}
-		}
-	}
 }
 
 // special type for data.Slice and MSlice
