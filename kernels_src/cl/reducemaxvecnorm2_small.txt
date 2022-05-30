@@ -18,10 +18,10 @@ reducemaxvecnorm2_small(__global __restrict real_t*       x,
 
     // Load from global buffer to local buffer
     while (i < n) {
-        real_t dx = x[i];
-        real_t dy = y[i];
-        real_t dz = z[i];
-        mine = fmax(mine, (dx*dx + dy*dy) + dz*dz);
+        real_t  dx = x[i];
+        real_t  dy = y[i];
+        real_t  dz = z[i];
+        mine = fmax(mine, dot((real_t3){dx, dy, dz}, (real_t3){dx, dy, dz}));
         i += stride;
     }
     scratch[local_idx] = mine;
