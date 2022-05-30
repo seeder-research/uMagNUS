@@ -1,0 +1,50 @@
+__kernel void
+reducemaxvecdiff2_small(__global __restrict real_t*      x1,
+                        __global __restrict real_t*      y1,
+                        __global __restrict real_t*      z1,
+                        __global __restrict real_t*      x2,
+                        __global __restrict real_t*      y2,
+                        __global __restrict real_t*      z2,
+                        __global __restrict real_t*     dst,
+                                            real_t  initVal,
+                                               int        n) {
+
+    // Assumption kernel is launched in groups of 64 workitems
+    __local real_t* scratch[64];
+    int    local_idx = get_local_id(0);
+    int       grp_sz = 64;
+    int       grp_id = get_group_id(0);
+    int      num_grp = get_num_groups(0);
+    int            i = grp_id * grp_sz + local_idx;
+    real_t      mine = initVal;
+    int       stride = num_grp * grp_sz;
+
+    // Load from global buffer to local buffer
+    while (i < n) {
+        real_t dx = x1[i] - x2[i];
+        real_t dy = y1[i] - y2[i];
+        real_t dz = z1[i] - z2[i];
+        mine = fmax(mine, (dx*dx + dy*dy) + dz*dz);
+        i += stride;
+    }
+    scratch[local_idx] = mine;
+
+    // Synchronize workitems before reduction
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    // Only the first 32 workitems are needed for reduction
+    if (local_idx < 32) {
+        __local volatile real_t* smem = scratch;
+        smem[local_idx] = fmax(smem[local_idx], smem[local_idx + 32]);
+        smem[local_idx] = fmax(smem[local_idx], smem[local_idx + 16]);
+        smem[local_idx] = fmax(smem[local_idx], smem[local_idx +  8]);
+        smem[local_idx] = fmax(smem[local_idx], smem[local_idx +  4]);
+        smem[local_idx] = fmax(smem[local_idx], smem[local_idx +  2]);
+        smem[local_idx] = fmax(smem[local_idx], smem[local_idx +  1]);
+    }
+
+    // Use one workitem in the group to output back to global buffer
+    if (local_idx == 0) {
+        dst[grp_id] = scratch[0];
+    }
+}
