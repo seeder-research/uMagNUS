@@ -232,12 +232,12 @@ func reduceBuf(initVal float64) unsafe.Pointer {
 	waitEvent, err := ClCmdQueue.EnqueueFillBuffer(buf, unsafe.Pointer(&initVal), SIZEOF_FLOAT64, 0, SIZEOF_FLOAT64, nil)
 	if err != nil {
 		fmt.Printf("reduceBuf failed: %+v \n", err)
-		return nil, nil
+		return nil
 	}
 	err = cl.WaitForEvents([]*cl.Event{waitEvent})
 	if err != nil {
 		fmt.Printf("First WaitForEvents in reduceBuf failed: %+v \n", err)
-		return nil, nil
+		return nil
 	}
 	return (unsafe.Pointer)(buf)
 }

@@ -8,7 +8,7 @@ reducesum(__global real_t* __restrict     src,
     // Calculate indices
     int    local_idx = get_local_id(0);   // Work-item index within workgroup
     int       grp_sz = get_local_size(0); // Total number of work-items in each workgroup
-    real_t       res = init_val;
+    real_t       res = initVal;
 
     // Accumulators for intermediate results
     real_t data1 = 0.0;
