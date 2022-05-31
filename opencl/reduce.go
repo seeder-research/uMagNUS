@@ -40,21 +40,29 @@ func Sum(in *data.Slice) float32 {
 	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in sum: %+v \n", err)
 	}
-	return copyback(out)
+	group_results := copyback(out)
+	sum_result := float64(0.0)
+	for _, v := range group_results {
+		sum_result += float64(v)
+	}
+	return float32(sum_result)
 }
 
 // Dot product
 func Dot(a, b *data.Slice) float32 {
 	util.Argument(a.NComp() == b.NComp())
 	util.Argument(a.Len() == b.Len())
-	result := float32(0)
+	result := float64(0)
 	numComp := a.NComp()
 	out := make([]unsafe.Pointer, numComp)
 	for c := 0; c < numComp; c++ {
 		out[c] = reduceBuf(0)
 	}
 	eventSync := make([]*cl.Event, numComp)
-	hostResult := make([]float32, numComp)
+	hostResult := make([][]float32, numComp)
+	for idx := 0; idx < numComp; idx++ {
+		hostResult[idx] = make([]float32, ReduceWorkgroups)
+	}
 	var wg sync.WaitGroup
 	// async over components
 	for c := 0; c < numComp; c++ {
@@ -75,7 +83,7 @@ func Dot(a, b *data.Slice) float32 {
 				a.Len(), reducecfg, nil) // all components add to out
 		}
 		wg.Add(1)
-		go func(idx int, eventList []*cl.Event, outBufferPtr unsafe.Pointer, res *float32) {
+		go func(idx int, eventList []*cl.Event, outBufferPtr unsafe.Pointer, res *[]float32) {
 			defer wg.Done()
 			if err := cl.WaitForEvents(eventList); err != nil {
 				fmt.Printf("WaitForEvents failed at index %d in dot: %+v \n", idx, err)
@@ -85,10 +93,12 @@ func Dot(a, b *data.Slice) float32 {
 	}
 	// Must synchronize since result is copied from device back to host
 	wg.Wait()
-	for _, oVal := range hostResult {
-		result += oVal
+	for idx := 0; idx < numComp; idx++ {
+		for _, oVal := range hostResult[idx] {
+			result += float64(oVal)
+		}
 	}
-	return result
+	return float32(result)
 }
 
 // Maximum of absolute values of all elements.
@@ -109,7 +119,14 @@ func MaxAbs(in *data.Slice) float32 {
 	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in maxabs: %+v \n", err)
 	}
-	return copyback(out)
+	dResult := copyback(out)
+	fresult := dResult[0]
+	for idx := 1; idx < ReduceWorkgroups; idx++ {
+		if dResult[idx] > fresult {
+			fresult = dResult[idx]
+		}
+	}
+	return fresult
 }
 
 // Maximum element-wise difference
@@ -117,7 +134,10 @@ func MaxDiff(a, b *data.Slice) []float32 {
 	util.Argument(a.NComp() == b.NComp())
 	util.Argument(a.Len() == b.Len())
 	numComp := a.NComp()
-	returnVal := make([]float32, numComp)
+	returnVal := make([][]float32, numComp)
+	for idx := 0; idx < numComp; idx++ {
+		returnVal[idx] = make([]float32, ReduceWorkgroups)
+	}
 	out := make([]unsafe.Pointer, numComp)
 	for c := 0; c < numComp; c++ {
 		out[c] = reduceBuf(0)
@@ -142,7 +162,7 @@ func MaxDiff(a, b *data.Slice) []float32 {
 				a.Len(), reducecfg, nil)
 		}
 		wg.Add(1)
-		go func(eventList []*cl.Event, outBufferPtr unsafe.Pointer, res *float32) {
+		go func(eventList []*cl.Event, outBufferPtr unsafe.Pointer, res *[]float32) {
 			defer wg.Done()
 			if err := cl.WaitForEvents(eventList); err != nil {
 				fmt.Printf("WaitForEvents failed in maxabs: %+v \n", err)
@@ -152,7 +172,16 @@ func MaxDiff(a, b *data.Slice) []float32 {
 	}
 	// Must synchronize since returnVal is copied from device back to host
 	wg.Wait()
-	return returnVal
+	fresult := make([]float32, numComp)
+	for idx := 0; idx < numComp; idx++ {
+		fresult[idx] = returnVal[idx][0]
+		for idx1 := 1; idx1 < ReduceWorkgroups; idx1++ {
+			if returnVal[idx][idx1] > fresult[idx] {
+				fresult[idx] = returnVal[idx][idx1]
+			}
+		}
+	}
+	return fresult
 }
 
 // Maximum of the norms of all vectors (x[i], y[i], z[i]).
@@ -180,7 +209,14 @@ func MaxVecNorm(v *data.Slice) float64 {
 	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in maxvecnorm: %+v \n", err)
 	}
-	return math.Sqrt(float64(copyback(out)))
+	dResult := copyback(out)
+	fresult := dResult[0]
+	for idx := 0; idx < ReduceWorkgroups; idx++ {
+		if dResult[idx] > fresult {
+			fresult = dResult[idx]
+		}
+	}
+	return math.Sqrt(float64(fresult))
 }
 
 // Maximum of the norms of the difference between all vectors (x1,y1,z1) and (x2,y2,z2)
@@ -217,7 +253,14 @@ func MaxVecDiff(x, y *data.Slice) float64 {
 	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in maxvecdiff: %+v \n", err)
 	}
-	return math.Sqrt(float64(copyback(out)))
+	dResult := copyback(out)
+	fresult := dResult[0]
+	for idx := 1; idx < ReduceWorkgroups; idx++ {
+		if dResult[idx] > fresult {
+			fresult = dResult[idx]
+		}
+	}
+	return math.Sqrt(float64(fresult))
 }
 
 var reduceBuffers chan (*cl.MemObject) // pool of 1-float OpenCL buffers for reduce
@@ -229,7 +272,7 @@ func reduceBuf(initVal float32) unsafe.Pointer {
 		initReduceBuf()
 	}
 	buf := <-reduceBuffers
-	waitEvent, err := ClCmdQueue.EnqueueFillBuffer(buf, unsafe.Pointer(&initVal), SIZEOF_FLOAT32, 0, SIZEOF_FLOAT32, nil)
+	waitEvent, err := ClCmdQueue.EnqueueFillBuffer(buf, unsafe.Pointer(&initVal), SIZEOF_FLOAT32, 0, ReduceWorkgroups*SIZEOF_FLOAT32, nil)
 	if err != nil {
 		fmt.Printf("reduceBuf failed: %+v \n", err)
 		return nil
@@ -243,9 +286,9 @@ func reduceBuf(initVal float32) unsafe.Pointer {
 }
 
 // copy back single float result from GPU and recycle buffer
-func copyback(buf unsafe.Pointer) float32 {
-	var result float32
-	MemCpyDtoH(unsafe.Pointer(&result), buf, SIZEOF_FLOAT32)
+func copyback(buf unsafe.Pointer) []float32 {
+	result := make([]float32, ReduceWorkgroups)
+	MemCpyDtoH(unsafe.Pointer(&result[0]), buf, ReduceWorkgroups*SIZEOF_FLOAT32)
 	reduceBuffers <- (*cl.MemObject)(buf)
 	return result
 }
@@ -255,7 +298,7 @@ func initReduceBuf() {
 	const N = 128
 	reduceBuffers = make(chan *cl.MemObject, N)
 	for i := 0; i < N; i++ {
-		reduceBuffers <- MemAlloc(SIZEOF_FLOAT32)
+		reduceBuffers <- MemAlloc(ReduceWorkgroups * SIZEOF_FLOAT32)
 	}
 }
 
@@ -263,4 +306,5 @@ func initReduceBuf() {
 // 8 is typ. number of multiprocessors.
 // could be improved but takes hardly ~1% of execution time
 var reducecfg = &config{Grid: []int{1, 1, 1}, Block: []int{1, 1, 1}}
-var reduceintcfg = &config{Grid: []int{8, 1, 1}, Block: []int{1, 1, 1}}
+var ReduceWorkitems = int(128)
+var ReduceWorkgroups = int(8)

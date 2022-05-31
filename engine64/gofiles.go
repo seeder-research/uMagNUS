@@ -29,6 +29,8 @@ var (
 	Flag_test        = flag.Bool("test", false, "OpenCL test (internal)")
 	Flag_version     = flag.Bool("v", true, "Print version")
 	Flag_vet         = flag.Bool("vet", false, "Check input files for errors, but don't run them")
+	Flag_wg          = flag.Int("wg", 8, "Number of workgroups launched for reduction kernels")
+	Flag_wi          = flag.Int("wi", 128, "Number of workitems launched for reduction kernels")
 	Flag_gpu         = int(-5) // To be set externally
 )
 
@@ -45,6 +47,8 @@ func InitAndClose() func() {
 
 	flag.Parse()
 
+	opencl.ReduceWorkitems = *Flag_wi
+	opencl.ReduceWorkgroups = *Flag_wg
 	if *Flag_host {
 		if Flag_gpu < 0 {
 			opencl.Init(Flag_gpu)
