@@ -7,10 +7,10 @@ reducesum(__global real_t* __restrict     src,
 
     // Calculate indices
     int    local_idx = get_local_id(0);   // Work-item index within workgroup
-    int       grp_id = get_local_id(0);   // ID of workgroup
+    int       grp_id = get_group_id(0);   // ID of workgroup
     int      num_grp = get_num_groups(0); // Number of workgroups launched
     int       grp_sz = get_local_size(0); // Total number of work-items in each workgroup
-    int            i = grp_id * grp_sz + local_idx;
+    int        grp_i = grp_id * grp_sz;
     int       stride = num_grp * grp_sz;
 
     // Accumulators for intermediate results
@@ -18,11 +18,11 @@ reducesum(__global real_t* __restrict     src,
     int      itr = 0;
 
     // Read into local buffer, reduce and accumulate in workitem registers
-    while (i < n) {
-        scratch[local_idx] = src[i];
-        i += stride;
+    while (grp_i < n) {
+        int  i = grp_i + local_idx;
+        scratch[local_idx] = 0.0;
         if (i < n) {
-            scratch[local_idx] += src[i];
+            scratch[local_idx] = src[i];
         }
 
         // Sync all workitems before reducing
@@ -47,11 +47,12 @@ reducesum(__global real_t* __restrict     src,
             smem[local_idx] += smem[local_idx +  8];
             smem[local_idx] += smem[local_idx +  4];
             smem[local_idx] += smem[local_idx +  2];
+            smem[local_idx] += smem[local_idx +  1];
         }
 
         // Write back to global buffer
         if (local_idx == itr) {
-            data1 += scratch[0] + scratch[1];
+            data1 += scratch[0];
         }
 
         itr++;
@@ -59,12 +60,7 @@ reducesum(__global real_t* __restrict     src,
             itr = 0;
         }
 
-        i += stride;
-
-        // Clear local buffer
-        scratch[local_idx] = 0.0;
-        // Sync all workitems before next iteration
-        barrier(CLK_LOCAL_MEM_FENCE);
+        grp_i += stride;
 
     }
 
@@ -94,11 +90,12 @@ reducesum(__global real_t* __restrict     src,
         smem[local_idx] += smem[local_idx +  8];
         smem[local_idx] += smem[local_idx +  4];
         smem[local_idx] += smem[local_idx +  2];
+        smem[local_idx] += smem[local_idx +  1];
     }
 
     // Write back to global buffer
     if (local_idx == 0) {
-        dst[grp_id] = scratch[0] + scratch[1];
+        dst[grp_id] = scratch[0];
     }
 
 }

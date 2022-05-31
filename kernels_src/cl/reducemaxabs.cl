@@ -7,7 +7,7 @@ reducemaxabs(__global real_t* __restrict     src,
 
     // Calculate indices
     int    local_idx = get_local_id(0);   // Work-item index within workgroup
-    int       grp_id = get_local_id(0);   // ID of workgroup
+    int       grp_id = get_group_id(0);   // ID of workgroup
     int      num_grp = get_num_groups(0); // Number of workgroups launched
     int       grp_sz = get_local_size(0); // Total number of work-items in each workgroup
     int            i = grp_id * grp_sz + local_idx;
