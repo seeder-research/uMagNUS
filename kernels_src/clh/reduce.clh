@@ -1,4 +1,12 @@
 #ifndef _REDUCE_H_
 #define _REDUCE_H_
 
+#if defined(__REAL_IS_DOUBLE__)
+    #pragma OPENCL EXTENSION cl_khr_int64_base_atomics : enable
+    #pragma OPENCL EXTENSION cl_khr_int64_extended_atomics : enable
+#else
+    #pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable
+    #pragma OPENCL EXTENSION cl_khr_global_int32_extended_atomics : enable
+#endif // __REAL_IS_DOUBLE__
+
 #endif // _REDUCE_H_

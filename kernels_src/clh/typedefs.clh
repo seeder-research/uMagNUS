@@ -1,6 +1,7 @@
 #if defined(__REAL_IS_DOUBLE__)
   #if defined(cl_khr_fp64) || defined(cl_amd_fp64)
     #define real_t double
+    #define realint_t long
     #define real_t2 double2
     #define real_t3 double3
     #define real_t4 double4
@@ -11,6 +12,7 @@
     #endif // cl_*_fp64
   #endif
 #else
+  #define realint_t int
   #define real_t float
   #define real_t2 float2
   #define real_t3 float3

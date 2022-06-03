@@ -1,22 +1,21 @@
 __kernel void
-reducemaxvecdiff2(__global real_t* __restrict      x1,
-                  __global real_t* __restrict      y1,
-                  __global real_t* __restrict      z1,
-                  __global real_t* __restrict      x2,
-                  __global real_t* __restrict      y2,
-                  __global real_t* __restrict      z2,
-                  __global real_t* __restrict     dst,
-                           real_t             initVal,
-                              int                   n,
-                  __local  real_t*            scratch) {
+reducemaxvecdiff2(__global real_t*             __restrict      x1,
+                  __global real_t*             __restrict      y1,
+                  __global real_t*             __restrict      z1,
+                  __global real_t*             __restrict      x2,
+                  __global real_t*             __restrict      y2,
+                  __global real_t*             __restrict      z2,
+                  __global realint_t* volatile __restrict     dst,
+                           real_t                         initVal,
+                              int                               n,
+                  __local  real_t*                        scratch) {
 
     // Calculate indices
     int    local_idx = get_local_id(0);   // Work-item index within workgroup
     int       grp_id = get_group_id(0);   // ID of workgroup
-    int      num_grp = get_num_groups(0); // Number of workgroups launched
     int       grp_sz = get_local_size(0); // Total number of work-items in each workgroup
     int            i = grp_id * grp_sz + local_idx;
-    int       stride = num_grp * grp_sz;
+    int       stride = get_global_size(0);
     real_t      mine = initVal;
 
     while (i < n) {
@@ -45,17 +44,22 @@ reducemaxvecdiff2(__global real_t* __restrict      x1,
 
     // Unroll loop
     if (local_idx < 32) {
-        __local volatile real_t* smem = scratch;
+        __local real_t* volatile smem = scratch;
         smem[local_idx] = fmax(smem[local_idx], smem[local_idx + 32]);
         smem[local_idx] = fmax(smem[local_idx], smem[local_idx + 16]);
         smem[local_idx] = fmax(smem[local_idx], smem[local_idx +  8]);
         smem[local_idx] = fmax(smem[local_idx], smem[local_idx +  4]);
         smem[local_idx] = fmax(smem[local_idx], smem[local_idx +  2]);
+        smem[local_idx] = fmax(smem[local_idx], smem[local_idx +  1]);
     }
 
     // Write back to global buffer
     if (local_idx == 0) {
-        dst[grp_id] = fmax(scratch[0], scratch[1]);
+#if defined(__REAL_IS_DOUBLE__)
+        atom_max(dst, as_long(scratch[0]));
+#else
+        atom_max(dst, as_int(scratch[0]));
+#endif // __REAL_IS_DOUBLE__
     }
 
 }

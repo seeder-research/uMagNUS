@@ -1,7 +1,7 @@
 __kernel void
-reducedot(__global real_t* __restrict     src1,
-          __global real_t* __restrict     src2,
-          __global real_t* __restrict      dst,
+reducedot(__global real_t*          __restrict     src1,
+          __global real_t*          __restrict     src2,
+          __global real_t* volatile __restrict      dst,
                    real_t              initVal,
                       int                    n,
           __local  real_t*             scratch){
@@ -9,10 +9,9 @@ reducedot(__global real_t* __restrict     src1,
     // Calculate indices
     int    local_idx = get_local_id(0);   // Work-item index within workgroup
     int       grp_id = get_group_id(0);   // ID of workgroup
-    int      num_grp = get_num_groups(0); // Number of workgroups launched
     int       grp_sz = get_local_size(0); // Total number of work-items in each workgroup
     int        grp_i = grp_id * grp_sz;
-    int       stride = num_grp * grp_sz;
+    int       stride = get_global_size(0);
 
     // Accumulators for intermediate results
     real_t data1 = initVal;
@@ -42,7 +41,7 @@ reducedot(__global real_t* __restrict     src1,
 
         // Unroll loop
         if (local_idx < 32) {
-            __local volatile real_t* smem = scratch;
+            __local real_t* volatile smem = scratch;
             smem[local_idx] += smem[local_idx + 32];
             smem[local_idx] += smem[local_idx + 16];
             smem[local_idx] += smem[local_idx +  8];
@@ -51,10 +50,16 @@ reducedot(__global real_t* __restrict     src1,
             smem[local_idx] += smem[local_idx +  1];
         }
 
+        // Sync all workitems before reducing
+        barrier(CLK_LOCAL_MEM_FENCE);
+
         // Write back to global buffer
         if (local_idx == itr) {
             data1 += scratch[0];
         }
+
+        // Sync all workitems before reducing
+        barrier(CLK_LOCAL_MEM_FENCE);
 
         itr++;
         if (itr >= grp_sz) {
@@ -85,7 +90,7 @@ reducedot(__global real_t* __restrict     src1,
 
     // Unroll loop
     if (local_idx < 32) {
-        __local volatile real_t* smem = scratch;
+        __local real_t* volatile smem = scratch;
         smem[local_idx] += smem[local_idx + 32];
         smem[local_idx] += smem[local_idx + 16];
         smem[local_idx] += smem[local_idx +  8];
@@ -96,7 +101,11 @@ reducedot(__global real_t* __restrict     src1,
 
     // Write back to global buffer
     if (local_idx == 0) {
-        dst[grp_id] = scratch[0];
+          real_t tmp = scratch[0];
+#if defined(__REAL_IS_DOUBLE__)
+          while ((tmp = atomic_xchg(dst, as_long(as_double(atomic_xchg(dst, 0.0)) + tmp))) != 0.0);
+#else
+          while ((tmp = atomic_xchg(dst, as_int(as_float(atomic_xchg(dst, 0.0)) + tmp))) != 0.0);
+#endif // __REAL_IS_DOUBLE__
     }
-
 }

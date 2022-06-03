@@ -18,7 +18,6 @@ BUILD_TARGETS = all base mod cl-binds cl-compiler clkernels clean data data64 dr
 
 
 all: base libs
-	$(MAKE) -C ./ libumagnus libumagnus64
 
 
 base: mod cl-compiler kernloader kernloader64 uMagNUS uMagNUS64

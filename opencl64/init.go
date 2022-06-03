@@ -86,8 +86,8 @@ func Init(gpu int) {
 			if idx == 0 {
 				tmpClPlatforms = append(tmpClPlatforms, plat)
 			}
-			// Only add devices that can support FP64 calculations
-			if strings.Contains(gpDev.Extensions(), "cl_khr_fp64") || strings.Contains(gpDev.Extensions(), "cl_amd_fp64") {
+			// Only add devices that can support FP64 calculations and 64-bit atomics
+			if strings.Contains(gpDev.Extensions(), "cl_khr_fp64") || strings.Contains(gpDev.Extensions(), "cl_amd_fp64") || strings.Contains(gpDev.Extensions(), "cl_khr_int64_base_atomics") || strings.Contains(gpDev.Extensions(), "cl_khr_int64_extended_atomics") {
 				tmpGpuList = append(tmpGpuList, GPU{Platform: plat, Device: gpDev})
 				tmpClDevices = append(tmpClDevices, gpDev)
 			}

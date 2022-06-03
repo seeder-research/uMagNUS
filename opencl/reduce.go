@@ -29,6 +29,7 @@ func Sum(in *data.Slice) float32 {
 	// check input slice for event to synchronize (if any)
 	var event *cl.Event
 	syncEvent := in.GetEvent(0)
+	fmt.Printf("    Reducesum() config: %+v \n", reducecfg)
 	if syncEvent == nil {
 		event = k_reducesum_async(in.DevPtr(0), out, 0,
 			in.Len(), reducecfg, nil)
@@ -41,9 +42,10 @@ func Sum(in *data.Slice) float32 {
 		fmt.Printf("WaitForEvents failed in sum: %+v \n", err)
 	}
 	group_results := copyback(out)
-	sum_result := float64(0.0)
+	sum_result := float64(0)
 	for _, v := range group_results {
 		sum_result += float64(v)
+		fmt.Printf("    Output of reducesum(): %+v \n", v)
 	}
 	return float32(sum_result)
 }
@@ -288,7 +290,11 @@ func reduceBuf(initVal float32) unsafe.Pointer {
 // copy back single float result from GPU and recycle buffer
 func copyback(buf unsafe.Pointer) []float32 {
 	result := make([]float32, ReduceWorkgroups)
-	MemCpyDtoH(unsafe.Pointer(&result[0]), buf, ReduceWorkgroups*SIZEOF_FLOAT32)
+	waitEvent := MemCpyDtoH(unsafe.Pointer(&result[0]), buf, ReduceWorkgroups*SIZEOF_FLOAT32)
+	if err := cl.WaitForEvents(waitEvent); err != nil {
+		fmt.Printf("WaitForEvents in copyback failed: %+v \n", err)
+		return []float32{}
+	}
 	reduceBuffers <- (*cl.MemObject)(buf)
 	return result
 }
