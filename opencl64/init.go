@@ -249,12 +249,18 @@ func Init(gpu int) {
 
 	config1DSize = ClTotalPE
 
-	// Reduce kernel launch parameters are updated on update to mesh size
-	reducecfg.Grid[0] = ClMaxWGSize
-	if ClMaxWGSize > 128 {
-		reducecfg.Grid[0] = 128
+	// Reduce kernel launch parameters are updated on start
+	reducecfg.Block[0] = 64
+	if ClMaxWGSize < ReduceWorkitems {
+		reducecfg.Block[0] = ClMaxWGSize
+	} else {
+		if ReduceWorkitems > 64 {
+			reducecfg.Block[0] = ReduceWorkitems
+		}
 	}
-	reducecfg.Block[0] = reducecfg.Grid[0]
+	if ReduceWorkgroups > 0 {
+		reducecfg.Grid[0] = ReduceWorkgroups * reducecfg.Block[0]
+	}
 
 	if Debug {
 		fmt.Printf("    PlatformInfo: \n%+v \n", PlatformInfo)

@@ -28,6 +28,8 @@ func main() {
 
 	opencl.Synchronous = *engine.Flag_sync
 	opencl.Debug = *engine.Flag_debug
+	opencl.ReduceWorkitems = *engine.Flag_wi
+	opencl.ReduceWorkgroups = *engine.Flag_wg
 
 	// Check flag and initialize engine
 	if len(*engine.Flag_gpulist) > 0 {

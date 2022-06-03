@@ -1,221 +1,55 @@
 __kernel void
-reducesum(__global real_t* __restrict     src,
-          __global real_t* __restrict     dst,
-                   real_t             initVal,
-                      int                   n,
-          __local  real_t*            scratch){
+reducesum(         __global real_t*    __restrict     src,
+          volatile __global real_t*    __restrict     dst,
+                            real_t                initVal,
+                               int                      n,
+          volatile __local  real_t*               scratch){
 
     // Calculate indices
     int    local_idx = get_local_id(0);   // Work-item index within workgroup
     int       grp_sz = get_local_size(0); // Total number of work-items in each workgroup
-    real_t       res = initVal;
+    int            i = get_group_id(0)*grp_sz + local_idx;
+    int       stride = get_global_size(0);
+    // Initialize ring accumulator for intermediate results
+    real_t accum[__REDUCE_REG_COUNT__];
+    for (unsigned int s = 0; s < __REDUCE_REG_COUNT__; s++) {
+        accum[s] = 0.0;
+    }
+    accum[0] = initVal;
+    unsigned int itr = 0;
 
-    // Accumulators for intermediate results
-    real_t data1 = 0.0;
-    real_t data2 = 0.0;
-    real_t data3 = 0.0;
-    real_t data4 = 0.0;
+    // Read from global memory and accumulate in workitem ring accumulator
+    while (i < n) {
+        accum[itr] += src[i]; // Load value from global buffer into ring accumulator
 
-    // Indices for accumulators for intermediate results
-    unsigned int id1 = 0;
-    unsigned int id2 = 0;
-    unsigned int id3 = 0;
-    unsigned int id4 = 0;
-
-    for (int base_gid = 0; base_gid < n; base_gid += grp_sz) {
-        // Load data from global buffer to local buffer
-        scratch[local_idx] = 0.0;
-        int global_idx = base_gid + local_idx;
-        if (global_idx < n) {
-            scratch[local_idx] = src[global_idx];
+        // Update pointer to ring accumulator
+        itr++;
+        if (itr >= __REDUCE_REG_COUNT__) {
+            itr = 0;
         }
 
-        // Synchronize workgroup before reduction in local buffer
-        barrier(CLK_LOCAL_MEM_FENCE);
-
-        // Reduce in local buffer
-        for (unsigned int s = (grp_sz >> 1); s > 1; s >>= 1 ) {
-            if (local_idx < s) {
-                scratch[local_idx] += scratch[local_idx + s];
-            }
-
-            // Synchronize workgroup before next iteration
-            barrier(CLK_LOCAL_MEM_FENCE);
-        }
-
-        // Accumulate intermediate result in register of
-        // corresponding workitem
-        if (local_idx == id1) {
-            data1 = scratch[0] + scratch[1];
-        }
-
-        // Synchronize workgroup before continuing
-        barrier(CLK_LOCAL_MEM_FENCE);
-
-        // Increment index of first stage, and reduce if needed,
-        // accumulating result in second stage
-        id1++;
-        if (id1 >= grp_sz) {
-            // Reset index of first stage
-            id1 = 0;
-
-            // Reduce intermediate results of first stage and
-            // accumulate in second stage
-            scratch[local_idx] = data1;
-
-            // Synchronize workgroup before reduction in local buffer
-            barrier(CLK_LOCAL_MEM_FENCE);
-
-            // Reduce in local buffer
-            for (unsigned int s = (grp_sz >> 1); s > 1; s >>= 1 ) {
-                if (local_idx < s) {
-                    scratch[local_idx] += scratch[local_idx + s];
-                }
-
-                // Synchronize workgroup before next iteration
-                barrier(CLK_LOCAL_MEM_FENCE);
-            }
-
-            // Accumulate intermediate result in register of
-            // corresponding workitem (stage 2)
-            if (local_idx == id2) {
-                data2 = scratch[0] + scratch[1];
-            }
-
-            // Synchronize workgroup before continuing
-            barrier(CLK_LOCAL_MEM_FENCE);
-
-            // Increment index of second stage, and reduce if needed,
-            // accumulating result in third stage
-            id2++;
-            if (id2 >= grp_sz) {
-                // Reset index of second stage
-                id2 = 0;
-
-                // Reduce intermediate results of second stage and
-                // accumulate in third stage
-                scratch[local_idx] = data2;
-
-                // Synchronize workgroup before reduction in local buffer
-                barrier(CLK_LOCAL_MEM_FENCE);
-
-                // Reduce in local buffer
-                for (unsigned int s = (grp_sz >> 1); s > 1; s >>= 1 ) {
-                    if (local_idx < s) {
-                        scratch[local_idx] += scratch[local_idx + s];
-                    }
-
-                    // Synchronize workgroup before next iteration
-                    barrier(CLK_LOCAL_MEM_FENCE);
-                }
-
-                // Accumulate intermediate result in register of
-                // corresponding workitem (stage 3)
-                if (local_idx == id3) {
-                    data3 = scratch[0] + scratch[1];
-                }
-
-                // Synchronize workgroup before continuing
-                barrier(CLK_LOCAL_MEM_FENCE);
-
-                // Increment index of third stage, and reduce if needed,
-                // accumulating result in fourth stage
-                id3++;
-                if (id3 >= grp_sz) {
-                    // Reset index of third stage
-                    id3 = 0;
-
-                    // Reduce intermediate results of third stage and
-                    // accumulate in fourth stage
-                    scratch[local_idx] = data3;
-
-                    // Synchronize workgroup before reduction in local buffer
-                    barrier(CLK_LOCAL_MEM_FENCE);
-
-                    // Reduce in local buffer
-                    for (unsigned int s = (grp_sz >> 1); s > 1; s >>= 1 ) {
-                        if (local_idx < s) {
-                            scratch[local_idx] += scratch[local_idx + s];
-                        }
-
-                        // Synchronize workgroup before next iteration
-                        barrier(CLK_LOCAL_MEM_FENCE);
-                    }
-
-                    // Accumulate intermediate result in register of
-                    // corresponding workitem (stage 4)
-                    if (local_idx == id4) {
-                        data4 = scratch[0] + scratch[1];
-                    }
-
-                    // Synchronize workgroup before continuing
-                    barrier(CLK_LOCAL_MEM_FENCE);
-
-                    // Increment index of fourth stage, and reduce if needed,
-                    // accumulating result in final register
-                    id4++;
-                    if (id4 >= grp_sz) {
-                        // Reset index of fourth stage
-                        id4 = 0;
-
-                        // Reduce intermediate results of fourth stage and
-                        // accumulate in final register
-                        scratch[local_idx] = data4;
-
-                        // Synchronize workgroup before reduction in local buffer
-                        barrier(CLK_LOCAL_MEM_FENCE);
-
-                        // Reduce in local buffer
-                        for (unsigned int s = (grp_sz >> 1); s > 1; s >>= 1 ) {
-                            if (local_idx < s) {
-                                scratch[local_idx] += scratch[local_idx + s];
-                            }
-
-                            // Synchronize workgroup before next iteration
-                            barrier(CLK_LOCAL_MEM_FENCE);
-                        }
-
-                        // Accumulate intermediate result in register of
-                        // corresponding workitem (final stage)
-                        if (local_idx == id4) {
-                            res += scratch[0] + scratch[1];
-                        }
-
-                        // Synchronize workgroup before continuing
-                        barrier(CLK_LOCAL_MEM_FENCE);
-
-                        // Reset registers of fourth stage
-                        data4 = 0.0;
-                    }
-
-                    // Reset registers of third stage
-                    data3 = 0.0;
-                }
-
-                // Reset registers of second stage
-                data2 = 0.0;
-            }
-
-            // Reset registers of first stage
-            data1 = 0.0;
-        }
+        // Update pointer to next global value
+        i += stride;
     }
 
     // All elements in global buffer have been picked up
-    // Reduce intermediate results in each stage and accumulate
-    // in final stage
+    // Reduce intermediate results and add atomically to global buffer
 
-    // Synchronize workgroup before reduction in local buffer
-    barrier(CLK_LOCAL_MEM_FENCE);
+    // Reduce value in ring buffer
+    for (unsigned int s1 = (__REDUCE_REG_COUNT__ >> 1); s1 > 1; s1 >>= 1) {
+        for (unsigned int s2 = 0; s2 < s1; s2++) {
+            accum[s2] += accum[s2+s1];
+        }
+    }
 
-    // Stage 1
-    scratch[local_idx] = data1;
+    // Reduce in local buffer
+    scratch[local_idx] = accum[0] + accum[1];
 
     // Synchronize workgroup before reduction in local buffer
     barrier(CLK_LOCAL_MEM_FENCE);
 
     // Reduce in local buffer
-    for (unsigned int s = (grp_sz >> 1); s > 1; s >>= 1 ) {
+    for (unsigned int s = (grp_sz >> 1); s > 32; s >>= 1 ) {
         if (local_idx < s) {
             scratch[local_idx] += scratch[local_idx + s];
         }
@@ -224,86 +58,20 @@ reducesum(__global real_t* __restrict     src,
         barrier(CLK_LOCAL_MEM_FENCE);
     }
 
-    // Accumulate intermediate result in register of
-    // corresponding workitem (stage 2)
-    if (local_idx == id2) {
-        data2 = scratch[0] + scratch[1];
+    // Unroll loop for remaining 32 workitems
+    if (local_idx < 32) {
+        volatile __local real_t* smem = scratch;
+        smem[local_idx] += smem[local_idx + 32];
+        smem[local_idx] += smem[local_idx + 16];
+        smem[local_idx] += smem[local_idx +  8];
+        smem[local_idx] += smem[local_idx +  4];
+        smem[local_idx] += smem[local_idx +  2];
+        smem[local_idx] += smem[local_idx +  1];
     }
 
-    // Synchronize workgroup before continuing
-    barrier(CLK_LOCAL_MEM_FENCE);
-
-    // Stage 2
-    scratch[local_idx] = data2;
-
-    // Synchronize workgroup before reduction in local buffer
-    barrier(CLK_LOCAL_MEM_FENCE);
-
-    // Reduce in local buffer
-    for (unsigned int s = (grp_sz >> 1); s > 1; s >>= 1 ) {
-        if (local_idx < s) {
-            scratch[local_idx] += scratch[local_idx + s];
-        }
-
-        // Synchronize workgroup before next iteration
-        barrier(CLK_LOCAL_MEM_FENCE);
-    }
-
-    // Accumulate intermediate result in register of
-    // corresponding workitem (stage 3)
-    if (local_idx == id3) {
-        data3 = scratch[0] + scratch[1];
-    }
-
-    // Synchronize workgroup before continuing
-    barrier(CLK_LOCAL_MEM_FENCE);
-
-    // Stage 3
-    scratch[local_idx] = data3;
-
-    // Synchronize workgroup before reduction in local buffer
-    barrier(CLK_LOCAL_MEM_FENCE);
-
-    // Reduce in local buffer
-    for (unsigned int s = (grp_sz >> 1); s > 1; s >>= 1 ) {
-        if (local_idx < s) {
-            scratch[local_idx] += scratch[local_idx + s];
-        }
-
-        // Synchronize workgroup before next iteration
-        barrier(CLK_LOCAL_MEM_FENCE);
-    }
-
-    // Accumulate intermediate result in register of
-    // corresponding workitem (stage 4)
-    if (local_idx == id4) {
-        data4 = scratch[0] + scratch[1];
-    }
-
-    // Synchronize workgroup before continuing
-    barrier(CLK_LOCAL_MEM_FENCE);
-
-    // Stage 4
-    scratch[local_idx] = data4;
-
-    // Synchronize workgroup before reduction in local buffer
-    barrier(CLK_LOCAL_MEM_FENCE);
-
-    // Reduce in local buffer
-    for (unsigned int s = (grp_sz >> 1); s > 1; s >>= 1 ) {
-        if (local_idx < s) {
-            scratch[local_idx] += scratch[local_idx + s];
-        }
-
-        // Synchronize workgroup before next iteration
-        barrier(CLK_LOCAL_MEM_FENCE);
-    }
-
-    // Accumulate intermediate result in register of
-    // corresponding workitem (final stage)
+    // Add atomically to global buffer
     if (local_idx == 0) {
-        res += scratch[0] + scratch[1];
-        dst[0] = res;
+        dst[get_group_id(0)] = scratch[0];
     }
 
 }

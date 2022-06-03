@@ -1,5 +1,6 @@
 #if defined(__REAL_IS_DOUBLE__)
   #if defined(cl_khr_fp64) || defined(cl_amd_fp64)
+    #define realint_t long
     #define real_t double
     #define real_t2 double2
     #define real_t3 double3
@@ -9,10 +10,15 @@
     #elif defined(cl_khr_fp64)
       #pragma OPENCL EXTENSION cl_khr_fp64 : enable
     #endif // cl_*_fp64
+    #define AS_INT as_long
+    #define AS_REAL as_double
   #endif
 #else
+  #define realint_t int
   #define real_t float
   #define real_t2 float2
   #define real_t3 float3
   #define real_t4 float4
+  #define AS_INT as_int
+  #define AS_REAL as_float
 #endif // __REAL_IS_DOUBLE__

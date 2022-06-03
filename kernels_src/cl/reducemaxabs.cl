@@ -1,46 +1,54 @@
 __kernel void
-reducemaxabs(__global real_t* __restrict     src,
-             __global real_t* __restrict     dst,
-                      real_t             initVal,
-                         int                   n,
-              __local real_t*            scratch) {
+reducemaxabs(         __global    real_t* __restrict     src,
+             volatile __global realint_t* __restrict     dst,
+                                  real_t             initVal,
+                                     int                   n,
+             volatile  __local    real_t*            scratch) {
 
     // Calculate indices
-    int    local_idx = get_local_id(0);   // Work-item index within workgroup
-    int       grp_sz = get_local_size(0); // Total number of work-items in each workgroup
-    real_t       res = 0.0;
+    unsigned int    local_idx = get_local_id(0);   // Work-item index within workgroup
+    unsigned int       grp_sz = get_local_size(0); // Total number of work-items in each workgroup
+    unsigned int            i = get_group_id(0)*grp_sz + local_idx;
+    unsigned int       stride = get_global_size(0);
+    real_t               mine = initVal;
 
-    for (int idx_base = 0; idx_base < n; idx_base += grp_sz) {
-        int global_idx = idx_base + local_idx;
-        scratch[local_idx] = 0.0;
-        if (global_idx < n) {
-            scratch[local_idx] = fabs(src[global_idx]);
+    while (i < (unsigned int)(n)) {
+        mine = fmax(mine, src[i]);
+        i += stride;
+    }
+
+    // Load workitem value into local buffer and synchronize
+    scratch[local_idx] = mine;
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    // Reduce using lor loop
+    for (unsigned int s = (grp_sz >> 1); s > 32; s >>= 1) {
+        if (local_idx < s) {
+            scratch[local_idx] = fmax(scratch[local_idx], scratch[local_idx + s]);
         }
 
-        // Add barrier to sync all threads
+        // Synchronize workitems before next iteration
         barrier(CLK_LOCAL_MEM_FENCE);
+    }
 
-        for (unsigned int s = (grp_sz >> 1); s > 1; s >>= 1 ) {
-            if (local_idx < s) {
-                real_t other = scratch[local_idx + s];
-                real_t  mine = scratch[local_idx];
-                scratch[local_idx] = fmax(mine, other);
-            }
-
-            // Synchronize work-group
-            barrier(CLK_LOCAL_MEM_FENCE);
-        }
-
-        // Store reduction result for each iteration and move to next
-        if (local_idx == 0) {
-            res = fmax(scratch[0], scratch[1]);
-        }
-
+    // Unroll for loop that executes within one unit that works on 32 workitems
+    if (local_idx < 32) {
+        volatile __local real_t* smem = scratch;
+        smem[local_idx] = fmax(smem[local_idx], smem[local_idx + 32]);
+        smem[local_idx] = fmax(smem[local_idx], smem[local_idx + 16]);
+        smem[local_idx] = fmax(smem[local_idx], smem[local_idx +  8]);
+        smem[local_idx] = fmax(smem[local_idx], smem[local_idx +  4]);
+        smem[local_idx] = fmax(smem[local_idx], smem[local_idx +  2]);
     }
 
     // Store reduction result for each iteration and move to next
     if (local_idx == 0) {
-        dst[0] = fmax(res, initVal);
+        mine = fmax(scratch[0], scratch[1]);
+#if defined(__REAL_IS_DOUBLE__)
+        atom_max(dst, as_long(mine));
+#else
+        atom_max(dst, as_int(mine));
+#endif // __REAL_IS_DOUBLE__
     }
 
 }
