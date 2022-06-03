@@ -86,8 +86,11 @@ func Init(gpu int) {
 			if idx == 0 {
 				tmpClPlatforms = append(tmpClPlatforms, plat)
 			}
-			tmpGpuList = append(tmpGpuList, GPU{Platform: plat, Device: gpDev})
-			tmpClDevices = append(tmpClDevices, gpDev)
+			// Only add devices that can support 32-bit atomics
+			if strings.Contains(gpDev.Extensions(), "cl_khr_global_int32_base_atomics") && strings.Contains(gpDev.Extensions(), "cl_khr_global_int32_extended_atomics") {
+				tmpGpuList = append(tmpGpuList, GPU{Platform: plat, Device: gpDev})
+				tmpClDevices = append(tmpClDevices, gpDev)
+			}
 		}
 	}
 
