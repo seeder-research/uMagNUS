@@ -72,7 +72,7 @@ reducedot(         __global real_t* __restrict     src1,
 
     // Add atomically to global buffer
     if (local_idx == 0) {
-        dst[get_group_id(0)] = scratch[0];
+        atomicAdd_r(dst, scratch[0]);
     }
 
 }
