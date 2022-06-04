@@ -1,10 +1,10 @@
 __kernel void
-reducemaxdiff(         __global real_t*    __restrict    src1,
-                       __global real_t*    __restrict    src2,
-              volatile __global realint_t* __restrict     dst,
-                                real_t                initVal,
-                                   int                      n,
-              volatile __local  real_t*               scratch) {
+reducemaxdiff(         __global real_t* __restrict    src1,
+                       __global real_t* __restrict    src2,
+              volatile __global real_t* __restrict     dst,
+                                real_t             initVal,
+                                   int                   n,
+              volatile __local  real_t*            scratch) {
 
     // Calculate indices
     unsigned int    local_idx = get_local_id(0);   // Work-item index within workgroup
@@ -45,11 +45,7 @@ reducemaxdiff(         __global real_t*    __restrict    src1,
     // Store reduction result for each iteration and move to next
     if (local_idx == 0) {
         mine = fmax(scratch[0], scratch[1]);
-#if defined(__REAL_IS_DOUBLE__)
-        atom_max(dst, as_long(mine));
-#else
-        atom_max(dst, as_int(mine));
-#endif // __REAL_IS_DOUBLE__
+        atomicMax_r(dst, mine);
     }
 
 }

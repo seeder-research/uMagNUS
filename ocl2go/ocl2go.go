@@ -37,7 +37,6 @@ func main() {
 	tm["float"] = RealType
 	tm["double"] = RealType
 	tm["real_t"] = RealType
-	tm["realint_t"] = RealType
 	for _, fname := range flag.Args() {
 		ocl2go(fname)
 	}
@@ -156,7 +155,6 @@ var tm = map[string]string{
 	"double3*":   "unsafe.Pointer",
 	"double4*":   "unsafe.Pointer",
 	"int":        "int",
-	"realint_t*": "unsafe.Pointer",
 	"real_t*":    "unsafe.Pointer",
 	"real_t2*":   "unsafe.Pointer",
 	"real_t3*":   "unsafe.Pointer",
