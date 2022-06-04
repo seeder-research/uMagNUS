@@ -12,8 +12,8 @@ import (
 	"text/template"
 	"unicode"
 
-	opencl "github.com/seeder-research/uMagNUS/opencl"
 	engine "github.com/seeder-research/uMagNUS/engine"
+	opencl "github.com/seeder-research/uMagNUS/opencl"
 )
 
 var (
