@@ -9,15 +9,20 @@ ifeq ($(OS), Windows_NT)
 	CLEANLIBFILES = rm -frv $(GOPATH)/bin/*.dll
 endif
 
+##LIBUMAGNUS32SRC := $(PWD)/kernels_src/Kernels/kernels32.h
+##LIBUMAGNUS64SRC := $(PWD)/kernels_src/Kernels/kernels64.h
+LIBUMAGNUS32SRC := $(PWD)/kernels_src/Kernels/printkernels32.h
+LIBUMAGNUS64SRC := $(PWD)/kernels_src/Kernels/printkernels64.h
+
 CGO_CFLAGS_ALLOW='(-fno-schedule-insns|-malign-double|-ffast-math)'
 
-BUILD_TARGETS = all base mod cl-binds cl-compiler clkernels clean data data64 draw draw64 dump dump64 engine engine64 freetype gui realclean hooks httpfs mag mag64 oommf oommf64 script script64 timer uMagNUS uMagNUS64 util loader loader64 kernloader kernloader64 libumagnus libumagnus64 libs
+BUILD_TARGETS = all base mod cl-binds cl-compiler clkernels clean data data64 draw draw64 dump dump64 engine engine64 freetype gui realclean hooks httpfs mag mag64 oommf oommf64 script script64 kerneldumper timer uMagNUS uMagNUS64 util loader loader64 kernloader kernloader64 libumagnus libumagnus64 libs
 
 
 .PHONY: $(BUILD_TARGETS)
 
 
-all: base libs
+all: base
 
 
 base: mod cl-compiler kernloader kernloader64 uMagNUS uMagNUS64
@@ -97,15 +102,17 @@ kernloader64: loader64
 	$(MAKE) -C ./cmd/uMagNUS-kernelLoader64 all
 
 
-libumagnus: cl-compiler
+libumagnus: cl-compiler kerneldumper
 	rm -f ./libumagnus/*.cc
-	uMagNUS-clCompiler -args="-cl-opt-disable -cl-mad-enable -cl-finite-math-only -cl-single-precision-constant -cl-fp32-correctly-rounded-divide-sqrt -cl-kernel-arg-info" -std="CL1.2" -iopts="-I$(PWD)/kernels_src" -dump $(PWD)/kernels_src/Kernels/kernels32.h >> libumagnus/libumagnus.cc
+	uMagNUS-kernelDump -o $(LIBUMAGNUS32SRC)
+	uMagNUS-clCompiler -args="-cl-opt-disable -cl-mad-enable -cl-finite-math-only -cl-single-precision-constant -cl-fp32-correctly-rounded-divide-sqrt -cl-kernel-arg-info" -std="CL1.2" -iopts="-I$(PWD)/kernels_src" -dump $(LIBUMAGNUS32SRC) >> libumagnus/libumagnus.cc
 	$(MAKE) -C ./libumagnus lib
 
 
-libumagnus64: cl-compiler
+libumagnus64: cl-compiler kerneldumper
 	rm -f ./libumagnus/*.cc
-	uMagNUS-clCompiler -args="-cl-opt-disable -cl-mad-enable -cl-finite-math-only -cl-fp32-correctly-rounded-divide-sqrt -cl-kernel-arg-info -D__REAL_IS_DOUBLE__" -std="CL1.2" -iopts="-I$(PWD)/kernels_src" -dump $(PWD)/kernels_src/Kernels/kernels64.h >> libumagnus/libumagnus64.cc
+	uMagNUS-kernelDump -k64 -o $(LIBUMAGNUS64SRC)
+	uMagNUS-clCompiler -args="-cl-opt-disable -cl-mad-enable -cl-finite-math-only -cl-fp32-correctly-rounded-divide-sqrt -cl-kernel-arg-info -D__REAL_IS_DOUBLE__" -std="CL1.2" -iopts="-I$(PWD)/kernels_src" -dump $(LIBUMAGNUS64SRC) >> libumagnus/libumagnus64.cc
 	$(MAKE) -C ./libumagnus lib64
 
 
@@ -122,6 +129,12 @@ data64: cl-binds util
 
 script: data
 	$(MAKE) -C ./script all
+
+
+kerneldumper: go.mod
+	$(MAKE) -C ./opencl all
+	$(MAKE) -C ./opencl64 all
+	$(MAKE) -C ./cmd/uMagNUS-kernelDump all
 
 
 script64: data64
@@ -183,6 +196,7 @@ clean:
 	$(MAKE) -C ./cl_loader clean
 	$(MAKE) -C ./opencl clean
 	$(MAKE) -C ./opencl64 clean
+	$(MAKE) -C ./kernels_src/Kernels clean
 	$(MAKE) -C ./libumagnus clean
 	$(MAKE) -C ./ocl2go realclean
 	$(MAKE) -C ./cl/stubs clean
@@ -192,6 +206,7 @@ realclean: clean
 	${MAKE} -C ./cl_loader realclean
 	${MAKE} -C ./opencl realclean
 	${MAKE} -C ./opencl64 realclean
+	$(MAKE) -C ./kernels_src/Kernels realclean
 	$(MAKE) -C ./libumagnus realclean
 	$(MAKE) -C ./ocl2go realclean
 	$(MAKE) -C ./cl/stubs realclean
