@@ -20,7 +20,7 @@ BUILD_TARGETS = all base mod cl-binds cl-compiler clkernels clean data data64 dr
 .PHONY: $(BUILD_TARGETS)
 
 
-all: base
+all: base libs
 
 
 base: mod cl-compiler kernloader kernloader64 uMagNUS uMagNUS64
@@ -90,6 +90,9 @@ loader: cl-binds
 loader64: cl-binds
 	$(MAKE) -C ./cl_loader all
 	$(MAKE) -C ./loader64 all
+
+
+loaders: loader loader64
 
 
 kernloader: loader

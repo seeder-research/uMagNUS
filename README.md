@@ -31,11 +31,15 @@ Consider downloading a pre-compiled binary. If you want to compile nevertheless:
         - Ubuntu 18.04 with Intel HD Graphics 630 (default Intel drivers from ubuntu repo)
         - Ubuntu 20.04 with Nvidia Quadro P100 (nvidia-dkms-510 driver from nvidia repo)
         - Ubuntu 20.04 with Nvidia Quadro P2000 (nvidia-dkms-510 driver from nvidia repo)
+        - Ubuntu 22.04 with Nvidia Quadro P100 (nvidia-dkms-515 driver from nvidia repo)
+        - Ubuntu 22.04 with Nvidia Quadro P2000 (nvidia-dkms-515 driver from nvidia repo)
         - Ubuntu 20.04 with Nvidia RTX 2080 Super (nvidia-dkms-510 driver from nvidia repo)
+        - Ubuntu 22.04 with Nvidia RTX 2080 Super (nvidia-dkms-515 driver from nvidia repo)
         - Ubuntu 20.04 with Nvidia GTX 660 Ti (nvidia-dkms-418 driver from nvidia repo)
+        - Ubuntu 20.04 with AMD RX 6500 XT (rocm-dkms driver from rocm repo)
         - Windows 11 using MSYS2 with Nvidia MX150 (Nvidia 416.xx to 512.xx drivers)
         - Windows 11 using MSYS2 with Intel UHD Graphics 620 (Intel 26.xx to 30.xx drivers)
-  * install TDM GCC compiler
+  * install TDM GCC compiler is gcc from msys2 is not compatible
     - https://jmeubank.github.io/tdm-gcc/download/
   * install Go 
     - https://golang.org/dl/
@@ -63,7 +67,7 @@ To do all at once on Ubuntu:
 sudo apt-get install git golang-go gcc gnuplot
 export GOPATH=$HOME git clone github.com/seeder-research/uMagNUS
 cd uMagNUS
-make cl-compiler kernloader kernloader64 uMagNUS uMagNUS64
+make base
 ```
 
 Adding your own extensions and opencl kernels
@@ -104,7 +108,7 @@ The build steps above only build the binaries for uMagNUS and uMagNUS64. There
 are additional dependencies that need to be built before uMagNUS can be run.
   * Building the umagnus libraries
     - cd into the the source directory
-    - `make loader loader64`
+    - `make loaders`
         - This creates the shared stub library in cl_loader/lib (libumagnus.so
           and libumagnus64.so for linux, umagnus.dll and umagnus64.dll for
           windows) in which there are no OpenCL kernels
@@ -112,7 +116,7 @@ are additional dependencies that need to be built before uMagNUS can be run.
           linux and PATH for windows
         - Run ldd on the uMagNUS and uMagNUS64 binaries to check if the
           environment is set up to correctly pick up the umagnus libraries
-    - `make libumagnus libumagnus64`
+    - `make libs`
         - This step needs to be run on the machine on which the GPU(s) will be
           used to run uMagNUS and uMagNUS64
         - The shared libraries containing the OpenCL kernels are located in
