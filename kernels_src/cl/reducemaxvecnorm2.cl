@@ -9,8 +9,9 @@ reducemaxvecnorm2(         __global real_t* __restrict       x,
 
     // Calculate indices
     unsigned int    local_idx = get_local_id(0);   // Work-item index within workgroup
+    unsigned int       grp_id = get_group_id(0);   // ID of workgroup
     unsigned int       grp_sz = get_local_size(0); // Total number of work-items in each workgroup
-    unsigned int            i = get_group_id(0)*grp_sz + local_idx;
+    unsigned int            i = grp_id*grp_sz + local_idx;
     unsigned int       stride = get_global_size(0);
     real_t               mine = initVal;
 
@@ -46,8 +47,9 @@ reducemaxvecnorm2(         __global real_t* __restrict       x,
 
     // Store reduction result for each iteration and move to next
     if (local_idx == 0) {
-        mine = fmax(scratch[0], scratch[1]);
-        atomicMax_r(dst, mine);
+//        mine = fmax(scratch[0], scratch[1]);
+//        atomicMax_r(dst, mine);
+        dst[grp_id] = fmax(scratch[0], scratch[1]);
     }
 
 }

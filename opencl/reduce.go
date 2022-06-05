@@ -40,7 +40,12 @@ func Sum(in *data.Slice) float32 {
 	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in sum: %+v \n", err)
 	}
-	return copyback(out)
+	results := copybackSlice(out)
+	res := float32(0)
+	for _, v := range results {
+		res += v
+	}
+	return res
 }
 
 // Dot product
@@ -80,7 +85,12 @@ func Dot(a, b *data.Slice) float32 {
 			if err := cl.WaitForEvents(eventList); err != nil {
 				fmt.Printf("WaitForEvents failed at index %d in dot: %+v \n", idx, err)
 			}
-			*res = copyback(outBufferPtr)
+			results := copybackSlice(outBufferPtr)
+			tmp := float32(0)
+			for _, v := range results {
+				tmp += v
+			}
+			*res = tmp
 		}(c, []*cl.Event{eventSync[c]}, out[c], &hostResult[c])
 	}
 	// Must synchronize since result is copied from device back to host
@@ -109,7 +119,12 @@ func MaxAbs(in *data.Slice) float32 {
 	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in maxabs: %+v \n", err)
 	}
-	return copyback(out)
+	results := copybackSlice(out)
+	res := float64(results[0])
+	for idx := 1; idx < ReduceWorkgroups; idx++ {
+		res = math.Max(res, float64(results[idx]))
+	}
+	return float32(res)
 }
 
 // Maximum element-wise difference
@@ -147,7 +162,12 @@ func MaxDiff(a, b *data.Slice) []float32 {
 			if err := cl.WaitForEvents(eventList); err != nil {
 				fmt.Printf("WaitForEvents failed in maxabs: %+v \n", err)
 			}
-			*res = copyback(outBufferPtr)
+			results := copybackSlice(outBufferPtr)
+			tmp := float64(results[0])
+			for idx := 1; idx < ReduceWorkgroups; idx++ {
+				tmp = math.Max(tmp, float64(results[idx]))
+			}
+			*res = float32(tmp)
 		}([]*cl.Event{eventSync[c]}, out[c], &returnVal[c])
 	}
 	// Must synchronize since returnVal is copied from device back to host
@@ -180,7 +200,12 @@ func MaxVecNorm(v *data.Slice) float64 {
 	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in maxvecnorm: %+v \n", err)
 	}
-	return math.Sqrt(float64(copyback(out)))
+	results := copybackSlice(out)
+	res := float64(results[0])
+	for idx := 1; idx < ReduceWorkgroups; idx++ {
+		res = math.Max(res, float64(results[idx]))
+	}
+	return math.Sqrt(float64(res))
 }
 
 // Maximum of the norms of the difference between all vectors (x1,y1,z1) and (x2,y2,z2)
@@ -217,7 +242,12 @@ func MaxVecDiff(x, y *data.Slice) float64 {
 	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in maxvecdiff: %+v \n", err)
 	}
-	return math.Sqrt(float64(copyback(out)))
+	results := copybackSlice(out)
+	res := float64(results[0])
+	for idx := 1; idx < ReduceWorkgroups; idx++ {
+		res = math.Max(res, float64(results[idx]))
+	}
+	return math.Sqrt(float64(res))
 }
 
 var reduceBuffers chan (*cl.MemObject) // pool of 1-float OpenCL buffers for reduce
@@ -229,7 +259,7 @@ func reduceBuf(initVal float32) unsafe.Pointer {
 		initReduceBuf()
 	}
 	buf := <-reduceBuffers
-	waitEvent, err := ClCmdQueue.EnqueueFillBuffer(buf, unsafe.Pointer(&initVal), SIZEOF_FLOAT32, 0, SIZEOF_FLOAT32, nil)
+	waitEvent, err := ClCmdQueue.EnqueueFillBuffer(buf, unsafe.Pointer(&initVal), SIZEOF_FLOAT32, 0, ReduceWorkgroups*SIZEOF_FLOAT32, nil)
 	if err != nil {
 		fmt.Printf("reduceBuf failed: %+v \n", err)
 		return nil
@@ -250,12 +280,20 @@ func copyback(buf unsafe.Pointer) float32 {
 	return result
 }
 
+// copy back float slice result from GPU and recycle buffer
+func copybackSlice(buf unsafe.Pointer) []float32 {
+	result := make([]float32, ReduceWorkgroups)
+	MemCpyDtoH(unsafe.Pointer(&result[0]), buf, ReduceWorkgroups*SIZEOF_FLOAT32)
+	reduceBuffers <- (*cl.MemObject)(buf)
+	return result
+}
+
 // initialize pool of 1-float and N-float OPENCL reduction buffers
 func initReduceBuf() {
 	const N = 128
 	reduceBuffers = make(chan *cl.MemObject, N)
 	for i := 0; i < N; i++ {
-		reduceBuffers <- MemAlloc(SIZEOF_FLOAT32)
+		reduceBuffers <- MemAlloc(ReduceWorkgroups * SIZEOF_FLOAT32)
 	}
 }
 

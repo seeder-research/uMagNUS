@@ -11,44 +11,4 @@
 
 #define __REDUCE_REG_COUNT__ 16
 
-#if defined(__REAL_IS_DOUBLE__)
-
-static inline void atomicAdd_r(volatile __global double* addr, double val) {
-    union{
-        unsigned long u64;
-        double f64;
-    } next, expected, current;
-    current.f64 = *addr;
-    do {
-        next.f64 = (expected.f64 = current.f64) + val;
-        current.u64 = atom_cmpxchg( (volatile __global unsigned long *) addr,
-            expected.u64, next.u64);
-    } while (current.u64 != expected.u64);
-}
-
-static inline void atomicMax_r(volatile __global double* addr, double val) {
-    atom_max( (volatile __global unsigned long *) addr, as_ulong(val));
-}
-
-#else
-
-static inline void atomicAdd_r(volatile __global float* addr, float val) {
-    union{
-        unsigned int u32;
-        float f32;
-    } next, expected, current;
-    current.f32 = *addr;
-    do {
-        next.f32 = (expected.f32 = current.f32) + val;
-        current.u32 = atomic_cmpxchg( (volatile __global unsigned int *) addr,
-            expected.u32, next.u32);
-    } while (current.u32 != expected.u32);
-}
-
-static inline void atomicMax_r(volatile __global float* addr, float val) {
-    atomic_max( (volatile __global unsigned int *) addr, as_uint(val));
-}
-
-#endif // __REAL_IS_DOUBLE__
-
 #endif // _REDUCE_H_

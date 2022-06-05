@@ -8,8 +8,9 @@ reducedot(         __global real_t* __restrict     src1,
 
     // Calculate indices
     int    local_idx = get_local_id(0);   // Work-item index within workgroup
+    int       grp_id = get_group_id(0);   // ID of workgroup
     int       grp_sz = get_local_size(0); // Total number of work-items in each workgroup
-    int            i = get_group_id(0)*grp_sz + local_idx;
+    int            i = grp_id(0)*grp_sz + local_idx;
     int       stride = get_global_size(0);
     // Initialize ring accumulator for intermediate results
     real_t accum[__REDUCE_REG_COUNT__];
@@ -72,7 +73,8 @@ reducedot(         __global real_t* __restrict     src1,
 
     // Add atomically to global buffer
     if (local_idx == 0) {
-        atomicAdd_r(dst, scratch[0]);
+//        atomicAdd_r(dst, scratch[0]);
+        dst[grp_id] = scratch[0];
     }
 
 }
