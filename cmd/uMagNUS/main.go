@@ -215,6 +215,6 @@ func printVersion() {
 	engine.LogOut("  If you use uMagNUS in any work or publication,                    //")
 	engine.LogOut("  we kindly ask you to cite the references in references.bib        //")
 	engine.LogOut("********************************************************************//")
-	engine.LogOut("//uMagNUS is an OpenCL-based derivative of MuMax 3.10", "\n")
+	engine.LogOut("//uMagNUS is an OpenCL-based derivative of MuMax 3.10")
 	engine.LogOut("//MuMax 3.10 is a CUDA-based micromagnetic tools developbed by (c) Arne Vansteenkiste, Dynamat LAB, Ghent University, Belgium", "\n")
 }
