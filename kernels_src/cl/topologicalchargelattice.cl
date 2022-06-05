@@ -1,7 +1,7 @@
 // Returns the topological charge contribution on an elementary triangle ijk
 // Order of arguments is important here to preserve the same measure of chirality
 // Note: the result is zero if an argument is zero, or when two arguments are the same
-inline real_t triangleCharge(real_t3 mi, real_t3 mj, real_t3 mk) {
+static inline real_t triangleCharge(real_t3 mi, real_t3 mj, real_t3 mk) {
     real_t numer   = dot(mi, cross(mj, mk));
     real_t denom   = 1.0f + dot(mi, mj) + dot(mi, mk) + dot(mj, mk);
     return 2.0f * atan2(numer, denom);

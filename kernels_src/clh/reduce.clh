@@ -13,7 +13,7 @@
 
 #if defined(__REAL_IS_DOUBLE__)
 
-inline void atomicAdd_r(volatile __global double* addr, double val) {
+static inline void atomicAdd_r(volatile __global double* addr, double val) {
     union{
         unsigned long u64;
         double f64;
@@ -26,13 +26,13 @@ inline void atomicAdd_r(volatile __global double* addr, double val) {
     } while (current.u64 != expected.u64);
 }
 
-inline void atomicMax_r(volatile __global double* addr, double val) {
-    atomic_max( (volatile __global unsigned long *) addr, as_ulong(val));
+static inline void atomicMax_r(volatile __global double* addr, double val) {
+    atom_max( (volatile __global unsigned long *) addr, as_ulong(val));
 }
 
 #else
 
-inline void atomicAdd_r(volatile __global float* addr, float val) {
+static inline void atomicAdd_r(volatile __global float* addr, float val) {
     union{
         unsigned int u32;
         float f32;
@@ -45,7 +45,7 @@ inline void atomicAdd_r(volatile __global float* addr, float val) {
     } while (current.u32 != expected.u32);
 }
 
-inline void atomicMax_r(volatile __global float* addr, float val) {
+static inline void atomicMax_r(volatile __global float* addr, float val) {
     atomic_max( (volatile __global unsigned int *) addr, as_uint(val));
 }
 

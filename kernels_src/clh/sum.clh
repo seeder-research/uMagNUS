@@ -1,7 +1,7 @@
 #ifndef _SUM_H_
 #define _SUM_H_
 
-inline real_t sum(real_t a, real_t b){
+static inline real_t sum(real_t a, real_t b){
 	return a + b;
 }
 

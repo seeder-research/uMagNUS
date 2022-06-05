@@ -2,7 +2,7 @@
 #define _ATOMICF_H_
 
 // Atomic max of abs value.
-inline void atomicFmaxabs(volatile __global real_t* a, real_t b){
+static inline void atomicFmaxabs(volatile __global real_t* a, real_t b){
     b = fabs(b);
     atomic_max((__global int*)(a), *((int*)(&b)));
 }

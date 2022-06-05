@@ -2,12 +2,12 @@
 #define _AMUL_H_
 
 // Returns mul * arr[i], or mul when arr == NULL;
-inline real_t amul(__global real_t *arr, float mul, int i) {
+static inline real_t amul(__global real_t *arr, float mul, int i) {
 	return (arr == NULL)? (mul) : (mul * arr[i]);
 }
 
 // Returns m * a[i], or m when a == NULL;
-inline real_t3 vmul(__global real_t *ax, __global real_t *ay, __global real_t *az,
+static inline real_t3 vmul(__global real_t *ax, __global real_t *ay, __global real_t *az,
                              real_t  mx,          real_t  my,          real_t  mz, int i) {
     return make_float3(amul(ax, mx, i),
                        amul(ay, my, i),
@@ -15,7 +15,7 @@ inline real_t3 vmul(__global real_t *ax, __global real_t *ay, __global real_t *a
 }
 
 // Returns 1/Msat, or 0 when Msat == 0.
-inline real_t inv_Msat(__global real_t* Ms_, real_t Ms_mul, int i) {
+static inline real_t inv_Msat(__global real_t* Ms_, real_t Ms_mul, int i) {
     real_t ms = amul(Ms_, Ms_mul, i);
     if (ms == 0.0f) {
         return 0.0f;

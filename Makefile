@@ -9,14 +9,12 @@ ifeq ($(OS), Windows_NT)
 	CLEANLIBFILES = rm -frv $(GOPATH)/bin/*.dll
 endif
 
-##LIBUMAGNUS32SRC := $(PWD)/kernels_src/Kernels/kernels32.h
-##LIBUMAGNUS64SRC := $(PWD)/kernels_src/Kernels/kernels64.h
-LIBUMAGNUS32SRC := $(PWD)/kernels_src/Kernels/printkernels32.h
-LIBUMAGNUS64SRC := $(PWD)/kernels_src/Kernels/printkernels64.h
+LIBUMAGNUS32SRC := $(PWD)/kernels_src/Kernels/kernels32.h
+LIBUMAGNUS64SRC := $(PWD)/kernels_src/Kernels/kernels64.h
 
 CGO_CFLAGS_ALLOW='(-fno-schedule-insns|-malign-double|-ffast-math)'
 
-BUILD_TARGETS = all base mod cl-binds cl-compiler clkernels clean data data64 draw draw64 dump dump64 engine engine64 freetype gui realclean hooks httpfs mag mag64 oommf oommf64 script script64 kerneldumper timer uMagNUS uMagNUS64 util loader loader64 kernloader kernloader64 libumagnus libumagnus64 libs
+BUILD_TARGETS = all base mod cl-binds cl-compiler clkernels clean data data64 draw draw64 dump dump64 engine engine64 freetype gui realclean hooks httpfs mag mag64 oommf oommf64 script script64 timer uMagNUS uMagNUS64 util loader loader64 kernloader kernloader64 libumagnus libumagnus64 libs
 
 
 .PHONY: $(BUILD_TARGETS)
@@ -102,16 +100,14 @@ kernloader64: loader64
 	$(MAKE) -C ./cmd/uMagNUS-kernelLoader64 all
 
 
-libumagnus: cl-compiler kerneldumper
+libumagnus: cl-compiler
 	rm -f ./libumagnus/*.cc
-	uMagNUS-kernelDump -o $(LIBUMAGNUS32SRC)
 	uMagNUS-clCompiler -args="-cl-opt-disable -cl-mad-enable -cl-finite-math-only -cl-single-precision-constant -cl-fp32-correctly-rounded-divide-sqrt -cl-kernel-arg-info" -std="CL1.2" -iopts="-I$(PWD)/kernels_src" -dump $(LIBUMAGNUS32SRC) >> libumagnus/libumagnus.cc
 	$(MAKE) -C ./libumagnus lib
 
 
-libumagnus64: cl-compiler kerneldumper
+libumagnus64: cl-compiler
 	rm -f ./libumagnus/*.cc
-	uMagNUS-kernelDump -k64 -o $(LIBUMAGNUS64SRC)
 	uMagNUS-clCompiler -args="-cl-opt-disable -cl-mad-enable -cl-finite-math-only -cl-fp32-correctly-rounded-divide-sqrt -cl-kernel-arg-info -D__REAL_IS_DOUBLE__" -std="CL1.2" -iopts="-I$(PWD)/kernels_src" -dump $(LIBUMAGNUS64SRC) >> libumagnus/libumagnus64.cc
 	$(MAKE) -C ./libumagnus lib64
 
@@ -129,12 +125,6 @@ data64: cl-binds util
 
 script: data
 	$(MAKE) -C ./script all
-
-
-kerneldumper: go.mod
-	$(MAKE) -C ./opencl all
-	$(MAKE) -C ./opencl64 all
-	$(MAKE) -C ./cmd/uMagNUS-kernelDump all
 
 
 script64: data64
