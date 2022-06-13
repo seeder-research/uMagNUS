@@ -22,27 +22,11 @@ func Resize(dst, src *data.Slice, layer int) {
 	cfg := make3DConf(dstsize)
 
 	eventsList := []*cl.Event{}
-	tmpEvtL := dst.GetAllEvents(X)
+	tmpEvtL := dst.GetAllEvents(0)
 	if len(tmpEvtL) > 0 {
 		eventsList = append(eventsList, tmpEvtL...)
 	}
-	tmpEvtL = dst.GetAllEvents(Y)
-	if len(tmpEvtL) > 0 {
-		eventsList = append(eventsList, tmpEvtL...)
-	}
-	tmpEvtL = dst.GetAllEvents(Z)
-	if len(tmpEvtL) > 0 {
-		eventsList = append(eventsList, tmpEvtL...)
-	}
-	tmpEvt := src.GetEvent(X)
-	if tmpEvt != nil {
-		eventsList = append(eventsList, tmpEvt)
-	}
-	tmpEvt = src.GetEvent(Y)
-	if tmpEvt != nil {
-		eventsList = append(eventsList, tmpEvt)
-	}
-	tmpEvt = src.GetEvent(Z)
+	tmpEvt := src.GetEvent(0)
 	if tmpEvt != nil {
 		eventsList = append(eventsList, tmpEvt)
 	}
@@ -54,9 +38,7 @@ func Resize(dst, src *data.Slice, layer int) {
 		src.DevPtr(0), srcsize[X], srcsize[Y], srcsize[Z], layer, scalex, scaley, cfg,
 		eventsList)
 
-	dst.SetEvent(X, event)
-	dst.SetEvent(Y, event)
-	dst.SetEvent(Z, event)
+	dst.SetEvent(0, event)
 
 	glist := []GSlice{src}
 	InsertEventIntoGSlices(event, glist)
