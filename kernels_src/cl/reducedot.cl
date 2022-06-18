@@ -6,86 +6,61 @@ reducedot(         __global real_t* __restrict     src1,
                                int                    n,
           volatile __local  real_t*            scratch){
 
-    // Calculate indices
-    unsigned int    local_idx = get_local_id(0);   // Work-item index within workgroup
-    unsigned int       grp_id = get_group_id(0);   // ID of workgroup
-    unsigned int       grp_sz = get_local_size(0); // Total number of work-items in each workgroup
-    unsigned int        grp_i = grp_id(0)*grp_sz;
-    unsigned int       stride = get_global_size(0);
+    ulong const block_size = get_local_size(0);
+    ulong const idx_in_block = get_local_id(0);
+    ulong idx_global = get_group_id(0) * (get_local_size(0) * 2) + get_local_id(0);
+    ulong const grid_size = block_size * 2 * get_num_groups(0);
+    scratch[idx_in_block] = (idx_global < n) ? src1[idx_global]*src2[idx_global] : 0;
 
-    // Initialize ring accumulator for intermediate results
-    real_t accum = (real_t)(0.0);
-    if (get_global_id(0) == 0) {
-        accum = initVal;
+    // We reduce multiple elements per thread.
+    // The number is determined by the number of active thread blocks (via gridDim).
+    // More blocks will result in a larger grid_size and therefore fewer elements per thread.
+    while (idx_global < n) {
+        scratch[idx_in_block] += src1[idx_global]*src2[idx_global];
+        // Ensure we don't read out of bounds -- this is optimized away for powerOf2 sized arrays.
+        if (idx_global + block_size < n)
+            scratch[idx_in_block] += src1[idx_global + block_size]*src2[idx_global + block_size];
+        idx_global += grid_size;
     }
-    unsigned int itr = 0;
 
-    while (grp_i < (unsigned int)(n)) {
-        unsigned int i = grp_i + local_idx;
+    barrier(CLK_LOCAL_MEM_FENCE);
 
-        // Read from global memory and accumulate local memory
-        scratch[local_idx] = (real_t)(0.0);
-        if (i < n) {
-                scratch[local_idx] = src1[i]*src2[i];
-        }
-
-        // Synchronize workgroup before reduction in local buffer
+    // Perform reduction in the shared memory.
+    if (block_size >= 512) {
+        if (idx_in_block < 256)
+            scratch[idx_in_block] += scratch[idx_in_block + 256];
         barrier(CLK_LOCAL_MEM_FENCE);
-
-        // Reduce in local buffer
-        for (unsigned int s = (grp_sz >> 1); s > 32; s >>= 1 ) {
-            if (local_idx < s) {
-                scratch[local_idx] += scratch[local_idx + s];
-            }
-
-            // Synchronize workgroup before next iteration
-            barrier(CLK_LOCAL_MEM_FENCE);
-        }
-
-        // Unroll loop for remaining 32 workitems
-        if (local_idx < 32) {
-            volatile __local real_t* smem = scratch;
-            smem[local_idx] += smem[local_idx + 32];
-            smem[local_idx] += smem[local_idx + 16];
-            smem[local_idx] += smem[local_idx +  8];
-            smem[local_idx] += smem[local_idx +  4];
-            smem[local_idx] += smem[local_idx +  2];
-            smem[local_idx] += smem[local_idx +  1];
-        }
-
-        if (local_idx == itr) {
-            accum += scratch[0];
-        }
-
-        // Move pointer to ring accumulator
-        itr++;
-        if (itr >= 32) {
-            itr = 0;
-        }
-
-        // Update pointer to next global value
-        grp_i += stride;
+    }
+    if (block_size >= 256) {
+        if (idx_in_block < 128)
+            scratch[idx_in_block] += scratch[idx_in_block + 128];
+        barrier(CLK_LOCAL_MEM_FENCE);
+    }
+    if (block_size >= 128) {
+        if (idx_in_block < 64)
+            scratch[idx_in_block] += scratch[idx_in_block + 64];
+        barrier(CLK_LOCAL_MEM_FENCE);
     }
 
-    // All elements in global buffer have been picked up
-    // Reduce intermediate results and add atomically to global buffer
-    if (local_idx < 32) {
-        scratch[local_idx] = accum;
-
-        // Unroll loop for remaining 32 workitems
-        if (local_idx < 16) {
-            volatile __local real_t* smem = scratch;
-            smem[local_idx] += smem[local_idx + 16];
-            smem[local_idx] += smem[local_idx +  8];
-            smem[local_idx] += smem[local_idx +  4];
-            smem[local_idx] += smem[local_idx +  2];
-            smem[local_idx] += smem[local_idx +  1];
-        }
+    if (idx_in_block < 32) {
+        if (block_size >= 64)
+            scratch[idx_in_block] += scratch[idx_in_block + 32];
+        if (block_size >= 32)
+            scratch[idx_in_block] += scratch[idx_in_block + 16];
+        if (block_size >= 16)
+            scratch[idx_in_block] += scratch[idx_in_block + 8];
+        if (block_size >= 8)
+            scratch[idx_in_block] += scratch[idx_in_block + 4];
+        if (block_size >= 4)
+            scratch[idx_in_block] += scratch[idx_in_block + 2];
+        if (block_size >= 2)
+            scratch[idx_in_block] += scratch[idx_in_block + 1];
+    }
 
         // Add atomically to global buffer
-        if (local_idx == 0) {
+        if (idx_in_block == 0) {
     //        atomicAdd_r(dst, scratch[0]);
-            dst[grp_id] = scratch[0];
+            dst[get_group_id(0)] = scratch[0];
         }
     }
 
