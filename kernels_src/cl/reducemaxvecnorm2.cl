@@ -53,10 +53,10 @@ reducemaxvecnorm2(         __global real_t* __restrict       x,
 
     // Store reduction result for each iteration and move to next
     if (local_idx == 0) {
-//        mine = fmax(scratch[0], scratch[1]);
-//        atomicMax_r(dst, mine);
+        mine = fmax(scratch[0], scratch[1]);
+        atomicMax_r(dst, mine);
 //        dst[grp_id] = fmax(scratch[0], scratch[1]);
-        dst[grp_id] = mine;
+//        dst[grp_id] = mine;
     }
 
 }

@@ -172,7 +172,11 @@ func Init(gpu int) {
 		}
 
 		// Attempt to build binary from opencl program
-		if err = program.BuildProgram([]*cl.Device{ClDevice}, "-cl-std=CL1.2 -cl-fp32-correctly-rounded-divide-sqrt -cl-kernel-arg-info"); err != nil {
+		argString := "-cl-std=CL1.2 -cl-fp32-correctly-rounded-divide-sqrt -cl-kernel-arg-info"
+		if strings.Contains(strings.ToUpper(PlatformInfo), "NVIDIA") {
+			argString = fmt.Sprint(argString, " -D__NVCODE__ ")
+		}
+		if err = program.BuildProgram([]*cl.Device{ClDevice}, argString); err != nil {
 			fmt.Printf("BuildProgram failed: %+v \n", err)
 			return
 		}

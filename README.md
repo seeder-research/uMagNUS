@@ -37,6 +37,7 @@ Consider downloading a pre-compiled binary. If you want to compile nevertheless:
         - Ubuntu 22.04 with Nvidia RTX 2080 Super (nvidia-dkms-515 driver from nvidia repo)
         - Ubuntu 20.04 with Nvidia GTX 660 Ti (nvidia-dkms-418 driver from nvidia repo)
         - Ubuntu 20.04 with AMD RX 6500 XT (rocm-dkms driver from rocm repo)
+        - Ubuntu 22.04 with AMD RX 6500 XT (rocm-dkms driver from rocm repo)
         - Windows 11 using MSYS2 with Nvidia MX150 (Nvidia 416.xx to 512.xx drivers)
         - Windows 11 using MSYS2 with Intel UHD Graphics 620 (Intel 26.xx to 30.xx drivers)
   * install TDM GCC compiler is gcc from msys2 is not compatible

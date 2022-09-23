@@ -130,6 +130,11 @@ func main() {
 		if buildOpts != "" {
 			buildOpts = buildOpts + " "
 		}
+		currPlatform := GPUList[gpuId].Device.Platform()
+		currPlatformInfo := fmt.Sprint(currPlatform.Name(), " ", currPlatform.Vendor(), " ", currPlatform.Profile(), " ", currPlatform.Version())
+		if strings.Contains(strings.ToUpper(currPlatformInfo), "NVIDIA") {
+			buildOpts += string(" -D__NVCODE__ ")
+		}
 		buildOpts = buildOpts + generateLinkerOpts()
 		if *Flag_verbose > 1 {
 			fmt.Println("        using options: ", buildOpts)
