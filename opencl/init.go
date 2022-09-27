@@ -174,7 +174,17 @@ func Init(gpu int) {
 		// Attempt to build binary from opencl program
 		argString := "-cl-std=CL1.2 -cl-fp32-correctly-rounded-divide-sqrt -cl-kernel-arg-info"
 		if strings.Contains(strings.ToUpper(PlatformInfo), "NVIDIA") {
-			argString = fmt.Sprint(argString, " -D__NVCODE__ ")
+			argString += fmt.Sprint(argString, " -D__NVCODE__ ")
+		} else {
+			if strings.EqualFold(DevName, "gfx908") {
+				argString += fmt.Sprint(argString, " -D__AMDGPU_FP32ATOMICS_1__ ")
+			}
+			if strings.EqualFold(DevName, "gfx90a") {
+				argString += fmt.Sprint(argString, " -D__AMDGPU_FP32ATOMICS_1__ -D__AMDGPU_FP64ATOMICS_0__ ")
+			}
+			if strings.EqualFold(DevName, "gfx940") {
+				argString += fmt.Sprint(argString, " -D__AMDGPU_FP32ATOMICS_0__ -D__AMDGPU_FP64ATOMICS_0__ ")
+			}
 		}
 		if err = program.BuildProgram([]*cl.Device{ClDevice}, argString); err != nil {
 			fmt.Printf("BuildProgram failed: %+v \n", err)
