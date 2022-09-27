@@ -136,13 +136,13 @@ func main() {
 			buildOpts += string(" -D__NVCODE__ ")
                 } else {
                         if strings.EqualFold(DevName, "gfx908") {
-                                argString += fmt.Sprint(argString, " -D__AMDGPU_FP32ATOMICS_1__ ")
+                                buildOpts += fmt.Sprint(buildOpts, " -D__AMDGPU_FP32ATOMICS_1__ ")
                         }
                         if strings.EqualFold(DevName, "gfx90a") {
-                                argString += fmt.Sprint(argString, " -D__AMDGPU_FP32ATOMICS_1__ -D__AMDGPU_FP64ATOMICS_0__ ")
+                                buildOpts += fmt.Sprint(buildOpts, " -D__AMDGPU_FP32ATOMICS_1__ -D__AMDGPU_FP64ATOMICS_0__ ")
                         }
                         if strings.EqualFold(DevName, "gfx940") {
-                                argString += fmt.Sprint(argString, " -D__AMDGPU_FP32ATOMICS_0__ -D__AMDGPU_FP64ATOMICS_0__ ")
+                                buildOpts += fmt.Sprint(buildOpts, " -D__AMDGPU_FP32ATOMICS_0__ -D__AMDGPU_FP64ATOMICS_0__ ")
                         }
 		}
 		buildOpts = buildOpts + generateLinkerOpts()
