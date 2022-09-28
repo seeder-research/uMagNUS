@@ -37,7 +37,7 @@ static inline void atomicAdd_r(volatile __global float* addr, float val) {
     __asm__ volatile ("flat_atomic_add_fp32 %0, %1" : : "v"(addr), "v"(val));
 #elif defined(__AMDGPU_FP32ATOMICS_1__)
     float prev;
-    __asm__ volatile ("global_atomic_add_fp32 %0, %1, %2" : "=v"(prev) : "v"(addr), "v"(val));
+    __asm__ volatile ("global_atomic_add_fp32 %0, %1, %2" : "=v"(prev) : "v"(addr), "s"(val));
 #else
     union{
         unsigned int u32;
