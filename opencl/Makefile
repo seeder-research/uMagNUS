@@ -33,7 +33,7 @@ opencl2go: ocl2go
 
 
 %_wrapper.go: ../kernels_src/cl/%.cl ocl2go
-	../ocl2go/ocl2go -outdir="$(GOPATH)/src/github.com/seeder-research/uMagNUS/opencl" $< > /dev/null
+	../ocl2go/ocl2go -outdir="." $< > /dev/null
 	gofmt -w -s -l ./$@ > /dev/null
 
 

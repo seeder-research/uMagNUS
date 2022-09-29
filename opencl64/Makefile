@@ -40,12 +40,12 @@ opencl2go: ocl2go
 
 
 %_wrapper.go: ../kernels_src/cl/%.cl
-	../ocl2go/ocl2go -outdir="$(GOPATH)/src/github.com/seeder-research/uMagNUS/opencl64" -lib64 $< > /dev/null
+	../ocl2go/ocl2go -outdir="." -lib64 $< > /dev/null
 	gofmt -w -s -l ./$@ > /dev/null
 
 
 %_fp64_wrapper.go: ../kernels_src/cl64/%.cl
-	../ocl2go/ocl2go -outdir="$(GOPATH)/src/github.com/seeder-research/uMagNUS/opencl64" -lib64 -double $< > /dev/null
+	../ocl2go/ocl2go -outdir="." -lib64 -double $< > /dev/null
 	gofmt -w -s -l ./$@ > /dev/null
 
 
