@@ -215,6 +215,11 @@ func Init(gpu int) {
 	ClCtx = context
 	ClCmdQueue = queue
 	ClProgram = program
+	err = initCmdQueues(ClCtx, ClDevice)
+	if err != nil {
+		fmt.Println("Unable to create list of command queues!")
+		return
+	}
 
 	// Set basic configuration for distributing
 	// work-items across compute units
@@ -299,6 +304,7 @@ func (s *GPU) getGpuPlatform() *cl.Platform {
 }
 
 func ReleaseAndClean() {
+	freeCmdQueues()
 	ClCmdQueue.Release()
 	ClProgram.Release()
 	ClCtx.Release()
