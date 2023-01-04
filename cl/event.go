@@ -21,7 +21,7 @@ import (
 	"unsafe"
 )
 
-//////////////// Basic Types ///////////////
+// ////////////// Basic Types ///////////////
 type ProfilingInfo int
 
 const (
@@ -45,17 +45,18 @@ const (
 	ProfilingInfoCommandEnd ProfilingInfo = C.CL_PROFILING_COMMAND_END
 )
 
-//////////////// Abstract Types ///////////////
+// ////////////// Abstract Types ///////////////
 type Event struct {
 	clEvent C.cl_event
 }
 
-////////////////// Supporting Types ////////////////
+// //////////////// Supporting Types ////////////////
 type CL_go_set_event_callback func(event C.cl_event, callback_status C.cl_int, user_data unsafe.Pointer)
 
 var go_set_event_callback_func map[unsafe.Pointer]CL_go_set_event_callback
 
-//////////////// Basic Functions ///////////////
+// ////////////// Basic Functions ///////////////
+//
 //export go_set_event_callback
 func go_set_event_callback(event C.cl_event, callback_status C.cl_int, user_data unsafe.Pointer) {
 	var c_user_data []unsafe.Pointer
@@ -114,7 +115,7 @@ func eventListPtr(el []*Event) (*C.cl_event, int) {
 	}
 }
 
-//////////////// Abstract Functions ///////////////
+// ////////////// Abstract Functions ///////////////
 func (e *Event) Release() {
 	releaseEvent(e)
 }
@@ -235,6 +236,42 @@ func (ctx *Context) CreateUserEvent() (*Event, error) {
 
 func (ev *Event) SetUserEventStatus(status CommandExecStatus) error {
 	return toError(C.clSetUserEventStatus(ev.clEvent, (C.cl_int)(status)))
+}
+
+func (ctx *Context) CreateCompletedEvent() (*Event, error) {
+	outEvent, err := ctx.CreateUserEvent()
+	if err != nil {
+		return nil, toError(err)
+	}
+	err = outEvent.SetUserEventStatus(CommandExecStatusComplete)
+	return outEvent, toError(err)
+}
+
+func (ctx *Context) CreateQueuedEvent() (*Event, error) {
+	outEvent, err := ctx.CreateUserEvent()
+	if err != nil {
+		return nil, toError(err)
+	}
+	err = outEvent.SetUserEventStatus(CommandExecStatusQueued)
+	return outEvent, toError(err)
+}
+
+func (ctx *Context) CreateRunningEvent() (*Event, error) {
+	outEvent, err := ctx.CreateUserEvent()
+	if err != nil {
+		return nil, toError(err)
+	}
+	err = outEvent.SetUserEventStatus(CommandExecStatusRunning)
+	return outEvent, toError(err)
+}
+
+func (ctx *Context) CreateSubmittedEvent() (*Event, error) {
+	outEvent, err := ctx.CreateUserEvent()
+	if err != nil {
+		return nil, toError(err)
+	}
+	err = outEvent.SetUserEventStatus(CommandExecStatusSubmitted)
+	return outEvent, toError(err)
 }
 
 func (ev *Event) SetEventCallback(status CommandExecStatus, user_data unsafe.Pointer) error {

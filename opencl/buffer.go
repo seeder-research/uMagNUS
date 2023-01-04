@@ -31,8 +31,8 @@ func Buffer(nComp int, size [3]int) *data.Slice {
 
 	// re-use as many buffers as possible form our stack
 	N := prod(size)
-	bytes := N * SIZEOF_FLOAT32
-	initVal := float32(0.0)
+	//	bytes := N * SIZEOF_FLOAT32
+	//	initVal := float32(0.0)
 	pool := buf_pool[N]
 	nFromPool := iMin(nComp, len(pool))
 	fillWait := make([]*cl.Event, nComp)
@@ -51,14 +51,18 @@ func Buffer(nComp int, size [3]int) *data.Slice {
 			panic(err)
 		}
 		ptrs[i] = unsafe.Pointer(tmpPtr)
-		fillWait[i], err = ClCmdQueue.EnqueueFillBuffer(tmpPtr, unsafe.Pointer(&initVal), SIZEOF_FLOAT32, 0, bytes, nil)
+		fillWait[i], err = ClCtx.CreateCompletedEvent()
 		if err != nil {
-			log.Printf("CreateEmptyBuffer failed: %+v \n", err)
+			log.Printf("CreateCompletedEvent failed: %+v \n", err)
 		}
-		err = cl.WaitForEvents([]*cl.Event{fillWait[i]})
-		if err != nil {
-			log.Printf("Wait for EnqueueFillBuffer failed: %+v \n", err)
-		}
+		//		fillWait[i], err = ClCmdQueue.EnqueueFillBuffer(tmpPtr, unsafe.Pointer(&initVal), SIZEOF_FLOAT32, 0, bytes, nil)
+		//		if err != nil {
+		//			log.Printf("CreateEmptyBuffer failed: %+v \n", err)
+		//		}
+		//		err = cl.WaitForEvents([]*cl.Event{fillWait[i]})
+		//		if err != nil {
+		//			log.Printf("Wait for EnqueueFillBuffer failed: %+v \n", err)
+		//		}
 		buf_check[ptrs[i]] = struct{}{} // mark this pointer as mine
 	}
 
