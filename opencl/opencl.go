@@ -25,7 +25,16 @@ func LaunchKernel(kernname string, gridDim, workDim []int, events []*cl.Event) *
 	if Debug {
 		fmt.Printf("Launching kernel: %+v with Grid = %+v and Block = %+v \n", kernname, gridDim, workDim)
 	}
-	KernEvent, err := ClCmdQueue.EnqueueNDRangeKernel(KernList[kernname], nil, gridDim, workDim, events)
+	queueIdx := <-cmdQueueIdx
+	launchQueue := cmdQueueArr[queueIdx]
+	KernEvent, err := launchQueue.EnqueueNDRangeKernel(KernList[kernname], nil, gridDim, workDim, events)
+	go func() {
+		qErr := launchQueue.Finish()
+		cmdQueueIdx <- cmdQueueMap[launchQueue]
+		if qErr != nil {
+			util.Fatal(err)
+		}
+	}()
 	if err != nil {
 		util.Fatal(err)
 		return nil

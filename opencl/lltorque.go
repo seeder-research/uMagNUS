@@ -8,10 +8,11 @@ import (
 )
 
 // Landau-Lifshitz torque divided by gamma0:
-// 	- 1/(1+α²) [ m x B +  α m x (m x B) ]
-// 	torque in Tesla
-// 	m normalized
-// 	B in Tesla
+//   - 1/(1+α²) [ m x B +  α m x (m x B) ]
+//     torque in Tesla
+//     m normalized
+//     B in Tesla
+//
 // see lltorque.cl
 func LLTorque(torque, m, B *data.Slice, alpha MSlice) {
 	N := torque.Len()

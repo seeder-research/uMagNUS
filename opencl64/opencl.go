@@ -1,10 +1,11 @@
 package opencl64
 
 import (
-	"log"
+	"fmt"
 	"unsafe"
 
 	cl "github.com/seeder-research/uMagNUS/cl"
+	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // Type size in bytes
@@ -18,15 +19,24 @@ const (
 // Assumes kernel arguments set prior to launch
 func LaunchKernel(kernname string, gridDim, workDim []int, events []*cl.Event) *cl.Event {
 	if KernList[kernname] == nil {
-		log.Panic("Kernel " + kernname + " does not exist!")
+		util.Fatal("Kernel " + kernname + " does not exist!")
 		return nil
 	}
 	if Debug {
-		log.Printf("Launching kernel: %+v with Grid = %+v and Block = %+v \n", kernname, gridDim, workDim)
+		fmt.Printf("Launching kernel: %+v with Grid = %+v and Block = %+v \n", kernname, gridDim, workDim)
 	}
-	KernEvent, err := ClCmdQueue.EnqueueNDRangeKernel(KernList[kernname], nil, gridDim, workDim, events)
+	queueIdx := <-cmdQueueIdx
+	launchQueue := cmdQueueArr[queueIdx]
+	KernEvent, err := launchQueue.EnqueueNDRangeKernel(KernList[kernname], nil, gridDim, workDim, events)
+	go func() {
+		qErr := launchQueue.Finish()
+		cmdQueueIdx <- cmdQueueMap[launchQueue]
+		if qErr != nil {
+			util.Fatal(err)
+		}
+	}()
 	if err != nil {
-		log.Fatal(err)
+		util.Fatal(err)
 		return nil
 	} else {
 		return KernEvent
@@ -35,31 +45,31 @@ func LaunchKernel(kernname string, gridDim, workDim []int, events []*cl.Event) *
 
 func SetKernelArgWrapper(kernname string, index int, arg interface{}) {
 	if KernList[kernname] == nil {
-		log.Panic("Kernel " + kernname + " does not exist!")
+		util.Fatal("Kernel " + kernname + " does not exist!")
 	}
 	switch val := arg.(type) {
 	default:
 		if err := KernList[kernname].SetArg(index, val); err != nil {
-			log.Fatal(err)
+			util.Fatal(err)
 		}
 	case unsafe.Pointer:
 		memBufHandle, flag := arg.(unsafe.Pointer)
 		if memBufHandle == unsafe.Pointer(uintptr(0)) {
 			if err := KernList[kernname].SetArgUnsafe(index, 8, memBufHandle); err != nil {
-				log.Fatal(err)
+				util.Fatal(err)
 			}
 		} else {
 			if flag {
 				if err := KernList[kernname].SetArg(index, (*cl.MemObject)(memBufHandle)); err != nil {
-					log.Fatal(err)
+					util.Fatal(err)
 				}
 			} else {
-				log.Fatal("Unable to change argument type to *cl.MemObject")
+				util.Fatal("Unable to change argument type to *cl.MemObject")
 			}
 		}
 	case int:
 		if err := KernList[kernname].SetArg(index, (int32)(val)); err != nil {
-			log.Fatal(err)
+			util.Fatal(err)
 		}
 	}
 }

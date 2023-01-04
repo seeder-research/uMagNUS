@@ -11,8 +11,9 @@ import (
 )
 
 // Add exchange field to Beff.
-// 	m: normalized magnetization
-// 	B: effective field in Tesla
+//
+//	m: normalized magnetization
+//	B: effective field in Tesla
 func AddRegionExchangeField(B, m *data.Slice, Msat MSlice, regions *Bytes, regionA, regionB uint8, sX, sY, sZ int, sig, sig2 float64, mesh *data.Mesh) {
 	c := mesh.CellSize()
 	dX := float64(sX) * c[X]

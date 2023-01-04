@@ -16,6 +16,7 @@ func initCmdQueues(context *cl.Context, device *cl.Device) error {
 
 	cmdQueueIdx = make(chan int, cmdQueueCnt)
 	cmdQueueArr = make([]*cl.CommandQueue, cmdQueueCnt)
+	cmdQueueMap = make(map[*cl.CommandQueue]int)
 	for i := 0; i < cmdQueueCnt; i++ {
 		cmdQueueIdx <- i
 		cmdQueueArr[i], err = context.CreateCommandQueue(device, 0)
