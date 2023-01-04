@@ -28,13 +28,21 @@ func LaunchKernel(kernname string, gridDim, workDim []int, events []*cl.Event) *
 	queueIdx := <-cmdQueueIdx
 	launchQueue := cmdQueueArr[queueIdx]
 	KernEvent, err := launchQueue.EnqueueNDRangeKernel(KernList[kernname], nil, gridDim, workDim, events)
-	go func() {
+	if Synchronous {
 		qErr := launchQueue.Finish()
 		cmdQueueIdx <- cmdQueueMap[launchQueue]
 		if qErr != nil {
 			util.Fatal(err)
 		}
-	}()
+	} else {
+		go func() {
+			qErr := launchQueue.Finish()
+			cmdQueueIdx <- cmdQueueMap[launchQueue]
+			if qErr != nil {
+				util.Fatal(err)
+			}
+		}()
+	}
 	if err != nil {
 		util.Fatal(err)
 		return nil
