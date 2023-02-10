@@ -32,6 +32,8 @@ var (
 	ClDevice     *cl.Device                // device associated with global OpenCL context
 	ClCtx        *cl.Context               // global OpenCL context
 	ClCmdQueue   *cl.CommandQueue          // command queue attached to global OpenCL context
+	ClH2DQueue   *cl.CommandQueue          // command queue attached to global OpenCL context (for H2D transfers)
+	ClD2HQueue   *cl.CommandQueue          // command queue attached to global OpenCL context (for D2H transfers)
 	ClProgram    *cl.Program               // handle to program in the global OpenCL context
 	KernList     = map[string]*cl.Kernel{} // Store pointers to all compiled kernels
 	initialized  = false                   // Initial state defaults to false
@@ -173,19 +175,19 @@ func Init(gpu int) {
 
 		// Attempt to build binary from opencl program
 		argString := "-cl-std=CL1.2 -cl-finite-math-only -cl-no-signed-zeros -cl-fp32-correctly-rounded-divide-sqrt -cl-kernel-arg-info -D__REAL_IS_DOUBLE__"
-                if strings.Contains(strings.ToUpper(PlatformInfo), "NVIDIA") {
-                        argString += fmt.Sprint(argString, " -D__NVCODE__ ")
-                } else {
-                        if strings.EqualFold(DevName, "gfx908") {
-                                argString += fmt.Sprint(argString, " -D__AMDGPU_FP32ATOMICS_1__ ")
-                        }
-                        if strings.EqualFold(DevName, "gfx90a") {
-                                argString += fmt.Sprint(argString, " -D__AMDGPU_FP32ATOMICS_1__ -D__AMDGPU_FP64ATOMICS_0__ ")
-                        }
-                        if strings.EqualFold(DevName, "gfx940") {
-                                argString += fmt.Sprint(argString, " -D__AMDGPU_FP32ATOMICS_0__ -D__AMDGPU_FP64ATOMICS_0__ ")
-                        }
-                }
+		if strings.Contains(strings.ToUpper(PlatformInfo), "NVIDIA") {
+			argString += fmt.Sprint(argString, " -D__NVCODE__ ")
+		} else {
+			if strings.EqualFold(DevName, "gfx908") {
+				argString += fmt.Sprint(argString, " -D__AMDGPU_FP32ATOMICS_1__ ")
+			}
+			if strings.EqualFold(DevName, "gfx90a") {
+				argString += fmt.Sprint(argString, " -D__AMDGPU_FP32ATOMICS_1__ -D__AMDGPU_FP64ATOMICS_0__ ")
+			}
+			if strings.EqualFold(DevName, "gfx940") {
+				argString += fmt.Sprint(argString, " -D__AMDGPU_FP32ATOMICS_0__ -D__AMDGPU_FP64ATOMICS_0__ ")
+			}
+		}
 		if err = program.BuildProgram([]*cl.Device{ClDevice}, argString); err != nil {
 			fmt.Printf("BuildProgram failed: %+v \n", err)
 			return
@@ -215,6 +217,26 @@ func Init(gpu int) {
 	ClCtx = context
 	ClCmdQueue = queue
 	ClProgram = program
+
+	err = initCmdQueues(ClCtx, ClDevice)
+	if err != nil {
+		fmt.Printf("Unable to create list of command queues!: %+v \n", err)
+		return
+	}
+
+	// Create opencl command queue on selected device for H2D transfers
+	ClH2DQueue, err = context.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("CreateCommandQueue (H2D) failed: %+v \n", err)
+		return
+	}
+
+	// Create opencl command queue on selected device for D2H transfers
+	ClD2HQueue, err = context.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("CreateCommandQueue (D2H) failed: %+v \n", err)
+		return
+	}
 
 	// Set basic configuration for distributing
 	// work-items across compute units

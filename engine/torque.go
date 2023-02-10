@@ -99,7 +99,7 @@ func init() {
 	DeclFunc("RemoveCustomTorques", RemoveCustomTorques, "Removes all custom torques again")
 }
 
-//Removes all customfields
+// Removes all customfields
 func RemoveCustomTorques() {
 	customTorques = nil
 }

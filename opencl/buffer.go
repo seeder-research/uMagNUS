@@ -35,7 +35,7 @@ func Buffer(nComp int, size [3]int) *data.Slice {
 	//	initVal := float32(0.0)
 	pool := buf_pool[N]
 	nFromPool := iMin(nComp, len(pool))
-	fillWait := make([]*cl.Event, nComp)
+	//fillWait := make([]*cl.Event, nComp)
 	for i := 0; i < nFromPool; i++ {
 		ptrs[i] = pool[len(pool)-i-1]
 	}
@@ -51,10 +51,10 @@ func Buffer(nComp int, size [3]int) *data.Slice {
 			panic(err)
 		}
 		ptrs[i] = unsafe.Pointer(tmpPtr)
-		fillWait[i], err = ClCtx.CreateCompletedEvent()
-		if err != nil {
-			log.Printf("CreateCompletedEvent failed: %+v \n", err)
-		}
+		//fillWait[i], err = ClCtx.CreateCompletedEvent()
+		//if err != nil {
+		//	log.Printf("CreateCompletedEvent failed: %+v \n", err)
+		//}
 		//		fillWait[i], err = ClCmdQueue.EnqueueFillBuffer(tmpPtr, unsafe.Pointer(&initVal), SIZEOF_FLOAT32, 0, bytes, nil)
 		//		if err != nil {
 		//			log.Printf("CreateEmptyBuffer failed: %+v \n", err)
@@ -67,7 +67,9 @@ func Buffer(nComp int, size [3]int) *data.Slice {
 	}
 
 	outBuffer := data.SliceFromPtrs(size, data.GPUMemory, ptrs)
-	outBuffer.SetEvents(fillWait)
+	for i := 0; i < nComp; i++ {
+		outBuffer.ClearAllEvents(i)
+	}
 	return outBuffer
 }
 

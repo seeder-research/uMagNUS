@@ -22,13 +22,12 @@ type Bytes struct {
 // Construct new byte slice with given length,
 // initialised to zeros.
 func NewBytes(Len int) *Bytes {
-	ptr, err := ClCtx.CreateEmptyBuffer(cl.MemReadWrite, Len)
-	if err != nil {
-		panic(err)
+	ptr, err1 := ClCtx.CreateEmptyBuffer(cl.MemReadWrite, Len)
+	if err1 != nil {
+		panic(err1)
 	}
 	zeroPattern := uint8(0)
-	var event *cl.Event
-	event, err = ClCmdQueue.EnqueueFillBuffer(ptr, unsafe.Pointer(&zeroPattern), 1, 0, Len, nil)
+	event, err := ClCmdQueue.EnqueueFillBuffer(ptr, unsafe.Pointer(&zeroPattern), 1, 0, Len, nil)
 	if err != nil {
 		panic(err)
 	}

@@ -21,7 +21,7 @@ import (
 	"unsafe"
 )
 
-// ////////////// Basic Types ///////////////
+//////////////// Basic Types ///////////////
 type ProfilingInfo int
 
 const (
@@ -45,17 +45,17 @@ const (
 	ProfilingInfoCommandEnd ProfilingInfo = C.CL_PROFILING_COMMAND_END
 )
 
-// ////////////// Abstract Types ///////////////
+//////////////// Abstract Types ///////////////
 type Event struct {
 	clEvent C.cl_event
 }
 
-// //////////////// Supporting Types ////////////////
+////////////////// Supporting Types ////////////////
 type CL_go_set_event_callback func(event C.cl_event, callback_status C.cl_int, user_data unsafe.Pointer)
 
 var go_set_event_callback_func map[unsafe.Pointer]CL_go_set_event_callback
 
-// ////////////// Basic Functions ///////////////
+//////////////// Basic Functions ///////////////
 //
 //export go_set_event_callback
 func go_set_event_callback(event C.cl_event, callback_status C.cl_int, user_data unsafe.Pointer) {
@@ -115,7 +115,7 @@ func eventListPtr(el []*Event) (*C.cl_event, int) {
 	}
 }
 
-// ////////////// Abstract Functions ///////////////
+//////////////// Abstract Functions ///////////////
 func (e *Event) Release() {
 	releaseEvent(e)
 }

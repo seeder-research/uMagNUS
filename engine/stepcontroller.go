@@ -9,7 +9,7 @@ import (
 )
 
 // Time step controller to be used with these solvers:
-//   RK4
+//	RK4
 func simpleController(Err *data.Slice, h float64, accOrder, rejOrder int) bool {
 
 	// determine error

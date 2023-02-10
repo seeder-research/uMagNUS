@@ -11,13 +11,14 @@ import (
 // Anne Kværnø, Singly diagonal implicit Runge-Kutta methods
 // with explicit first stage," BIT Numerical Mathematics vol. 44,
 // 489-502, 2004.
+//
 // Advance using y{n+1}
-// 	k1 = f(tn, yn)
-// 	k2 = f(tn + 0.5857864376 h, yn + 0.2928932188 h k1 + 0.2928932188 h k2)
-// 	k3 = f(tn + h, yn + 0.353553390567523 h k1 + 0.353553390632477 h k2 + 0.2928932188 h k3)
-// 	y{n+1}  = yn + 0.353553390567523 h k1 + 0.353553390632477 h k2 + 0.2928932188 h k3 // 2nd order
-// 	k4 = f(tn + h, yn + 0.215482203122508 h k1 + 0.686886723913539 h k2 - 0.195262145836047 h k3 + 0.2928932188 h k4)
-// 	z{n+1} = yn + 0.215482203122508 h k1 + 0.686886723913539 h k2 - 0.195262145836047 h k3 + 0.2928932188 h k4 // 3rd order
+//	k1 = f(tn, yn)
+//	k2 = f(tn + 0.5857864376 h, yn + 0.2928932188 h k1 + 0.2928932188 h k2)
+//	k3 = f(tn + h, yn + 0.353553390567523 h k1 + 0.353553390632477 h k2 + 0.2928932188 h k3)
+//	y{n+1}  = yn + 0.353553390567523 h k1 + 0.353553390632477 h k2 + 0.2928932188 h k3 // 2nd order
+//	k4 = f(tn + h, yn + 0.215482203122508 h k1 + 0.686886723913539 h k2 - 0.195262145836047 h k3 + 0.2928932188 h k4)
+//	z{n+1} = yn + 0.215482203122508 h k1 + 0.686886723913539 h k2 - 0.195262145836047 h k3 + 0.2928932188 h k4 // 3rd order
 type ESDIRK32B struct {
 	k1 *data.Slice // torque at end of step is kept for beginning of next step
 }
