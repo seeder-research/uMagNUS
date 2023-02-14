@@ -217,66 +217,70 @@ func (s *Slice) Host() [][]float32 {
 }
 
 // Implementation of mutex for synchronizing RW accesses to slices
-// Locks all underlying slices of the slice for R (prevents
-// writing into the underlying slices)
-func (s *Slice) RLock() {
-	for _, ptr := range s.ptrs {
-		if ptr == nil {
-			continue
-		}
-		ptr.RLock()
-		ptr.Add(1)
+// Locks an underlying slice of the slice for R (prevents
+// writing into the underlying slice)
+func (s *Slice) RLock(component int) {
+	if s.ptrs == nil {
+		return
 	}
+	ptr := s.ptrs[component]
+	if ptr == nil {
+		return
+	}
+	ptr.RLock()
+	ptr.Add(1)
 }
 
-// Unlocks all underlying slices of the slice for R (can be
-// written into after all R has been unlocked
-func (s *Slice) RUnlock() {
-	for _, ptr := range s.ptrs {
-		if ptr == nil {
-			continue
-		}
-		ptr.RUnlock()
-		ptr.Done()
+// Unlocks an underlying slice of the slice for R (can be
+// written into after R has been unlocked
+func (s *Slice) RUnlock(component int) {
+	if s.ptrs == nil {
+		return
 	}
+	ptr := s.ptrs[component]
+	if ptr == nil {
+		return
+	}
+	ptr.RUnlock()
+	ptr.Done()
 }
 
-// Locks all underlying slices of the slice for R+W
-func (s *Slice) Lock() {
-	for _, ptr := range s.ptrs {
-		if ptr == nil {
-			continue
-		}
-		ptr.Lock()
-		ptr.Add(1)
+// Locks an underlying slice of the slice for R+W
+func (s *Slice) Lock(component int) {
+	if s.ptrs == nil {
+		return
 	}
+	ptr := s.ptrs[component]
+	if ptr == nil {
+		return
+	}
+	ptr.Lock()
+	ptr.Add(1)
 }
 
-// Unlocks all underlying slices of the slice for R+W
-func (s *Slice) Unlock() {
-	for _, ptr := range s.ptrs {
-		if ptr == nil {
-			continue
-		}
-		ptr.Unlock()
-		ptr.Done()
+// Unlocks an underlying slice of the slice for R+W
+func (s *Slice) Unlock(component int) {
+	if s.ptrs == nil {
+		return
 	}
+	ptr := s.ptrs[component]
+	if ptr == nil {
+		return
+	}
+	ptr.Unlock()
+	ptr.Done()
 }
 
-// Waits on all underlying slices of the slice
-func (s *Slice) Wait() {
-	var wg_ sync.WaitGroup
-	for _, ptr := range s.ptrs {
-		if ptr == nil {
-			continue
-		}
-		wg_.Add(1)
-		go func(iS *internalSlice) {
-			defer wg_.Done()
-			iS.Wait()
-		}(ptr)
+// Waits on an underlying slice of the slice
+func (s *Slice) Wait(component int) {
+	if s.ptrs == nil {
+		return
 	}
-	wg_.Wait()
+	ptr := s.ptrs[component]
+	if ptr == nil {
+		return
+	}
+	ptr.Wait()
 }
 
 // Returns a copy of the Slice, allocated on CPU.
@@ -414,25 +418,71 @@ func Copy(dst, src *Slice) {
 	}
 	d, s := dst.GPUAccess(), src.GPUAccess()
 	bytes := SIZEOF_FLOAT32 * dst.Len()
+	var wg_ sync.WaitGroup
 	switch {
 	default:
 		panic("bug")
 	case d && s:
 		for c := 0; c < dst.NComp(); c++ {
-			eventsList := memCpy(dst.DevPtr(c), src.DevPtr(c), bytes)
-			dst.SetEvent(c, eventsList[0])
-			src.InsertReadEvent(c, eventsList[1])
+			wg_.Add(1)
+			go func(d0, s0 *Slice, comp int) {
+				defer d0.Unlock(comp)
+				defer s0.RUnlock(comp)
+				d0.Lock(comp)
+				s0.RLock(comp)
+				eventsList := memCpy(d0.DevPtr(comp), s0.DevPtr(comp), bytes)
+				d0.SetEvent(comp, eventsList[0])
+				s0.InsertReadEvent(comp, eventsList[1])
+				wg_.Done()
+				err := cl.WaitForEvents(eventsList)
+				if err != nil {
+					panic(fmt.Sprintf("WaitForEvents in slice copy failed: %+v \n", err))
+				}
+				d0.Unlock(comp)
+				s0.RUnlock(comp)
+			}(dst, src, c)
 		}
+		wg_.Wait()
 	case s && !d:
 		for c := 0; c < dst.NComp(); c++ {
-			eventsList := memCpyDtoH(dst.ptrs[c].Ptr, src.DevPtr(c), bytes)
-			src.InsertReadEvent(c, eventsList[0])
+			wg_.Add(1)
+			go func(d0, s0 *Slice, comp int) {
+				defer d0.Unlock(comp)
+				defer s0.RUnlock(comp)
+				d0.Lock(comp)
+				s0.RLock(comp)
+				eventsList := memCpyDtoH(d0.ptrs[comp].Ptr, s0.DevPtr(comp), bytes)
+				s0.InsertReadEvent(comp, eventsList[0])
+				wg_.Done()
+				err := cl.WaitForEvents([]*cl.Event{eventsList[0]})
+				if err != nil {
+					panic(fmt.Sprintf("WaitForEvents in slice copy (device to host) failed: %+v \n", err))
+				}
+				d0.Unlock(comp)
+				s0.RUnlock(comp)
+			}(dst, src, c)
 		}
+		wg_.Wait()
 	case !s && d:
 		for c := 0; c < dst.NComp(); c++ {
-			eventsList := memCpyHtoD(dst.DevPtr(c), src.ptrs[c].Ptr, bytes)
-			dst.SetEvent(c, eventsList[0])
+			wg_.Add(1)
+			go func(d0, s0 *Slice, comp int) {
+				defer d0.Unlock(comp)
+				defer s0.RUnlock(comp)
+				d0.Lock(comp)
+				s0.RLock(comp)
+				eventsList := memCpyHtoD(d0.DevPtr(comp), s0.ptrs[comp].Ptr, bytes)
+				d0.SetEvent(comp, eventsList[0])
+				wg_.Done()
+				err := cl.WaitForEvents([]*cl.Event{eventsList[0]})
+				if err != nil {
+					panic(fmt.Sprintf("WaitForEvents in slice copy (host to device) failed: %+v \n", err))
+				}
+				d0.Unlock(comp)
+				s0.RUnlock(comp)
+			}(dst, src, c)
 		}
+		wg_.Wait()
 	case !d && !s:
 		dst, src := dst.Host(), src.Host()
 		for c := range dst {
