@@ -75,10 +75,17 @@ func Buffer(nComp int, size [3]int) *data.Slice {
 
 // Returns a buffer obtained from GetBuffer to the pool.
 func Recycle(s *data.Slice) {
-	if Synchronous {
-		ClCmdQueue.Finish()
+	// Make sure nothing is using the slice
+	if s.ptrs != nil {
+		for _, ptr := range s.ptrs {
+			ptr.Lock()
+		}
 	}
-
+	if s.ptrs != nil {
+		for _, ptr := range s.ptrs {
+			ptr.Unlock()
+		}
+	}
 	N := s.Len()
 	pool := buf_pool[N]
 	// put each component buffer back on the stack
@@ -98,7 +105,6 @@ func Recycle(s *data.Slice) {
 
 // Frees all buffers. Called after mesh resize.
 func FreeBuffers() {
-	ClCmdQueue.Finish()
 	for _, size := range buf_pool {
 		for i := range size {
 			tmpObj := (*cl.MemObject)(size[i])
@@ -106,7 +112,6 @@ func FreeBuffers() {
 			size[i] = nil
 		}
 	}
-	ClCmdQueue.Finish()
 	buf_pool = make(map[int][]unsafe.Pointer)
 	buf_check = make(map[unsafe.Pointer]struct{})
 }

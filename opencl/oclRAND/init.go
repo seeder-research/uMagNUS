@@ -1,7 +1,7 @@
 package oclRAND
 
 import (
-	"github.com/seeder-research/uMagNUS/cl"
+	cl "github.com/seeder-research/uMagNUS/cl"
 	"log"
 	"unsafe"
 )
@@ -22,12 +22,18 @@ func Init(q *cl.CommandQueue, synch bool, kList map[string]*cl.Kernel) {
 	KernList = kList
 }
 
-func LaunchKernel(kernname string, gridDim, workDim []int, events []*cl.Event) *cl.Event {
+func WaitCommandQueueFinish() {
+	if err := ClCmdQueue.Finish(); err != nil {
+		log.Fatal("OCLRAND unable to wait for command queue to finish")
+	}
+}
+
+func LaunchKernel(kernname string, queue *cl.CommandQueue, gridDim, workDim []int, events []*cl.Event) *cl.Event {
 	if KernList[kernname] == nil {
 		log.Panic("Kernel " + kernname + " does not exist!")
 		return nil
 	}
-	KernEvent, err := ClCmdQueue.EnqueueNDRangeKernel(KernList[kernname], nil, gridDim, workDim, events)
+	KernEvent, err := queue.EnqueueNDRangeKernel(KernList[kernname], nil, gridDim, workDim, events)
 	if err != nil {
 		log.Fatal(err)
 		return nil

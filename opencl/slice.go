@@ -119,6 +119,7 @@ func MemCpyHtoD(dst, src unsafe.Pointer, bytes int) []*cl.Event {
 func MemCpy(dst, src unsafe.Pointer, bytes int) []*cl.Event {
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	defer cmdqueue.Release()
 	if err != nil {
 		fmt.Printf("MemCpyDoH failed to create command queue: %+v \n", err)
 		return nil
@@ -144,7 +145,6 @@ func MemCpy(dst, src unsafe.Pointer, bytes int) []*cl.Event {
 	}
 	timer.Stop("memcpy")
 
-	cmdqueue.Release()
 	returnList := make([]*cl.Event, 2)
 	returnList[0], returnList[1] = event, event
 	return returnList
@@ -179,13 +179,14 @@ func memset_func(s *data.Slice, comp int, v *float32, ev *[]*cl.Event, wg__ sync
 	var err error
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	defer cmdqueue.Release()
 	if err != nil {
 		fmt.Printf("MemSet failed to create command queue: %+v \n", err)
 		return nil
 	}
 
 	var evt *cl.Event
-	evt, err = cmdqueue.EnqueueFillBuffer((*cl.MemObject)(s.DevPtr(comp)), unsafe.Pointer(v), SIZEOF_FLOAT32, 0, s.Len()*SIZEOF_FLOAT32, [](*cl.Event){s.GetEvent(comp)})
+	evt, err = cmdqueue.EnqueueFillBuffer((*cl.MemObject)(s.DevPtr(comp)), unsafe.Pointer(v), SIZEOF_FLOAT32, 0, s.Len()*SIZEOF_FLOAT32, nil)
 	wg__.Done()
 	if err != nil {
 		fmt.Printf("MemSet failed to enqueue command: %+v \n", err)
@@ -199,10 +200,8 @@ func memset_func(s *data.Slice, comp int, v *float32, ev *[]*cl.Event, wg__ sync
 	err = cmdqueue.Finish()
 	if err != nil {
 		fmt.Printf("Wait for command to complete in MemCpy failed: %+v \n", err)
-		cmdqueue.Release()
 		return nil
 	}
-	cmdqueue.Release()
 }
 
 // Set all elements of all components to zero.
@@ -215,7 +214,6 @@ func SetCell(s *data.Slice, comp int, ix, iy, iz int, value float32) {
 }
 
 func SetElem(s *data.Slice, comp int, index int, value float32) {
-	f := value
 	if s.ptrs == nil {
 		return
 	}
@@ -239,16 +237,17 @@ func setelem__(s. *data.Slice, comp int, index int, value float32, wg__ sync.Wai
 
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	defer cmdqueue.Release()
 	if err != nil {
 		fmt.Printf("SetElem failed to create command queue: %+v \n", err)
 		return nil
 	}
 	var event *cl.Event
-	event, err := cmdqueue.EnqueueWriteBuffer((*cl.MemObject)(s.DevPtr(comp)), false, index*SIZEOF_FLOAT32, SIZEOF_FLOAT32, unsafe.Pointer(&f), [](*cl.Event){s.GetEvent(comp)})
+	f := value
+	event, err := cmdqueue.EnqueueWriteBuffer((*cl.MemObject)(s.DevPtr(comp)), false, index*SIZEOF_FLOAT32, SIZEOF_FLOAT32, unsafe.Pointer(&f), nil)
 	wg__.Done()
 	if err != nil {
 		fmt.Printf("EnqueueWriteBuffer failed: %+v \n", err)
-		cmdqueue.Release()
 		return
 	}
 
@@ -258,8 +257,6 @@ func setelem__(s. *data.Slice, comp int, index int, value float32, wg__ sync.Wai
 		fmt.Printf("Wait for command to complete in SetElem failed: %+v \n", err)
 	}
 
-	cmdqueue.Release()
-	return
 }
 
 func GetElem(s *data.Slice, comp int, index int) float32 {
@@ -268,25 +265,23 @@ func GetElem(s *data.Slice, comp int, index int) float32 {
 
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	defer cmdqueue.Release()
 	if err != nil {
 		fmt.Printf("GetElem failed to create command queue: %+v \n", err)
 		return nil
 	}
 	var event *cl.Event
 	var f float32
-	event, err := cmdqueue.EnqueueReadBuffer((*cl.MemObject)(s.DevPtr(comp)), false, index*SIZEOF_FLOAT32, SIZEOF_FLOAT32, unsafe.Pointer(&f), [](*cl.Event){s.GetEvent(comp)})
+	event, err := cmdqueue.EnqueueReadBuffer((*cl.MemObject)(s.DevPtr(comp)), false, index*SIZEOF_FLOAT32, SIZEOF_FLOAT32, unsafe.Pointer(&f), nil)
 	if err != nil {
 		fmt.Printf("EnqueueReadBuffer failed: %+v \n", err)
-		cmdqueue.Release()
 		return
 	}
 
-	err = cmdqueue.Finish()
-	if err != nil {
-		fmt.Printf("Wait for command to complete in GetElem failed: %+v \n", err)
+	if err = cl.WaitForEvents([]*cl.Event{event});err != nil {
+		fmt.Printf("WaitForEvents in GetElem failed: %+v \n", err)
 	}
 
-	cmdqueue.Release()
 	return f
 }
 

@@ -5,8 +5,8 @@ import (
 	"log"
 	"unsafe"
 
-	"github.com/seeder-research/uMagNUS/cl"
-	"github.com/seeder-research/uMagNUS/timer"
+	cl "github.com/seeder-research/uMagNUS/cl"
+	timer "github.com/seeder-research/uMagNUS/timer"
 )
 
 func (p *XORWOW_status_array_ptr) Init(seed uint64, events []*cl.Event) {
@@ -39,7 +39,8 @@ func (p *XORWOW_status_array_ptr) Init(seed uint64, events []*cl.Event) {
 	if events != nil {
 		seed_events = events
 	}
-	event := k_xorwow_seed_async(unsafe.Pointer(p.Status_buf), unsafe.Pointer(jump_mat), seed, &config{[]int{totalCount}, []int{p.GetGroupSize()}}, seed_events)
+	event := k_xorwow_seed_async(unsafe.Pointer(p.Status_buf), unsafe.Pointer(jump_mat),
+		seed, &config{[]int{totalCount}, []int{p.GetGroupSize()}}, ClCmdQueue, seed_events)
 
 	p.Ini = true
 	err = cl.WaitForEvents([]*cl.Event{event})
@@ -61,7 +62,7 @@ func (p *XORWOW_status_array_ptr) GenerateUniform(d_data unsafe.Pointer, data_si
 	}
 
 	event := k_xorwow_uniform_async(unsafe.Pointer(p.Status_buf), d_data, data_size,
-		&config{[]int{p.GetStatusSize()}, []int{p.GetGroupSize()}}, events)
+		&config{[]int{p.GetStatusSize()}, []int{p.GetGroupSize()}}, ClCmdQueue, events)
 
 	if Synchronous { // debug
 		ClCmdQueue.Finish()
@@ -83,7 +84,7 @@ func (p *XORWOW_status_array_ptr) GenerateNormal(d_data unsafe.Pointer, data_siz
 	}
 
 	event := k_xorwow_normal_async(unsafe.Pointer(p.Status_buf), d_data, data_size,
-		&config{[]int{p.GetStatusSize()}, []int{p.GetGroupSize()}}, events)
+		&config{[]int{p.GetStatusSize()}, []int{p.GetGroupSize()}}, ClCmdQueue, events)
 
 	if Synchronous { // debug
 		ClCmdQueue.Finish()

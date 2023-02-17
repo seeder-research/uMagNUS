@@ -4,6 +4,7 @@ package opencl
 
 import (
 	"log"
+	"sync"
 	"unsafe"
 
 	cl "github.com/seeder-research/uMagNUS/cl"
@@ -17,6 +18,7 @@ type Bytes struct {
 	Len   int
 	Evt   *cl.Event
 	RdEvt *data.SliceEventMap
+	sync.RWMutex
 }
 
 // Construct new byte slice with given length,
@@ -26,63 +28,110 @@ func NewBytes(Len int) *Bytes {
 	if err1 != nil {
 		panic(err1)
 	}
+
+	emptyMap := new(data.SliceEventMap)
+	emptyMap.Init()
+
+	outByte := &Bytes{unsafe.Pointer(ptr), Len, event, emptyMap}
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	if Synchronous {
+		byte_zero__(outByte, wg)
+	} else {
+		go byte_zero__(outByte, wg)
+	}
+	wg.Wait()
+	return outByte
+}
+
+func byte_zero__(b *Bytes, wg_ sync.WaitGroup) {
+	b.Zero(wg_)
+}
+
+func (dst *Bytes) Zero(wg_ sync.WaitGroup) {
+	dst.Lock()
+	defer dst.Unlock()
+
 	zeroPattern := uint8(0)
-	event, err := ClCmdQueue.EnqueueFillBuffer(ptr, unsafe.Pointer(&zeroPattern), 1, 0, Len, nil)
+
+	// Create the command queue to execute the command
+	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("bytes.zero failed to create command queue: %+v \n", err)
+		return nil
+	}
+	defer cmdqueue.Release()
+
+	var event *cl.Event
+	_, err = cmdqueue.EnqueueFillBuffer(ptr, unsafe.Pointer(&zeroPattern), 1, 0, Len, nil)
+	wg_.Done()
 	if err != nil {
 		panic(err)
 	}
-	if Debug {
-		if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
-			log.Panic("WaitForEvents failed in NewBytes:", err)
-		}
+
+	if err = cmdqueue.Finish(); err != nil {
+		log.Panic("Wait for command to complete failed in bytes.zero:", err)
 	}
-	emptyMap := new(data.SliceEventMap)
-	emptyMap.Init()
-	return &Bytes{unsafe.Pointer(ptr), Len, event, emptyMap}
 }
 
 // Upload src (host) to dst (gpu).
 func (dst *Bytes) Upload(src []byte) {
 	util.Argument(dst.Len == len(src))
-	dstEvt := dst.GetEvent()
-	if dstEvt != nil {
-		if err := cl.WaitForEvents([](*cl.Event){dstEvt}); err != nil {
-			log.Panic("WaitForEvents failed in Upload:", err)
+	dst.Lock()
+	src.RLock()
+	ev := MemCpyHtoD(dst.Ptr, unsafe.Pointer(&src[0]), dst.Len)
+	if Synchronous {
+		if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+			panic(err)
 		}
+		dst.Unlock()
+		src.RUnlock()
+	} else {
+		go func() {
+			if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+				panic(err)
+			}
+			dst.Unlock()
+			src.RUnlock()
+		}()
 	}
-	MemCpyHtoD(dst.Ptr, unsafe.Pointer(&src[0]), dst.Len)
 }
 
 // Copy on device: dst = src.
 func (dst *Bytes) Copy(src *Bytes) {
 	util.Argument(dst.Len == src.Len)
-	eventWaitList := []*cl.Event{}
-	tmpEvtL := dst.GetAllEvents()
-	if len(tmpEvtL) > 0 {
-		eventWaitList = append(eventWaitList, tmpEvtL...)
-	}
-	tmpEvt := src.GetEvent()
-	if tmpEvt != nil {
-		eventWaitList = append(eventWaitList, tmpEvt)
-	}
-	if len(eventWaitList) > 0 {
-		if err := cl.WaitForEvents(eventWaitList); err != nil {
-			log.Panic("WaitForEvents failed in Copy:", err)
+	dst.Lock()
+	src.RLock()
+	ev := MemCpy(dst.Ptr, src.Ptr, dst.Len)
+	if Synchronous {
+		if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+			panic(err)
 		}
+		dst.Unlock()
+		src.RUnlock()
+	} else {
+		go func() {
+			if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+				panic(err)
+			}
+			dst.Unlock()
+			src.RUnlock()
+		}()
 	}
-	MemCpy(dst.Ptr, src.Ptr, dst.Len)
 }
 
 // Copy to host: dst = src.
 func (src *Bytes) Download(dst []byte) {
 	util.Argument(src.Len == len(dst))
-	srcEvt := src.GetEvent()
-	if srcEvt != nil {
-		if err := cl.WaitForEvents([](*cl.Event){srcEvt}); err != nil {
-			log.Panic("WaitForEvents failed in Download:", err)
-		}
+	dst.Lock()
+	src.RLock()
+	ev := MemCpyDtoH(unsafe.Pointer(&dst[0]), src.Ptr, src.Len)
+	if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+		panic(err)
 	}
-	MemCpyDtoH(unsafe.Pointer(&dst[0]), src.Ptr, src.Len)
+	dst.Unlock()
+	src.RUnlock()
 }
 
 // Set one element to value.
@@ -91,23 +140,39 @@ func (dst *Bytes) Set(index int, value byte) {
 	if index < 0 || index >= dst.Len {
 		log.Panic("Bytes.Set: index out of range:", index)
 	}
-	src := value
-	dstEvt := dst.GetEvent()
-	var event *cl.Event
-	var err error
-	if dstEvt != nil {
-		event, err = ClCmdQueue.EnqueueWriteBuffer((*cl.MemObject)(dst.Ptr), false, index, 1, unsafe.Pointer(&src), []*cl.Event{dstEvt})
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	if Synchronous {
+		bytes_set__(dst, index, value, wg)
 	} else {
-		event, err = ClCmdQueue.EnqueueWriteBuffer((*cl.MemObject)(dst.Ptr), false, index, 1, unsafe.Pointer(&src), nil)
+		go bytes_set__(dst, index, value, wg)
 	}
+	wg.Wait()
+}
+
+func bytes_set__(dst *Bytes, index int, value byte, wg_ sync.WaitGroup) {
+	dst.Lock()
+	defer dst.Unlock()
+
+	src := value
+
+	// Create the command queue to execute the command
+	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("MemCpyDoH failed to create command queue: %+v \n", err)
+		return nil
+	}
+	defer cmdqueue.Release()
+
+	var event *cl.Event
+	event, err = cmdqueue.EnqueueWriteBuffer((*cl.MemObject)(dst.Ptr), false, index, 1, unsafe.Pointer(&src), nil)
+	wg_.Done()
 	if err != nil {
 		panic(err)
 	}
-	dst.SetEvent(event)
-	if Debug {
-		if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
-			log.Panic("WaitForEvents failed in Bytes.Set():", err)
-		}
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+		log.Panic("WaitForEvents failed in Bytes.Set():", err)
 	}
 }
 
@@ -118,26 +183,32 @@ func (src *Bytes) Get(index int) byte {
 		log.Panic("Bytes.Set: index out of range:", index)
 	}
 	dst := make([]byte, 1)
-	srcEvent := src.GetEvent()
-	var event *cl.Event
-	var err error
-	if srcEvent != nil {
-		event, err = ClCmdQueue.EnqueueReadBufferByte((*cl.MemObject)(src.Ptr), false, index, dst, []*cl.Event{srcEvent})
-	} else {
-		event, err = ClCmdQueue.EnqueueReadBufferByte((*cl.MemObject)(src.Ptr), false, index, dst, nil)
+	src.RLock()
+	defer src.RUnlock()
+
+	// Create the command queue to execute the command
+	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("MemCpyDoH failed to create command queue: %+v \n", err)
+		return nil
 	}
+	defer cmdqueue.Release()
+
+	event, err := cmdqueue.EnqueueReadBufferByte((*cl.MemObject)(src.Ptr), false, index, dst, nil)
 	if err != nil {
 		panic(err)
 	}
 	// Must synchronize
 	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
-		log.Panic("WaitForEvents failed in Bytes.Set():", err)
+		log.Panic("WaitForEvents failed in Bytes.Get():", err)
 	}
 	return dst[0]
 }
 
 // Frees the GPU memory and disables the slice.
 func (b *Bytes) Free() {
+	b.Lock()
+	b.Unlock()
 	if b.Ptr != nil {
 		tmpObj := (*cl.MemObject)(b.Ptr)
 		tmpObj.Release()
