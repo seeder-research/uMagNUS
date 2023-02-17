@@ -64,14 +64,14 @@ func (dst *Bytes) Zero(wg_ sync.WaitGroup) {
 	defer cmdqueue.Release()
 
 	var event *cl.Event
-	_, err = cmdqueue.EnqueueFillBuffer(ptr, unsafe.Pointer(&zeroPattern), 1, 0, Len, nil)
+	event, err = cmdqueue.EnqueueFillBuffer(ptr, unsafe.Pointer(&zeroPattern), 1, 0, Len, nil)
 	wg_.Done()
 	if err != nil {
 		panic(err)
 	}
 
-	if err = cmdqueue.Finish(); err != nil {
-		log.Panic("Wait for command to complete failed in bytes.zero:", err)
+	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
+		log.Panic("WaitForEvents failed in bytes.zero:", err)
 	}
 }
 

@@ -45,8 +45,7 @@ func crop__(dst, src *data.Slice, offX, offY, offZ, idx int, wg_ sync.WaitGroup)
 	}
 	defer cmdqueue.Release()
 
-	var ev *cl.Event
-	ev = k_crop_async(dst.DevPtr(idx), D[X], D[Y], D[Z],
+	ev := k_crop_async(dst.DevPtr(idx), D[X], D[Y], D[Z],
 		src.DevPtr(idx), S[X], S[Y], S[Z],
 		offX, offY, offZ, cfg, cmdqueue, nil)
 	wg_.Done()

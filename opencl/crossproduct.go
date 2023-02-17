@@ -58,9 +58,10 @@ func crossproduct__(dst, a, b *data.Slice, wg_ sync.WaitGroup) {
 		a.DevPtr(X), a.DevPtr(Y), a.DevPtr(Z),
 		b.DevPtr(X), b.DevPtr(Y), b.DevPtr(Z),
 		N, cfg, cmdqueue, nil)
+
 	wg.Done()
 
-	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in crossproduct: %+v \n", err)
 	}
 }

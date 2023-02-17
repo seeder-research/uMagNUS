@@ -77,8 +77,8 @@ func addcubicanisotropy__(Beff, m *data.Slice, Msat, k1, k2, k3, c1, c2 MSlice, 
 
 	wg_.Done()
 
-	if err := cmdqueue.Finish(); err != nil {
-		fmt.Printf("Wait for command to complete failed in addcubicanisotropy: %+v \n", err)
+	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
+		fmt.Printf("WaitForEvents failed in addcubicanisotropy: %+v \n", err)
 	}
 }
 
@@ -143,8 +143,8 @@ func adduniaxialanisotropy2__(Beff, m *data.Slice, Msat, k1, k2, u MSlice, wg_ s
 
 	wg_.Done()
 
-	if err := cmdqueue.Finish(); err != nil {
-		fmt.Printf("Wait for command to complete failed in addcubicanisotropy2: %+v \n", err)
+	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
+		fmt.Printf("WaitForEvents failed in adduniaxialanisotropy2: %+v \n", err)
 	}
 }
 
@@ -206,8 +206,8 @@ func adduniaxialanisotropy__(Beff, m *data.Slice, Msat, k1, u MSlice, wg_ sync.W
 
 	wg_.Done()
 
-	if err := cmdqueue.Finish(); err != nil {
-		fmt.Printf("Wait for command to complete failed in addcubicanisotropy: %+v \n", err)
+	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
+		fmt.Printf("Wait for command to complete failed in adduniaxialanisotropy: %+v \n", err)
 	}
 }
 
@@ -274,7 +274,7 @@ func addvoltagecontrolledanisotropy__(Beff, m *data.Slice, Msat, vcmaCoeff, volt
 
 	wg_.Done()
 
-	if err := cmdqueue.Finish(); err != nil {
+	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("Wait for command to complete failed in addvoltagecontrolledanisotropy: %+v \n", err)
 	}
 }

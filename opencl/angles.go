@@ -48,8 +48,8 @@ func setphi__(s *data.Slice, m *data.Slice, wg_ sync.WaitGroup) {
 	wg_.Done()
 
 	// Force synchronization
-	if err := cmdqueue.Finish(); err != nil {
-		fmt.Printf("Wait for command to complete failed in phi: %+v \n", err)
+	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
+		fmt.Printf("WaitForEvents failed in phi: %+v \n", err)
 	}
 }
 
@@ -89,7 +89,7 @@ func settheta__(s *data.Slice, m *data.Slice, wg_ sync.WaitGroup) {
 	wg_.Done()
 
 	// Force synchronization
-	if err := cmdqueue.Finish(); err != nil {
-		fmt.Printf("Wait for command to complete failed in theta: %+v \n", err)
+	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
+		fmt.Printf("WaitForEvents failed in theta: %+v \n", err)
 	}
 }
