@@ -47,8 +47,8 @@ func adddmi__(Beff *data.Slice, m *data.Slice, Aex_red, Dex_red SymmLUT, Msat MS
 	defer m.RUnlock(X)
 	defer m.RUnlock(Y)
 	defer m.RUnlock(Z)
-	regions.Lock()
-	defer regions.Lock()
+	regions.RLock()
+	defer regions.RUnlock()
 
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
