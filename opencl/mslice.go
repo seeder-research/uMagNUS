@@ -59,6 +59,54 @@ func (m MSlice) Recycle() {
 	}
 }
 
+func (m MSlice) RLock() {
+	if m.arr.ptrs == nil {
+		return
+	}
+	for _, ptr := range m.arr.ptrs {
+		if ptr == nil {
+			continue
+		}
+		ptr.RLock()
+	}
+}
+
+func (m MSlice) RUnlock() {
+	if m.arr.ptrs == nil {
+		return
+	}
+	for _, ptr := range m.arr.ptrs {
+		if ptr == nil {
+			continue
+		}
+		ptr.RUnlock()
+	}
+}
+
+func (m MSlice) Lock() {
+	if m.arr.ptrs == nil {
+		return
+	}
+	for _, ptr := range m.arr.ptrs {
+		if ptr == nil {
+			continue
+		}
+		ptr.Lock()
+	}
+}
+
+func (m MSlice) Unlock() {
+	if m.arr.ptrs == nil {
+		return
+	}
+	for _, ptr := range m.arr.ptrs {
+		if ptr == nil {
+			continue
+		}
+		ptr.Unlock()
+	}
+}
+
 func (m MSlice) SetEvent(index int, event *cl.Event) {
 	m.arr.SetEvent(index, event)
 }
