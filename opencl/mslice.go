@@ -60,50 +60,62 @@ func (m MSlice) Recycle() {
 }
 
 func (m MSlice) RLock() {
+	if m.arr == nil {
+		return
+	}
 	if m.arr.ptrs == nil {
 		return
 	}
-	for _, ptr := range m.arr.ptrs {
+	for c, ptr := range m.arr.ptrs {
 		if ptr == nil {
 			continue
 		}
-		ptr.RLock()
+		m.arr.RLock(c)
 	}
 }
 
 func (m MSlice) RUnlock() {
+	if m.arr == nil {
+		return
+	}
 	if m.arr.ptrs == nil {
 		return
 	}
-	for _, ptr := range m.arr.ptrs {
+	for c, ptr := range m.arr.ptrs {
 		if ptr == nil {
 			continue
 		}
-		ptr.RUnlock()
+		m.arr.RUnlock(c)
 	}
 }
 
 func (m MSlice) Lock() {
+	if m.arr == nil {
+		return
+	}
 	if m.arr.ptrs == nil {
 		return
 	}
-	for _, ptr := range m.arr.ptrs {
+	for c := range m.arr.ptrs {
 		if ptr == nil {
 			continue
 		}
-		ptr.Lock()
+		m.arr.Lock(c)
 	}
 }
 
 func (m MSlice) Unlock() {
+	if m.arr == nil {
+		return
+	}
 	if m.arr.ptrs == nil {
 		return
 	}
-	for _, ptr := range m.arr.ptrs {
+	for c, ptr := range m.arr.ptrs {
 		if ptr == nil {
 			continue
 		}
-		ptr.Unlock()
+		m.arr.Unlock(c)
 	}
 }
 

@@ -2,6 +2,7 @@ package opencl
 
 import (
 	"fmt"
+	"sync"
 
 	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
