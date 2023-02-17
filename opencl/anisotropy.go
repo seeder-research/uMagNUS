@@ -221,73 +221,46 @@ func AddVoltageControlledAnisotropy(Beff, m *data.Slice, Msat, vcmaCoeff, voltag
 	N := Beff.Len()
 	cfg := make1DConf(N)
 
-	eventList := []*cl.Event{}
-	tmpEvtL := Beff.GetAllEvents(X)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	if Synchronous {
+		addvoltagecontrolledanisotropy__(Beff, m, Msat, vcmaCoeff, voltage, u, wg)
+	} else {
+		go addvoltagecontrolledanisotropy__(Beff, m, Msat, vcmaCoeff, voltage, u, wg)
 	}
-	tmpEvtL = Beff.GetAllEvents(Y)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	tmpEvtL = Beff.GetAllEvents(Z)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	tmpEvt := m.GetEvent(X)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvt = m.GetEvent(Y)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvt = m.GetEvent(Z)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	if Msat.GetSlicePtr() != nil {
-		tmpEvt = Msat.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-	}
-	if vcmaCoeff.GetSlicePtr() != nil {
-		tmpEvt = vcmaCoeff.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-	}
-	if voltage.GetSlicePtr() != nil {
-		tmpEvt = voltage.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-	}
-	if u.GetSlicePtr() != nil {
-		tmpEvt = u.GetEvent(X)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-		tmpEvt = u.GetEvent(Y)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-		tmpEvt = u.GetEvent(Z)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-	}
-	if len(eventList) == 0 {
-		eventList = nil
-	}
+	wg.Wait()
+}
+
+func addvoltagecontrolledanisotropy__(Beff, m *data.Slice, Msat, vcmaCoeff, voltage, u MSlice, wg_ sync.WaitGroup) {
+	Beff.Lock(X)
+	Beff.Lock(Y)
+	Beff.Lock(Z)
+	defer Beff.Unlock(X)
+	defer Beff.Unlock(Y)
+	defer Beff.Unlock(Z)
+	m.RLock(X)
+	m.RLock(Y)
+	m.RLock(Z)
+	defer m.RUnlock(X)
+	defer m.RUnlock(Y)
+	defer m.RUnlock(Z)
+	Msat.RLock()
+	defer Msat.RUnlock()
+	vcmaCoeff.RLock()
+	defer vcmaCoeff.RUnlock()
+	voltage.RLock()
+	defer voltage.RUnlock()
+	u.RLock()
+	defer u.RUnlock()
 
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
-		fmt.Printf("MemCpyDoH failed to create command queue: %+v \n", err)
+		fmt.Printf("addvoltagecontrolledanisotropy failed to create command queue: %+v \n", err)
 		return nil
 	}
+	defer cmdqueue.Release()
+
 	event := k_addvoltagecontrolledanisotropy2_async(
 		Beff.DevPtr(X), Beff.DevPtr(Y), Beff.DevPtr(Z),
 		m.DevPtr(X), m.DevPtr(Y), m.DevPtr(Z),
@@ -297,35 +270,11 @@ func AddVoltageControlledAnisotropy(Beff, m *data.Slice, Msat, vcmaCoeff, voltag
 		u.DevPtr(X), u.Mul(X),
 		u.DevPtr(Y), u.Mul(Y),
 		u.DevPtr(Z), u.Mul(Z),
-		N, cfg, cmdqueue, eventList)
+		N, cfg, cmdqueue, nil)
 
-	Beff.SetEvent(X, event)
-	Beff.SetEvent(Y, event)
-	Beff.SetEvent(Z, event)
+	wg_.Done()
 
-	glist := []GSlice{m}
-	if Msat.GetSlicePtr() != nil {
-		glist = append(glist, Msat)
+	if err := cmdqueue.Finish(); err != nil {
+		fmt.Printf("Wait for command to complete failed in addvoltagecontrolledanisotropy: %+v \n", err)
 	}
-	if vcmaCoeff.GetSlicePtr() != nil {
-		glist = append(glist, vcmaCoeff)
-	}
-	if voltage.GetSlicePtr() != nil {
-		glist = append(glist, voltage)
-	}
-	if u.GetSlicePtr() != nil {
-		glist = append(glist, u)
-	}
-	InsertEventIntoGSlices(event, glist)
-
-	if Debug {
-		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-			fmt.Printf("WaitForEvents failed in addvoltagecontrolledanisotropy: %+v \n", err)
-		}
-		WaitAndUpdateDataSliceEvents(event, glist, false)
-		return
-	}
-
-	go WaitAndUpdateDataSliceEvents(event, glist, true)
-
 }
