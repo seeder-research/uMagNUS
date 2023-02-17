@@ -2,6 +2,7 @@ package opencl
 
 import (
 	"fmt"
+	"sync"
 
 	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
@@ -14,67 +15,52 @@ func CrossProduct(dst, a, b *data.Slice) {
 
 	N := dst.Len()
 	cfg := make1DConf(N)
-	eventWaitList := []*cl.Event{}
-	tmpEventL := dst.GetAllEvents(X)
-	if len(tmpEventL) > 0 {
-		eventWaitList = append(eventWaitList, tmpEventL...)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	if Synchronous {
+		crossproduct__(dst, a, b, wg)
+	} else {
+		go crossproduct__(dst, a, b, wg)
 	}
-	tmpEventL = dst.GetAllEvents(Y)
-	if len(tmpEventL) > 0 {
-		eventWaitList = append(eventWaitList, tmpEventL...)
+	wg.Wait()
+}
+
+func crossproduct__(dst, a, b *data.Slice, wg_ sync.WaitGroup) {
+	dst.Lock(X)
+	dst.Lock(Y)
+	dst.Lock(Z)
+	defer dst.Unlock(X)
+	defer dst.Unlock(Y)
+	defer dst.Unlock(Z)
+	a.RLock(X)
+	a.RLock(Y)
+	a.RLock(Z)
+	defer a.RUnlock(X)
+	defer a.RUnlock(Y)
+	defer a.RUnlock(Z)
+	b.RLock(X)
+	b.RLock(Y)
+	b.RLock(Z)
+	defer b.RUnlock(X)
+	defer b.RUnlock(Y)
+	defer b.RUnlock(Z)
+
+	// Create the command queue to execute the command
+	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("crossproduct failed to create command queue: %+v \n", err)
+		return nil
 	}
-	tmpEventL = dst.GetAllEvents(Z)
-	if len(tmpEventL) > 0 {
-		eventWaitList = append(eventWaitList, tmpEventL...)
-	}
-	tmpEvent := a.GetEvent(X)
-	if tmpEvent != nil {
-		eventWaitList = append(eventWaitList, tmpEvent)
-	}
-	tmpEvent = a.GetEvent(Y)
-	if tmpEvent != nil {
-		eventWaitList = append(eventWaitList, tmpEvent)
-	}
-	tmpEvent = a.GetEvent(Z)
-	if tmpEvent != nil {
-		eventWaitList = append(eventWaitList, tmpEvent)
-	}
-	tmpEvent = b.GetEvent(X)
-	if tmpEvent != nil {
-		eventWaitList = append(eventWaitList, tmpEvent)
-	}
-	tmpEvent = b.GetEvent(Y)
-	if tmpEvent != nil {
-		eventWaitList = append(eventWaitList, tmpEvent)
-	}
-	tmpEvent = b.GetEvent(Z)
-	if tmpEvent != nil {
-		eventWaitList = append(eventWaitList, tmpEvent)
-	}
-	if len(eventWaitList) == 0 {
-		eventWaitList = nil
-	}
+	defer cmdqueue.Release()
 
 	event := k_crossproduct_async(dst.DevPtr(X), dst.DevPtr(Y), dst.DevPtr(Z),
 		a.DevPtr(X), a.DevPtr(Y), a.DevPtr(Z),
 		b.DevPtr(X), b.DevPtr(Y), b.DevPtr(Z),
-		N, cfg, eventWaitList)
+		N, cfg, cmdqueue, nil)
+	wg.Done()
 
-	dst.SetEvent(X, event)
-	dst.SetEvent(Y, event)
-	dst.SetEvent(Z, event)
-
-	glist := []GSlice{a, b}
-	InsertEventIntoGSlices(event, glist)
-
-	if Debug {
-		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-			fmt.Printf("WaitForEvents failed in crossproduct: %+v \n", err)
-		}
-		WaitAndUpdateDataSliceEvents(event, glist, false)
-		return
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+		fmt.Printf("WaitForEvents failed in crossproduct: %+v \n", err)
 	}
-
-	go WaitAndUpdateDataSliceEvents(event, glist, true)
-
 }
