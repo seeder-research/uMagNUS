@@ -2,6 +2,7 @@ package opencl
 
 import (
 	"fmt"
+	"sync"
 
 	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
@@ -13,60 +14,55 @@ func AddDotProduct(dst *data.Slice, prefactor float32, a, b *data.Slice) {
 	util.Argument(dst.NComp() == 1 && a.NComp() == 3 && b.NComp() == 3)
 	util.Argument(dst.Len() == a.Len() && dst.Len() == b.Len())
 
+	var wg sync.WaitGroup
+	wg.Add(1)
+	if Synchronous {
+		dotproduct__(dst, prefactor, a, b, wg)
+	} else {
+		go dotproduct__(dst, prefactor, a, b, wg)
+	}
+	wg.Wait()
+}
+
+func dotproduct__(dst *data.Slice, prefactor float32, a, b *data.Slice, wg_ sync.WaitGroup) {
+	dst.Lock(X)
+	dst.Lock(Y)
+	dst.Lock(Z)
+	defer dst.Unlock(X)
+	defer dst.Unlock(Y)
+	defer dst.Unlock(Z)
+	a.RLock(X)
+	a.RLock(Y)
+	a.RLock(Z)
+	defer a.RUnlock(X)
+	defer a.RUnlock(Y)
+	defer a.RUnlock(Z)
+	b.RLock(X)
+	b.RLock(Y)
+	b.RLock(Z)
+	defer b.RUnlock(X)
+	defer b.RUnlock(Y)
+	defer b.RUnlock(Z)
+
+	// Create the command queue to execute the command
+	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("adddotproduct failed to create command queue: %+v \n", err)
+		return nil
+	}
+	defer cmdqueue.Release()
+
 	N := dst.Len()
 	cfg := make1DConf(N)
-
-	eventList := []*cl.Event{}
-	tmpEvtL := dst.GetAllEvents(0)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	tmpEvt := a.GetEvent(X)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvt = a.GetEvent(Y)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvt = a.GetEvent(Z)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvt = b.GetEvent(X)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvt = b.GetEvent(Y)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvt = b.GetEvent(Z)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	if len(eventList) == 0 {
-		eventList = nil
-	}
 
 	event := k_dotproduct_async(dst.DevPtr(0), prefactor,
 		a.DevPtr(X), a.DevPtr(Y), a.DevPtr(Z),
 		b.DevPtr(X), b.DevPtr(Y), b.DevPtr(Z),
-		N, cfg, eventList)
+		N, cfg, cmdqueue, nil)
 
-	dst.SetEvent(0, event)
+	wg_.Done()
 
-	glist := []GSlice{a, b}
-	InsertEventIntoGSlices(event, glist)
-
-	if Debug {
-		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-			fmt.Printf("WaitForEvents failed in adddotproduct: %+v \n", err)
-		}
-		WaitAndUpdateDataSliceEvents(event, glist, false)
-		return
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+		fmt.Printf("WaitForEvents failed in adddotproduct: %+v \n", err)
 	}
-
-	go WaitAndUpdateDataSliceEvents(event, glist, true)
-
 }

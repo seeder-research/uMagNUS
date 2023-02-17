@@ -17,8 +17,6 @@ func Crop(dst, src *data.Slice, offX, offY, offZ int) {
 	util.Argument(dst.NComp() == src.NComp())
 	util.Argument(D[X]+offX <= S[X] && D[Y]+offY <= S[Y] && D[Z]+offZ <= S[Z])
 
-	cfg := make3DConf(D)
-
 	var wg sync.WaitGroup
 	for c := 0; c < dst.NComp(); c++ {
 		wg.Add(1)
@@ -44,6 +42,10 @@ func crop__(dst, src *data.Slice, offX, offY, offZ, idx int, wg_ sync.WaitGroup)
 		return nil
 	}
 	defer cmdqueue.Release()
+
+	D := dst.Size()
+	S := src.Size()
+	cfg := make3DConf(D)
 
 	ev := k_crop_async(dst.DevPtr(idx), D[X], D[Y], D[Z],
 		src.DevPtr(idx), S[X], S[Y], S[Z],

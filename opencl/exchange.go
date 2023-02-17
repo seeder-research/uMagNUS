@@ -2,6 +2,7 @@ package opencl
 
 import (
 	"fmt"
+	"sync"
 	"unsafe"
 
 	cl "github.com/seeder-research/uMagNUS/cl"
@@ -14,6 +15,42 @@ import (
 //	Aex_red: Aex / (Msat * 1e18 m2)
 // see exchange.cl
 func AddExchange(B, m *data.Slice, Aex_red SymmLUT, Msat MSlice, regions *Bytes, mesh *data.Mesh) {
+	var wg sync.WaitGroup
+	wg.Add(1)
+	if Synchronous {
+		addexchange__(B, m, Aex_red, Msat, regions, mesh, wg)
+	} else {
+		go addexchange__(B, m, Aex_red, Msat, regions, mesh, wg)
+	}
+	wg.Wait()
+}
+
+func addexchange__(B, m *data.Slice, Aex_red SymmLUT, Msat MSlice, regions *Bytes, mesh *data.Mesh, wg_ sync.WaitGroup) {
+	B.Lock(X)
+	B.Lock(Y)
+	B.Lock(Z)
+	defer B.Unlock(X)
+	defer B.Unlock(Y)
+	defer B.Unlock(Z)
+	m.RLock(X)
+	m.RLock(Y)
+	m.RLock(Z)
+	defer m.RUnlock(X)
+	defer m.RUnlock(Y)
+	defer m.RUnlock(Z)
+	Msat.RLock()
+	defer Msat.RUnlock()
+	regions.RLock()
+	defer regions.RUnlock()
+
+	// Create the command queue to execute the command
+	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("adddmi failed to create command queue: %+v \n", err)
+		return nil
+	}
+	defer cmdqueue.Release()
+
 	c := mesh.CellSize()
 	wx := float32(2 / (c[X] * c[X]))
 	wy := float32(2 / (c[Y] * c[Y]))
@@ -21,85 +58,51 @@ func AddExchange(B, m *data.Slice, Aex_red SymmLUT, Msat MSlice, regions *Bytes,
 	N := mesh.Size()
 	pbc := mesh.PBC_code()
 	cfg := make3DConf(N)
-
-	eventList := []*cl.Event{}
-	tmpEvtL := B.GetAllEvents(X)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	tmpEvtL = B.GetAllEvents(Y)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	tmpEvtL = B.GetAllEvents(Z)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	tmpEvt := m.GetEvent(X)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvt = m.GetEvent(Y)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvt = m.GetEvent(Z)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	if Msat.GetSlicePtr() != nil {
-		tmpEvt = Msat.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-	}
-	tmpEvt = regions.GetEvent()
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	if len(eventList) == 0 {
-		eventList = nil
-	}
 
 	event := k_addexchange_async(B.DevPtr(X), B.DevPtr(Y), B.DevPtr(Z),
 		m.DevPtr(X), m.DevPtr(Y), m.DevPtr(Z),
 		Msat.DevPtr(0), Msat.Mul(0),
 		unsafe.Pointer(Aex_red), regions.Ptr,
 		wx, wy, wz, N[X], N[Y], N[Z], pbc, cfg,
-		eventList)
+		cmdqueue, nil)
 
-	B.SetEvent(X, event)
-	B.SetEvent(Y, event)
-	B.SetEvent(Z, event)
+	wg_.Done()
 
-	glist := []GSlice{m}
-	if Msat.GetSlicePtr() != nil {
-		glist = append(glist, Msat)
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+		fmt.Printf("WaitForEvents failed in addexchange: %+v", err)
 	}
-	InsertEventIntoGSlices(event, glist)
-	regions.InsertReadEvent(event)
-
-	if Debug {
-		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-			fmt.Printf("WaitForEvents failed in addexchange: %+v", err)
-		}
-		WaitAndUpdateDataSliceEvents(event, glist, false)
-		regions.RemoveReadEvent(event)
-		return
-	}
-
-	go WaitAndUpdateDataSliceEvents(event, glist, true)
-	go func(ev *cl.Event, b *Bytes) {
-		if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
-			fmt.Printf("WaitForEvents failed in addexchange: %+v \n", err)
-		}
-		b.RemoveReadEvent(ev)
-	}(event, regions)
-
 }
 
 // Finds the average exchange strength around each cell, for debugging.
 func ExchangeDecode(dst *data.Slice, Aex_red SymmLUT, regions *Bytes, mesh *data.Mesh) {
+	var wg sync.WaitGroup
+	wg.Add(1)
+	if Synchronous {
+		exchangedecode__(dst, Aex_red, regions, mesh, wg)
+	} else {
+		go exchangedecode__(dst, Aex_red, regions, mesh, wg)
+	}
+	wg.Wait()
+}
+
+func exchangedecode__ (dst *data.Slice, Aex_red SymmLUT, regions *Bytes, mesh *data.Mesh, wg_ sync.WaitGroup) {
+	dst.Lock(X)
+	dst.Lock(Y)
+	dst.Lock(Z)
+	defer dst.Unlock(X)
+	defer dst.Unlock(Y)
+	defer dst.Unlock(Z)
+	regions.RLock()
+	defer regions.RUnlock()
+
+	// Create the command queue to execute the command
+	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("exchangedecode failed to create command queue: %+v \n", err)
+		return nil
+	}
+	defer cmdqueue.Release()
+
 	c := mesh.CellSize()
 	wx := float32(2 / (c[X] * c[X]))
 	wy := float32(2 / (c[Y] * c[Y]))
@@ -108,40 +111,13 @@ func ExchangeDecode(dst *data.Slice, Aex_red SymmLUT, regions *Bytes, mesh *data
 	pbc := mesh.PBC_code()
 	cfg := make3DConf(N)
 
-	eventList := []*cl.Event{}
-	tmpEvtL := dst.GetAllEvents(0)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	tmpEvt := regions.GetEvent()
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	if len(eventList) == 0 {
-		eventList = nil
-	}
-
 	event := k_exchangedecode_async(dst.DevPtr(0), unsafe.Pointer(Aex_red), regions.Ptr,
-		wx, wy, wz, N[X], N[Y], N[Z], pbc, cfg,
-		eventList)
+		wx, wy, wz, N[X], N[Y], N[Z], pbc, cfg, cmdqueue,
+		nil)
 
-	dst.SetEvent(0, event)
+	wg_.Done()
 
-	regions.InsertReadEvent(event)
-
-	if Debug {
-		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-			fmt.Printf("WaitForEvents failed in exchangedecode: %+v", err)
-		}
-		regions.RemoveReadEvent(event)
-		return
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+		fmt.Printf("WaitForEvents failed in exchangedecode: %+v", err)
 	}
-
-	go func(ev *cl.Event, b *Bytes) {
-		if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
-			fmt.Printf("WaitForEvents failed in exchangedecode: %+v \n", err)
-		}
-		b.RemoveReadEvent(ev)
-	}(event, regions)
-
 }

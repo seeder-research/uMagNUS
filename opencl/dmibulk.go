@@ -13,10 +13,8 @@ import (
 // Add effective field due to bulk Dzyaloshinskii-Moriya interaction to Beff.
 // See dmibulk.cl
 func AddDMIBulk(Beff *data.Slice, m *data.Slice, Aex_red, D_red SymmLUT, Msat MSlice, regions *Bytes, mesh *data.Mesh, OpenBC bool) {
-	cellsize := mesh.CellSize()
 	N := Beff.Size()
 	util.Argument(m.Size() == N)
-	cfg := make3DConf(N)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -56,6 +54,10 @@ func adddmibulk__(Beff *data.Slice, m *data.Slice, Aex_red, D_red SymmLUT, Msat 
 		return nil
 	}
 	defer cmdqueue.Release()
+
+	cellsize := mesh.CellSize()
+	N := Beff.Size()
+	cfg := make3DConf(N)
 
 	event := k_adddmibulk_async(Beff.DevPtr(X), Beff.DevPtr(Y), Beff.DevPtr(Z),
 		m.DevPtr(X), m.DevPtr(Y), m.DevPtr(Z),

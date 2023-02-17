@@ -13,9 +13,6 @@ import (
 func AddCubicAnisotropy2(Beff, m *data.Slice, Msat, k1, k2, k3, c1, c2 MSlice) {
 	util.Argument(Beff.Size() == m.Size())
 
-	N := Beff.Len()
-	cfg := make1DConf(N)
-
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
@@ -60,6 +57,9 @@ func addcubicanisotropy__(Beff, m *data.Slice, Msat, k1, k2, k3, c1, c2 MSlice, 
 	}
 	defer cmdqueue.Release()
 
+	N := Beff.Len()
+	cfg := make1DConf(N)
+
 	event := k_addcubicanisotropy2_async(
 		Beff.DevPtr(X), Beff.DevPtr(Y), Beff.DevPtr(Z),
 		m.DevPtr(X), m.DevPtr(Y), m.DevPtr(Z),
@@ -86,9 +86,6 @@ func addcubicanisotropy__(Beff, m *data.Slice, Msat, k1, k2, k3, c1, c2 MSlice, 
 // see uniaxialanisotropy2.cl
 func AddUniaxialAnisotropy2(Beff, m *data.Slice, Msat, k1, k2, u MSlice) {
 	util.Argument(Beff.Size() == m.Size())
-
-	N := Beff.Len()
-	cfg := make1DConf(N)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -130,6 +127,9 @@ func adduniaxialanisotropy2__(Beff, m *data.Slice, Msat, k1, k2, u MSlice, wg_ s
 	}
 	defer cmdqueue.Release()
 
+	N := Beff.Len()
+	cfg := make1DConf(N)
+
 	event := k_adduniaxialanisotropy2_async(
 		Beff.DevPtr(X), Beff.DevPtr(Y), Beff.DevPtr(Z),
 		m.DevPtr(X), m.DevPtr(Y), m.DevPtr(Z),
@@ -152,9 +152,6 @@ func adduniaxialanisotropy2__(Beff, m *data.Slice, Msat, k1, k2, u MSlice, wg_ s
 // see uniaxialanisotropy.cl
 func AddUniaxialAnisotropy(Beff, m *data.Slice, Msat, k1, u MSlice) {
 	util.Argument(Beff.Size() == m.Size())
-
-	N := Beff.Len()
-	cfg := make1DConf(N)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -194,6 +191,9 @@ func adduniaxialanisotropy__(Beff, m *data.Slice, Msat, k1, u MSlice, wg_ sync.W
 	}
 	defer cmdqueue.Release()
 
+	N := Beff.Len()
+	cfg := make1DConf(N)
+
 	event := k_adduniaxialanisotropy_async(
 		Beff.DevPtr(X), Beff.DevPtr(Y), Beff.DevPtr(Z),
 		m.DevPtr(X), m.DevPtr(Y), m.DevPtr(Z),
@@ -217,9 +217,6 @@ func AddVoltageControlledAnisotropy(Beff, m *data.Slice, Msat, vcmaCoeff, voltag
 	util.Argument(Beff.Size() == m.Size())
 
 	checkSize(Beff, m, vcmaCoeff, voltage, u, Msat)
-
-	N := Beff.Len()
-	cfg := make1DConf(N)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -260,6 +257,9 @@ func addvoltagecontrolledanisotropy__(Beff, m *data.Slice, Msat, vcmaCoeff, volt
 		return nil
 	}
 	defer cmdqueue.Release()
+
+	N := Beff.Len()
+	cfg := make1DConf(N)
 
 	event := k_addvoltagecontrolledanisotropy2_async(
 		Beff.DevPtr(X), Beff.DevPtr(Y), Beff.DevPtr(Z),

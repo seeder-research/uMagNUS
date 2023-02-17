@@ -14,10 +14,8 @@ import (
 // According to Bagdanov and Röβler, PRL 87, 3, 2001. eq.8 (out-of-plane symmetry breaking).
 // See dmi.cl
 func AddDMI(Beff *data.Slice, m *data.Slice, Aex_red, Dex_red SymmLUT, Msat MSlice, regions *Bytes, mesh *data.Mesh, OpenBC bool) {
-	cellsize := mesh.CellSize()
 	N := Beff.Size()
 	util.Argument(m.Size() == N)
-	cfg := make3DConf(N)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -57,6 +55,10 @@ func adddmi__(Beff *data.Slice, m *data.Slice, Aex_red, Dex_red SymmLUT, Msat MS
 		return nil
 	}
 	defer cmdqueue.Release()
+
+	cellsize := mesh.CellSize()
+	N := Beff.Size()
+	cfg := make3DConf(N)
 
 	event := k_adddmi_async(Beff.DevPtr(X), Beff.DevPtr(Y), Beff.DevPtr(Z),
 		m.DevPtr(X), m.DevPtr(Y), m.DevPtr(Z),

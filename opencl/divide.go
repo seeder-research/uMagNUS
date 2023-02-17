@@ -15,7 +15,6 @@ func Divide(dst, a, b *data.Slice) {
 	N := dst.Len()
 	nComp := dst.NComp()
 	util.Assert(a.Len() == N && a.NComp() == nComp && b.Len() == N && b.NComp() == nComp)
-	cfg := make1DConf(N)
 
 	var wg sync.WaitGroup
 	for c := 0; c < nComp; c++ {
@@ -44,6 +43,10 @@ func divide__(dst, a, b *data.Slice, idx int, wg_ sync.WaitGroup) {
 		return nil
 	}
 	defer cmdqueue.Release()
+
+	N := dst.Len()
+	nComp := dst.NComp()
+	cfg := make1DConf(N)
 
 	ev := k_divide_async(dst.DevPtr(idx), a.DevPtr(idx), b.DevPtr(idx), N, cfg, cmdqueue, nil)
 
