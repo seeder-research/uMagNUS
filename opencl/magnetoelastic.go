@@ -19,91 +19,58 @@ func AddMagnetoelasticField(Beff, m *data.Slice, exx, eyy, ezz, exy, exz, eyz, B
 	util.Argument(Beff.Size() == exz.Size())
 	util.Argument(Beff.Size() == eyz.Size())
 
+	var wg sync.WaitGroup
+	wg.Add(1)
+	if Synchronous {
+		addmagnetoelasticfield__(Beff, m, exx, eyy, ezz, exy, exz, eyz, B1, B2, Msat, wg)
+	} else {
+		go addmagnetoelasticfield__(Beff, m, exx, eyy, ezz, exy, exz, eyz, B1, B2, Msat, wg)
+	}
+	wg.Wait()
+}
+
+func addmagnetoelasticfield__(Beff, m *data.Slice, exx, eyy, ezz, exy, exz, eyz, B1, B2, Msat MSlice, wg_ sync.WaitGroup) {
+	Beff.Lock(X)
+	Beff.Lock(Y)
+	Beff.Lock(Z)
+	defer Beff.Unlock(X)
+	defer Beff.Unlock(Y)
+	defer Beff.Unlock(Z)
+	m.RLock(X)
+	m.RLock(Y)
+	m.RLock(Z)
+	defer m.RUnlock(X)
+	defer m.RUnlock(Y)
+	defer m.RUnlock(Z)
+	exx.RLock()
+	defer exx.RUnlock()
+	eyy.RLock()
+	defer eyy.RUnlock()
+	ezz.RLock()
+	defer ezz.RUnlock()
+	exy.RLock()
+	defer exy.RUnlock()
+	exz.RLock()
+	defer exz.RUnlock()
+	eyz.RLock()
+	defer eyz.RUnlock()
+	B1.RLock()
+	defer B1.RUnlock()
+	B2.RLock()
+	defer B2.RUnlock()
+	Msat.RLock()
+	defer Msat.RUnlock()
+
+	// Create the command queue to execute the command
+	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("addmagnetoelasticfield failed to create command queue: %+v \n", err)
+		return nil
+	}
+	defer cmdqueue.Release()
+
 	N := Beff.Len()
 	cfg := make1DConf(N)
-
-	eventList := [](*cl.Event){}
-	tmpEvtL := Beff.GetAllEvents(X)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	tmpEvtL = Beff.GetAllEvents(Y)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	tmpEvtL = Beff.GetAllEvents(Z)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	tmpEvt := m.GetEvent(X)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvt = m.GetEvent(Y)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvt = m.GetEvent(Z)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	if exx.GetSlicePtr() != nil {
-		tmpEvt = exx.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-	}
-	if eyy.GetSlicePtr() != nil {
-		tmpEvt = eyy.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-	}
-	if ezz.GetSlicePtr() != nil {
-		tmpEvt = ezz.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-	}
-	if exy.GetSlicePtr() != nil {
-		tmpEvt = exy.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-	}
-	if exz.GetSlicePtr() != nil {
-		tmpEvt = exz.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-	}
-	if eyz.GetSlicePtr() != nil {
-		tmpEvt = eyz.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-	}
-	if B1.GetSlicePtr() != nil {
-		tmpEvt = B1.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-	}
-	if B2.GetSlicePtr() != nil {
-		tmpEvt = B2.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-	}
-	if Msat.GetSlicePtr() != nil {
-		tmpEvt = Msat.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-	}
-	if len(eventList) == 0 {
-		eventList = nil
-	}
 
 	event := k_addmagnetoelasticfield_async(Beff.DevPtr(X), Beff.DevPtr(Y), Beff.DevPtr(Z),
 		m.DevPtr(X), m.DevPtr(Y), m.DevPtr(Z),
@@ -111,58 +78,55 @@ func AddMagnetoelasticField(Beff, m *data.Slice, exx, eyy, ezz, exy, exz, eyz, B
 		exy.DevPtr(0), exy.Mul(0), exz.DevPtr(0), exz.Mul(0), eyz.DevPtr(0), eyz.Mul(0),
 		B1.DevPtr(0), B1.Mul(0), B2.DevPtr(0), B2.Mul(0),
 		Msat.DevPtr(0), Msat.Mul(0),
-		N, cfg, eventList)
+		N, cfg, cmdqueue, nil)
 
-	Beff.SetEvent(X, event)
-	Beff.SetEvent(Y, event)
-	Beff.SetEvent(Z, event)
+	wg_.Done()
 
-	glist := []GSlice{m}
-	if exx.GetSlicePtr() != nil {
-		glist = append(glist, exx)
+	if err = cl.WaitForEvent([]*cl.Event{event}); err != nil {
+		fmt.Printf("WaitForEvents failed in addmagnetoelasticfield: %+v \n", err)
 	}
-	if eyy.GetSlicePtr() != nil {
-		glist = append(glist, eyy)
-	}
-	if ezz.GetSlicePtr() != nil {
-		glist = append(glist, ezz)
-	}
-	if exy.GetSlicePtr() != nil {
-		glist = append(glist, exy)
-	}
-	if exz.GetSlicePtr() != nil {
-		glist = append(glist, exz)
-	}
-	if eyz.GetSlicePtr() != nil {
-		glist = append(glist, eyz)
-	}
-	if B1.GetSlicePtr() != nil {
-		glist = append(glist, B1)
-	}
-	if B2.GetSlicePtr() != nil {
-		glist = append(glist, B2)
-	}
-	if Msat.GetSlicePtr() != nil {
-		glist = append(glist, Msat)
-	}
-	InsertEventIntoGSlices(event, glist)
-
-	if Debug {
-		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-			fmt.Printf("WaitForEvents in addmagnetoelasticfield failed: %+v \n", err)
-		}
-		WaitAndUpdateDataSliceEvents(event, glist, false)
-		return
-	}
-
-	go WaitAndUpdateDataSliceEvents(event, glist, true)
-
 }
 
 // Calculate magneto-elasticit force density
 // see magnetoelasticforce.cl
 func GetMagnetoelasticForceDensity(out, m *data.Slice, B1, B2 MSlice, mesh *data.Mesh) {
 	util.Argument(out.Size() == m.Size())
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	if Synchronous {
+		getmagnetoelasticforcedensity__(out, m, B1, B2, mesh, wg) {
+	} else {
+		go getmagnetoelasticforcedensity__(out, m, B1, B2, mesh, wg) {
+	}
+	wg.Wait()
+}
+
+func getmagnetoelasticforcedensity__(out, m *data.Slice, B1, B2 MSlice, mesh *data.Mesh, wg_ sync.WaitGroup) {
+	out.Lock(X)
+	out.Lock(Y)
+	out.Lock(Z)
+	defer out.Unlock(X)
+	defer out.Unlock(Y)
+	defer out.Unlock(Z)
+	m.RLock(X)
+	m.RLock(Y)
+	m.RLock(Z)
+	defer out.RUnlock(X)
+	defer out.RUnlock(Y)
+	defer out.RUnlock(Z)
+	B1.RLock()
+	B2.RLock()
+	defer B1.RUnlock()
+	defer B2.RUnlock()
+
+	// Create the command queue to execute the command
+	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("getmagnetoelasticforcedensity failed to create command queue: %+v \n", err)
+		return nil
+	}
+	defer cmdqueue.Release()
 
 	cellsize := mesh.CellSize()
 	N := mesh.Size()
@@ -172,75 +136,16 @@ func GetMagnetoelasticForceDensity(out, m *data.Slice, B1, B2 MSlice, mesh *data
 	rcsy := float32(1.0 / cellsize[Y])
 	rcsz := float32(1.0 / cellsize[Z])
 
-	eventList := [](*cl.Event){}
-	tmpEvtL := out.GetAllEvents(X)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	tmpEvtL = out.GetAllEvents(Y)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	tmpEvtL = out.GetAllEvents(Z)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	tmpEvt := m.GetEvent(X)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvt = m.GetEvent(Y)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvt = m.GetEvent(Z)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	if B1.GetSlicePtr() != nil {
-		tmpEvt = B1.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-	}
-	if B2.GetSlicePtr() != nil {
-		tmpEvt = B2.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-	}
-	if len(eventList) == 0 {
-		eventList = nil
-	}
-
 	event := k_getmagnetoelasticforce_async(out.DevPtr(X), out.DevPtr(Y), out.DevPtr(Z),
 		m.DevPtr(X), m.DevPtr(Y), m.DevPtr(Z),
 		B1.DevPtr(0), B1.Mul(0), B2.DevPtr(0), B2.Mul(0),
 		rcsx, rcsy, rcsz,
 		N[X], N[Y], N[Z],
-		mesh.PBC_code(), cfg, eventList)
+		mesh.PBC_code(), cfg, cmdqueue, nil)
 
-	out.SetEvent(X, event)
-	out.SetEvent(Y, event)
-	out.SetEvent(Z, event)
+	wg_.Done()
 
-	glist := []GSlice{m}
-	if B1.GetSlicePtr() != nil {
-		glist = append(glist, B1)
+	if err = cl.WaitForEvent([]*cl.Event{event}); err != nil {
+		fmt.Printf("WaitForEvents failed in getmagnetoelasticforcedensity: %+v \n", err)
 	}
-	if B2.GetSlicePtr() != nil {
-		glist = append(glist, B2)
-	}
-	InsertEventIntoGSlices(event, glist)
-
-	if Debug {
-		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-			fmt.Printf("WaitForEvents in addmagnetoelasticforce failed: %+v \n", err)
-		}
-		WaitAndUpdateDataSliceEvents(event, glist, false)
-		return
-	}
-
-	go WaitAndUpdateDataSliceEvents(event, glist, true)
-
 }
