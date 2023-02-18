@@ -2,6 +2,7 @@ package opencl
 
 import (
 	"fmt"
+	"sync"
 
 	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
@@ -14,40 +15,41 @@ func copyUnPad(dst, src *data.Slice, dstsize, srcsize [3]int) {
 	util.Argument(dst.NComp() == 1 && src.NComp() == 1)
 	util.Argument(dst.Len() == prod(dstsize) && src.Len() == prod(srcsize))
 
-	cfg := make3DConf(dstsize)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	if Synchronous {
+		copyunpad__(dst, src, dstsize, srcsize, wg)
+	} else {
+		go copyunpad__(dst, src, dstsize, srcsize, wg)
+	}
+	wg.Wait()
+}
 
-	eventList := []*cl.Event{}
-	tmpEvtL := dst.GetAllEvents(0)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
+func copyunpad__(dst, src *data.Slice, dstsize, srcsize [3]int, wg_ sync.WaitGroup) {
+	dst.Lock(0)
+	defer dst.Unlock(0)
+	src.RLock(0)
+	defer src.RUnlock(0)
+
+	// Create the command queue to execute the command
+	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("copyunpad failed to create command queue: %+v \n", err)
+		return nil
 	}
-	tmpEvt := src.GetEvent(0)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	if len(eventList) == 0 {
-		eventList = nil
-	}
+	defer cmdqueue.Release()
+
+	cfg := make3DConf(dstsize)
 
 	event := k_copyunpad_async(dst.DevPtr(0), dstsize[X], dstsize[Y], dstsize[Z],
 		src.DevPtr(0), srcsize[X], srcsize[Y], srcsize[Z], cfg,
-		eventList)
+		cmdqueue, nil)
 
-	dst.SetEvent(0, event)
+	wg_.Done()
 
-	glist := []GSlice{src}
-	InsertEventIntoGSlices(event, glist)
-
-	if Debug {
-		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-			fmt.Printf("WaitForEvents failed in copyunpad: %+v \n", err)
-		}
-		WaitAndUpdateDataSliceEvents(event, glist, false)
-		return
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+		fmt.Printf("WaitForEvents failed in copyunpad: %+v \n", err)
 	}
-
-	go WaitAndUpdateDataSliceEvents(event, glist, true)
-
 }
 
 // Copies src into dst, which is larger, and multiplies by vol*Bsat.
@@ -57,52 +59,46 @@ func copyPadMul(dst, src, vol *data.Slice, dstsize, srcsize [3]int, Msat MSlice)
 	util.Argument(dst.NComp() == 1 && src.NComp() == 1)
 	util.Assert(dst.Len() == prod(dstsize) && src.Len() == prod(srcsize))
 
-	cfg := make3DConf(srcsize)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	if Synchronous {
+		copypadmul__(dst, src, vol, dstsize, srcsize, Msat, wg)
+	} else {
+		go copypadmul__(dst, src, vol, dstsize, srcsize, Msat, wg)
+	}
+	wg.Wait()
+}
 
-	eventList := []*cl.Event{}
-	tmpEvtL := dst.GetAllEvents(0)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	tmpEvent := src.GetEvent(0)
-	if tmpEvent != nil {
-		eventList = append(eventList, tmpEvent)
-	}
-	tmpEvent = vol.GetEvent(0)
-	if tmpEvent != nil {
-		eventList = append(eventList, tmpEvent)
-	}
+func copypadmul__(dst, src, vol *data.Slice, dstsize, srcsize [3]int, Msat MSlice, wg_ sync.WaitGroup) {
+	dst.Lock(0)
+	defer dst.Unlock(0)
+	src.RLock(0)
+	defer src.RUnlock(0)
+	vol.RLock(0)
+	defer vol.RUnlock(0)
 	if Msat.GetSlicePtr() != nil {
-		tmpEvent = Msat.GetEvent(0)
-		if tmpEvent != nil {
-			eventList = append(eventList, tmpEvent)
-		}
+		Msat.RLock()
+		defer Msat.RUnlock()
 	}
-	if len(eventList) == 0 {
-		eventList = nil
+
+	// Create the command queue to execute the command
+	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("copypadmul failed to create command queue: %+v \n", err)
+		return nil
 	}
+	defer cmdqueue.Release()
+
+	cfg := make3DConf(srcsize)
 
 	event := k_copypadmul2_async(dst.DevPtr(0), dstsize[X], dstsize[Y], dstsize[Z],
 		src.DevPtr(0), srcsize[X], srcsize[Y], srcsize[Z],
 		Msat.DevPtr(0), Msat.Mul(0), vol.DevPtr(0), cfg,
-		eventList)
+		cmdqueue, nil)
 
-	dst.SetEvent(0, event)
+	wg_.Done()
 
-	glist := []GSlice{src, vol}
-	if Msat.GetSlicePtr() != nil {
-		glist = append(glist, Msat)
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+		fmt.Printf("WaitForEvents failed in copypadmul: %+v \n", err)
 	}
-	InsertEventIntoGSlices(event, glist)
-
-	if Debug {
-		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-			fmt.Printf("WaitForEvents failed in copypadmul: %+v \n", err)
-		}
-		WaitAndUpdateDataSliceEvents(event, glist, false)
-		return
-	}
-
-	go WaitAndUpdateDataSliceEvents(event, glist, true)
-
 }
