@@ -2,6 +2,7 @@ package opencl
 
 import (
 	"fmt"
+	"sync"
 	"unsafe"
 
 	cl "github.com/seeder-research/uMagNUS/cl"
@@ -14,89 +15,64 @@ import (
 func SetTemperature(Bth, noise *data.Slice, k2mu0_Mu0VgammaDt float64, Msat, Temp, Alpha MSlice) {
 	util.Argument(Bth.NComp() == 1 && noise.NComp() == 1)
 
-	N := Bth.Len()
-	cfg := make1DConf(N)
-
-	Beff := (unsafe.Pointer)(nil)
-	nois := (unsafe.Pointer)(nil)
-	Msat_X := (unsafe.Pointer)(nil)
-	Temp_X := (unsafe.Pointer)(nil)
-	Alpha_X := (unsafe.Pointer)(nil)
-	eventList := [](*cl.Event){}
-	var tmpEvt *cl.Event
-
-	if Bth != nil {
-		Beff = Bth.DevPtr(0)
-		tmpEvtL := Bth.GetAllEvents(0)
-		if len(tmpEvtL) > 0 {
-			eventList = append(eventList, tmpEvtL...)
-		}
+	var wg sync.WaitGroup
+	wg.Add(1)
+	if Synchronous {
+		settemperature__(Bth, noise, k2mu0_Mu0VgammaDt, Msat, Temp, Alpha, wg)
 	} else {
-		panic("ERROR (SetTemperature): Bth pointer cannot be nil")
+		go settemperature__(Bth, noise, k2mu0_Mu0VgammaDt, Msat, Temp, Alpha, wg)
+	}
+	wg.Done()
+}
+
+func settemperature__(Bth, noise *data.Slice, k2mu0_Mu0VgammaDt float64, Msat, Temp, Alpha MSlice) {
+	if Bth != nil {
+		Bth.Lock(0)
+		defer Bth.Unlock(0)
+		Beff = Bth.DevPtr(0)
 	}
 	if noise != nil {
+		noise.RLock(0)
+		defer noise.RUnlock(0)
 		nois = noise.DevPtr(0)
-		tmpEvt = noise.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-	} else {
-		panic("ERROR (SetTemperature): Bth pointer cannot be nil")
 	}
 	if Msat.GetSlicePtr() != nil {
+		Msat.RLock()
+		defer Msat.RUnlock()
 		Msat_X = Msat.DevPtr(0)
-		tmpEvt = Msat.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
 	}
 	if Temp.GetSlicePtr() != nil {
+		Temp.RLock()
+		defer Temp.RUnlock()
 		Temp_X = Temp.DevPtr(0)
-		tmpEvt = Temp.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
 	}
 	if Alpha.GetSlicePtr() != nil {
+		Alpha.RLock()
+		defer Alpha.RUnlock()
 		Alpha_X = Alpha.DevPtr(0)
-		tmpEvt = Alpha.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
 	}
-	if len(eventList) == 0 {
-		eventList = nil
+
+	// Create the command queue to execute the command
+	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("settemperature failed to create command queue: %+v \n", err)
+		return nil
 	}
+	defer cmdqueue.Release()
+
+	N := Bth.Len()
+	cfg := make1DConf(N)
 
 	event := k_settemperature2_async(Beff, nois, float32(k2mu0_Mu0VgammaDt),
 		Msat_X, Msat.Mul(0),
 		Temp_X, Temp.Mul(0),
 		Alpha_X, Alpha.Mul(0),
 		N, cfg,
-		eventList)
+		cmdqueue, nil)
 
-	Bth.SetEvent(0, event)
+	wg_.Done()
 
-	glist := []GSlice{noise}
-	if Msat_X != nil {
-		glist = append(glist, Msat)
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+		fmt.Printf("WaitForEvents failed in settemperature: %+v \n", err)
 	}
-	if Temp_X != nil {
-		glist = append(glist, Temp)
-	}
-	if Alpha_X != nil {
-		glist = append(glist, Alpha)
-	}
-	InsertEventIntoGSlices(event, glist)
-
-	if Debug {
-		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-			fmt.Printf("WaitForEvents failed in settemperature: %+v \n", err)
-		}
-		WaitAndUpdateDataSliceEvents(event, glist, false)
-		return
-	}
-
-	go WaitAndUpdateDataSliceEvents(event, glist, true)
-
 }
