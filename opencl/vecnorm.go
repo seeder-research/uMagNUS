@@ -2,6 +2,7 @@ package opencl
 
 import (
 	"fmt"
+	"sync"
 
 	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
@@ -13,47 +14,44 @@ func VecNorm(dst *data.Slice, a *data.Slice) {
 	util.Argument(dst.NComp() == 1 && a.NComp() == 3)
 	util.Argument(dst.Len() == a.Len())
 
+	var wg sync.WaitGroup
+	wg.Add(1)
+	if Synchronous {
+		vecnorm__(dst, a, wg)
+	} else {
+		go vecnorm__(dst, a, wg)
+	}
+	wg.Wait()
+}
+
+func vecnorm__(dst *data.Slice, a *data.Slice, wg_ sync.WaitGroup) {
+	dst.Lock(0)
+	defer dst.Unlock(0)
+	a.RLock(X)
+	a.RLock(Y)
+	a.RLock(Z)
+	defer a.RUnlock(X)
+	defer a.RUnlock(Y)
+	defer a.RUnlock(Z)
+
+	// Create the command queue to execute the command
+	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("vecnorm failed to create command queue: %+v \n", err)
+		return nil
+	}
+	defer cmdqueue.Release()
+
 	N := dst.Len()
 	cfg := make1DConf(N)
 
-	eventsList := []*cl.Event{}
-	tmpEvtL := dst.GetAllEvents(0)
-	if len(tmpEvtL) > 0 {
-		eventsList = append(eventsList, tmpEvtL...)
-	}
-	tmpEvt := a.GetEvent(X)
-	if tmpEvt != nil {
-		eventsList = append(eventsList, tmpEvt)
-	}
-	tmpEvt = a.GetEvent(Y)
-	if tmpEvt != nil {
-		eventsList = append(eventsList, tmpEvt)
-	}
-	tmpEvt = a.GetEvent(Z)
-	if tmpEvt != nil {
-		eventsList = append(eventsList, tmpEvt)
-	}
-	if len(eventsList) == 0 {
-		eventsList = nil
-	}
-
 	event := k_vecnorm_async(dst.DevPtr(0),
 		a.DevPtr(X), a.DevPtr(Y), a.DevPtr(Z),
-		N, cfg, eventsList)
+		N, cfg, cmdqueue, nil)
 
-	dst.SetEvent(0, event)
+	wg_.Done()
 
-	glist := []GSlice{a}
-	InsertEventIntoGSlices(event, glist)
-
-	if Debug {
-		if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
-			fmt.Printf("WaitForEvents failed in vecnorm: %+v \n", err)
-		}
-		WaitAndUpdateDataSliceEvents(event, glist, false)
-		return
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+		fmt.Printf("WaitForEvents failed in vecnorm: %+v \n", err)
 	}
-
-	go WaitAndUpdateDataSliceEvents(event, glist, true)
-
 }
