@@ -42,24 +42,42 @@ func addmagnetoelasticfield__(Beff, m *data.Slice, exx, eyy, ezz, exy, exz, eyz,
 	defer m.RUnlock(X)
 	defer m.RUnlock(Y)
 	defer m.RUnlock(Z)
-	exx.RLock()
-	defer exx.RUnlock()
-	eyy.RLock()
-	defer eyy.RUnlock()
-	ezz.RLock()
-	defer ezz.RUnlock()
-	exy.RLock()
-	defer exy.RUnlock()
-	exz.RLock()
-	defer exz.RUnlock()
-	eyz.RLock()
-	defer eyz.RUnlock()
-	B1.RLock()
-	defer B1.RUnlock()
-	B2.RLock()
-	defer B2.RUnlock()
-	Msat.RLock()
-	defer Msat.RUnlock()
+	if exx.GetSlicePtr() != nil {
+		exx.RLock()
+		defer exx.RUnlock()
+	}
+	if eyy.GetSlicePtr() != nil {
+		eyy.RLock()
+		defer eyy.RUnlock()
+	}
+	if ezz.GetSlicePtr() != nil {
+		ezz.RLock()
+		defer ezz.RUnlock()
+	}
+	if exy.GetSlicePtr() != nil {
+		exy.RLock()
+		defer exy.RUnlock()
+	}
+	if exz.GetSlicePtr() != nil {
+		exz.RLock()
+		defer exz.RUnlock()
+	}
+	if eyz.GetSlicePtr() != nil {
+		eyz.RLock()
+		defer eyz.RUnlock()
+	}
+	if B1.GetSlicePtr() != nil {
+		B1.RLock()
+		defer B1.RUnlock()
+	}
+	if B2.GetSlicePtr() != nil {
+		B2.RLock()
+		defer B2.RUnlock()
+	}
+	if Msat.GetSlicePtr() != nil {
+		Msat.RLock()
+		defer Msat.RUnlock()
+	}
 
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
@@ -115,10 +133,14 @@ func getmagnetoelasticforcedensity__(out, m *data.Slice, B1, B2 MSlice, mesh *da
 	defer out.RUnlock(X)
 	defer out.RUnlock(Y)
 	defer out.RUnlock(Z)
-	B1.RLock()
-	B2.RLock()
-	defer B1.RUnlock()
-	defer B2.RUnlock()
+	if B1.GetSlicePtr() != nil {
+		B1.RLock()
+		defer B1.RUnlock()
+	}
+	if B2.GetSlicePtr() != nil {
+		B2.RLock()
+		defer B2.RUnlock()
+	}
 
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)

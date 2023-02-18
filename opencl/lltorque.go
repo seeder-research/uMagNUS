@@ -44,8 +44,10 @@ func lltorque__(torque, m, B *data.Slice, alpha MSlice, wg_ sync.WaitGroup) {
 	defer B.RUnlock(X)
 	defer B.RUnlock(Y)
 	defer B.RUnlock(Z)
-	alpha.RLock()
-	defer alpha.RUnlock()
+	if alpha.GetSlicePtr() != nil {
+		alpha.RLock()
+		defer alpha.RUnlock()
+	}
 
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)

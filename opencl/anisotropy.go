@@ -36,8 +36,10 @@ func addcubicanisotropy__(Beff, m *data.Slice, Msat, k1, k2, k3, c1, c2 MSlice, 
 	defer m.RUnlock(X)
 	defer m.RUnlock(Y)
 	defer m.RUnlock(Z)
-	Msat.RLock()
-	defer Msat.RUnlock()
+	if Msat.GetSlicePtr() != nil {
+		Msat.RLock()
+		defer Msat.RUnlock()
+	}
 	k1.RLock()
 	k2.RLock()
 	k3.RLock()
@@ -110,8 +112,10 @@ func adduniaxialanisotropy2__(Beff, m *data.Slice, Msat, k1, k2, u MSlice, wg_ s
 	defer m.RUnlock(X)
 	defer m.RUnlock(Y)
 	defer m.RUnlock(Z)
-	Msat.RLock()
-	defer Msat.RUnlock()
+	if Msat.GetSlicePtr() != nil {
+		Msat.RLock()
+		defer Msat.RUnlock()
+	}
 	k1.RLock()
 	k2.RLock()
 	defer k1.RUnlock()
@@ -176,8 +180,10 @@ func adduniaxialanisotropy__(Beff, m *data.Slice, Msat, k1, u MSlice, wg_ sync.W
 	defer m.RUnlock(X)
 	defer m.RUnlock(Y)
 	defer m.RUnlock(Z)
-	Msat.RLock()
-	defer Msat.RUnlock()
+	if Msat.GetSlicePtr() != nil {
+		Msat.RLock()
+		defer Msat.RUnlock()
+	}
 	k1.RLock()
 	defer k1.RUnlock()
 	u.RLock()
@@ -241,14 +247,22 @@ func addvoltagecontrolledanisotropy__(Beff, m *data.Slice, Msat, vcmaCoeff, volt
 	defer m.RUnlock(X)
 	defer m.RUnlock(Y)
 	defer m.RUnlock(Z)
-	Msat.RLock()
-	defer Msat.RUnlock()
-	vcmaCoeff.RLock()
-	defer vcmaCoeff.RUnlock()
-	voltage.RLock()
-	defer voltage.RUnlock()
-	u.RLock()
-	defer u.RUnlock()
+	if Msat.GetSlicePtr() != nil {
+		Msat.RLock()
+		defer Msat.RUnlock()
+	}
+	if vcmaCoeff.GetSlicePtr() != nil {
+		vcmaCoeff.RLock()
+		defer vcmaCoeff.RUnlock()
+	}
+	if voltage.GetSlicePtr() != nil {
+		voltage.RLock()
+		defer voltage.RUnlock()
+	}
+	if u.GetSlicePtr() != nil {
+		u.RLock()
+		defer u.RUnlock()
+	}
 
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)

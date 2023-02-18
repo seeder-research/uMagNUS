@@ -38,10 +38,14 @@ func addexchange__(B, m *data.Slice, Aex_red SymmLUT, Msat MSlice, regions *Byte
 	defer m.RUnlock(X)
 	defer m.RUnlock(Y)
 	defer m.RUnlock(Z)
-	Msat.RLock()
-	defer Msat.RUnlock()
-	regions.RLock()
-	defer regions.RUnlock()
+	if Msat.GetSlicePtr() != nil {
+		Msat.RLock()
+		defer Msat.RUnlock()
+	}
+	if regions != nil {
+		regions.RLock()
+		defer regions.RUnlock()
+	}
 
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
@@ -92,8 +96,10 @@ func exchangedecode__ (dst *data.Slice, Aex_red SymmLUT, regions *Bytes, mesh *d
 	defer dst.Unlock(X)
 	defer dst.Unlock(Y)
 	defer dst.Unlock(Z)
-	regions.RLock()
-	defer regions.RUnlock()
+	if regions != nil {
+		regions.RLock()
+		defer regions.RUnlock()
+	}
 
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
