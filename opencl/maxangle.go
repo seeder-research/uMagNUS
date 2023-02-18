@@ -54,7 +54,7 @@ func maxangle__(dst, m *data.Slice, Aex_red SymmLUT, regions *Bytes, mesh *data.
 
 	wg_.Done()
 
-	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in setmaxangle: %+v \n", err)
 	}
 }

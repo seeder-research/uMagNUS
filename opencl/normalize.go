@@ -55,7 +55,7 @@ func normalize__(vec, vol *data.Slice, wg_ sync.WaitGroup) {
 
 	wg_.Done()
 
-	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
+	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in normalize: %+v \n", err)
 	}
 }

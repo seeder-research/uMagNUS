@@ -59,7 +59,7 @@ func minimize__(m, m0, torque *data.Slice, dt float32, wg_ sync.WaitGroup) {
 
 	wg_.Done()
 
-	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in minimize: %+v \n", err)
 	}
 }

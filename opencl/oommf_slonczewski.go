@@ -2,6 +2,7 @@ package opencl
 
 import (
 	"fmt"
+	"sync"
 	"unsafe"
 
 	cl "github.com/seeder-research/uMagNUS/cl"
@@ -10,100 +11,80 @@ import (
 
 // Add Slonczewski ST torque to torque (Tesla).
 func AddOommfSlonczewskiTorque(torque, m *data.Slice, Msat, J, fixedP, alpha, pfix, pfree, λfix, λfree, ε_prime MSlice, mesh *data.Mesh) {
+	var wg sync.WaitGroup
+	wg.Add(1)
+	if Synchronous {
+		addoommfslonczewskitorque__(torque, m, Msat, J,
+			fixedP, alpha, pfix, pfree, λfix, λfree, ε_prime, mesh, wg)
+	} else {
+		go addoommfslonczewskitorque__(torque, m, Msat, J,
+			fixedP, alpha, pfix, pfree, λfix, λfree, ε_prime, mesh, wg)
+	}
+	wg.Wait()
+}
+
+func addoommfslonczewskitorque__(torque, m *data.Slice, Msat, J, fixedP, alpha, pfix, pfree, λfix, λfree, ε_prime MSlice, mesh *data.Mesh, wg_ sync.WaitGroup) {
 	N := torque.Len()
 	cfg := make1DConf(N)
 	flt := float32(mesh.WorldSize()[Z])
 
-	eventList := [](*cl.Event){}
-	tmpEvtL := torque.GetAllEvents(X)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	tmpEvtL = torque.GetAllEvents(Y)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	tmpEvtL = torque.GetAllEvents(Z)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	tmpEvt := m.GetEvent(X)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvt = m.GetEvent(Y)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvt = m.GetEvent(Z)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
+	torque.Lock(X)
+	torque.Lock(Y)
+	torque.Lock(Z)
+	defer torque.Unlock(X)
+	defer torque.Unlock(Y)
+	defer torque.Unlock(Z)
+	m.RLock(X)
+	m.RLock(Y)
+	m.RLock(Z)
+	defer m.RUnlock(X)
+	defer m.RUnlock(Y)
+	defer m.RUnlock(Z)
+
 	if J.GetSlicePtr() != nil {
-		tmpEvt = J.GetEvent(Z)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
+		J.RLock()
+		defer J.RUnlock()
 	}
 	if fixedP.GetSlicePtr() != nil {
-		tmpEvt = fixedP.GetEvent(X)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-		tmpEvt = fixedP.GetEvent(Y)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-		tmpEvt = fixedP.GetEvent(Z)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
+		fixedP.RLock()
+		defer fixedP.RUnlock()
 	}
 	if alpha.GetSlicePtr() != nil {
-		tmpEvt = alpha.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
+		alpha.RLock()
+		defer alpha.RUnlock()
 	}
 	if ε_prime.GetSlicePtr() != nil {
-		tmpEvt = ε_prime.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
+		ε_prime.RLock()
+		defer ε_prime.RUnlock()
 	}
 	if Msat.GetSlicePtr() != nil {
-		tmpEvt = Msat.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
+		Msat.RLock()
+		defer Msat.RUnlock()
 	}
 	if pfix.GetSlicePtr() != nil {
-		tmpEvt = pfix.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
+		pfix.RLock()
+		defer pfix.RUnlock()
 	}
 	if pfree.GetSlicePtr() != nil {
-		tmpEvt = pfree.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
+		pfree.RLock()
+		defer pfree.RUnlock()
 	}
 	if λfix.GetSlicePtr() != nil {
-		tmpEvt = λfix.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
+		λfix.RLock()
+		defer λfix.RUnlock()
 	}
 	if λfree.GetSlicePtr() != nil {
-		tmpEvt = λfree.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
+		λfree.RLock()
+		defer λfree.RUnlock()
 	}
-	if len(eventList) == 0 {
-		eventList = nil
+
+	// Create the command queue to execute the command
+	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("addoommfslonczewskitorque failed to create command queue: %+v \n", err)
+		return nil
 	}
+	defer cmdqueue.Release()
 
 	event := k_addoommfslonczewskitorque_async(
 		torque.DevPtr(X), torque.DevPtr(Y), torque.DevPtr(Z),
@@ -120,51 +101,11 @@ func AddOommfSlonczewskiTorque(torque, m *data.Slice, Msat, J, fixedP, alpha, pf
 		λfree.DevPtr(0), λfree.Mul(0),
 		ε_prime.DevPtr(0), ε_prime.Mul(0),
 		unsafe.Pointer(uintptr(0)), flt,
-		N, cfg, eventList)
+		N, cfg, cmdqueue, nil)
 
-	torque.SetEvent(X, event)
-	torque.SetEvent(Y, event)
-	torque.SetEvent(Z, event)
+	wg_.Done()
 
-	glist := []GSlice{m}
-	if J.GetSlicePtr() != nil {
-		glist = append(glist, J)
+	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
+		fmt.Printf("WaitForEvents failed in addoommfslonczewskitorque: %+v \n", err)
 	}
-	if Msat.GetSlicePtr() != nil {
-		glist = append(glist, Msat)
-		Msat.SetEvent(0, event)
-	}
-	if fixedP.GetSlicePtr() != nil {
-		glist = append(glist, fixedP)
-	}
-	if ε_prime.GetSlicePtr() != nil {
-		glist = append(glist, ε_prime)
-	}
-	if alpha.GetSlicePtr() != nil {
-		glist = append(glist, alpha)
-	}
-	if pfix.GetSlicePtr() != nil {
-		glist = append(glist, pfix)
-	}
-	if pfree.GetSlicePtr() != nil {
-		glist = append(glist, pfree)
-	}
-	if λfix.GetSlicePtr() != nil {
-		glist = append(glist, λfix)
-	}
-	if λfree.GetSlicePtr() != nil {
-		glist = append(glist, λfree)
-	}
-	InsertEventIntoGSlices(event, glist)
-
-	if Debug {
-		if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
-			fmt.Printf("WaitForEvents failed in addoommfslonczewskitorque: %+v \n", err)
-		}
-		WaitAndUpdateDataSliceEvents(event, glist, false)
-		return
-	}
-
-	go WaitAndUpdateDataSliceEvents(event, glist, true)
-
 }
