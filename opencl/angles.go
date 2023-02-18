@@ -34,7 +34,7 @@ func setphi__(s *data.Slice, m *data.Slice, wg_ sync.WaitGroup) {
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
-		fmt.Printf("phi failed to create command queue: %+v \n", err)
+		fmt.Printf("setphi failed to create command queue: %+v \n", err)
 		return nil
 	}
 	defer cmdqueue.Release()
@@ -51,7 +51,7 @@ func setphi__(s *data.Slice, m *data.Slice, wg_ sync.WaitGroup) {
 
 	// Force synchronization
 	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
-		fmt.Printf("WaitForEvents failed in phi: %+v \n", err)
+		fmt.Printf("WaitForEvents failed in setphi: %+v \n", err)
 	}
 }
 
@@ -78,7 +78,7 @@ func settheta__(s *data.Slice, m *data.Slice, wg_ sync.WaitGroup) {
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
-		fmt.Printf("theta failed to create command queue: %+v \n", err)
+		fmt.Printf("settheta failed to create command queue: %+v \n", err)
 		return nil
 	}
 	defer cmdqueue.Release()
@@ -94,6 +94,6 @@ func settheta__(s *data.Slice, m *data.Slice, wg_ sync.WaitGroup) {
 
 	// Force synchronization
 	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
-		fmt.Printf("WaitForEvents failed in theta: %+v \n", err)
+		fmt.Printf("WaitForEvents failed in settheta: %+v \n", err)
 	}
 }
