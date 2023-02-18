@@ -72,7 +72,7 @@ func settemperature__(Bth, noise *data.Slice, k2mu0_Mu0VgammaDt float64, Msat, T
 
 	wg_.Done()
 
-	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in settemperature: %+v \n", err)
 	}
 }

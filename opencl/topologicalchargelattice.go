@@ -2,6 +2,7 @@ package opencl
 
 import (
 	"fmt"
+	"sync"
 
 	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
@@ -10,52 +11,51 @@ import (
 
 // Topological charge according to Berg and Lüscher
 func SetTopologicalChargeLattice(s *data.Slice, m *data.Slice, mesh *data.Mesh) {
-	cellsize := mesh.CellSize()
 	N := s.Size()
 	util.Argument(m.Size() == N)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	if Synchronous {
+		settopologicalcharglattice__(s, m, mesh, wg)
+	} else {
+		go settopologicalcharglattice__(s, m, mesh, wg)
+	}
+	wg.Wait()
+}
+
+func settopologicalcharglattice__(s *data.Slice, m *data.Slice, mesh *data.Mesh, wg_ sync.WaitGroup) {
+	s.Lock(0)
+	defer s.Unlock(0)
+	m.RLock(X)
+	m.RLock(Y)
+	m.RLock(Z)
+	defer m.RUnlock(X)
+	defer m.RUnlock(Y)
+	defer m.RUnlock(Z)
+
+	// Create the command queue to execute the command
+	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("settopologicalchargelattice failed to create command queue: %+v \n", err)
+		return nil
+	}
+	defer cmdqueue.Release()
+
+	cellsize := mesh.CellSize()
+	N := s.Size()
 	cfg := make3DConf(N)
 	icxcy := float32(1.0 / (cellsize[X] * cellsize[Y]))
-
-	eventList := []*cl.Event{}
-	tmpEvtL := s.GetAllEvents(X)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	tmpEvt := m.GetEvent(X)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvt = m.GetEvent(Y)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvt = m.GetEvent(Z)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	if len(eventList) == 0 {
-		eventList = nil
-	}
 
 	event := k_settopologicalchargelattice_async(
 		s.DevPtr(X),
 		m.DevPtr(X), m.DevPtr(Y), m.DevPtr(Z),
 		icxcy, N[X], N[Y], N[Z], mesh.PBC_code(),
-		cfg, eventList)
+		cfg, cmdqueue, nil)
 
-	s.SetEvent(X, event)
+	wg_.Done()
 
-	glist := []GSlice{m}
-	InsertEventIntoGSlices(event, glist)
-
-	if Debug {
-		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-			fmt.Printf("WaitForEvents failed in settopologicalchargelattice: %+v \n", err)
-		}
-		WaitAndUpdateDataSliceEvents(event, glist, false)
-		return
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+		fmt.Printf("WaitForEvents failed in settopologicalchargelattice: %+v \n", err)
 	}
-
-	go WaitAndUpdateDataSliceEvents(event, glist, true)
-
 }

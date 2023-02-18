@@ -55,7 +55,7 @@ func settopologicalcharge__(s, m *data.Slice, mesh *data.Mesh, wg_ sync.WaitGrou
 
 	wg_.Done()
 
-	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in settopologicalcharge: %+v \n", err)
 	}
 }

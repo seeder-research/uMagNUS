@@ -56,7 +56,7 @@ func resize__(dst, src *data.Slice, layer int, wg_ sync.WaitGroup) {
 	wg_.Done()
 
 	// Synchronize for resize
-	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
+	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in resize: %+v \n", err)
 	}
 }

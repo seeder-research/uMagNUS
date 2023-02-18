@@ -47,7 +47,7 @@ func shiftx__(dst, src *data.Slice, shiftX int, clampL, clampR float32, wg_ sync
 
 	wg_.Done()
 
-	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents in shiftx failed: %+v \n", err)
 	}
 }
@@ -88,7 +88,7 @@ func shifty__(dst, src *data.Slice, shiftY int, clampL, clampR float32, wg_ sync
 
 	wg_.Done()
 
-	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents in shifty failed: %+v \n", err)
 	}
 }
@@ -129,7 +129,7 @@ func shiftz__(dst, src *data.Slice, shiftZ int, clampL, clampR float32, wg_ sync
 
 	wg_.Done()
 
-	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents in shiftz failed: %+v \n", err)
 	}
 }
@@ -168,7 +168,7 @@ func shiftbytes__(dst, src *Bytes, m *data.Mesh, shiftX int, clamp byte, wg_ syn
 
 	wg_.Done()
 
-	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents in shiftbytes failed: %+v \n", err)
 	}
 }
@@ -206,7 +206,7 @@ func shiftbytesy__(dst, src *Bytes, m *data.Mesh, shiftY int, clamp byte, wg_ sy
 
 	wg_.Done()
 
-	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents in shiftbytesy failed: %+v \n", err)
 	}
 }
