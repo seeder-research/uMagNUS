@@ -2,6 +2,7 @@ package opencl
 
 import (
 	"fmt"
+	"sync"
 	"unsafe"
 
 	cl "github.com/seeder-research/uMagNUS/cl"
@@ -12,55 +13,49 @@ import (
 // Normalize vec to unit length, unless length or vol are zero.
 func Normalize(vec, vol *data.Slice) {
 	util.Argument(vol == nil || vol.NComp() == 1)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	if Synchronous {
+		normalize__(vec, vol, wg)
+	} else {
+		go normalize__(vec, vol, wg)
+	}
+	wg.Wait()
+}
+
+func normalize__(vec, vol *data.Slice, wg_ sync.WaitGroup) {
 	N := vec.Len()
 	cfg := make1DConf(N)
 
-	eventList := []*cl.Event{}
-	tmpEvtL := vec.GetAllEvents(X)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	tmpEvtL = vec.GetAllEvents(Y)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	tmpEvtL = vec.GetAllEvents(Z)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
+	vec.Lock(X)
+	vec.Lock(Y)
+	vec.Lock(Z)
+	defer vec.Unlock(X)
+	defer vec.Unlock(Y)
+	defer vec.Unlock(Z)
+
 	volPtr := (unsafe.Pointer)(nil)
 	if vol != nil {
 		volPtr = vol.DevPtr(0)
-		eventList = append(eventList, vol.GetEvent(0))
-	}
-	if len(eventList) == 0 {
-		eventList = nil
+		vol.RLock(0)
+		defer vol.RUnlock(0)
 	}
 
-	event := k_normalize2_async(vec.DevPtr(X), vec.DevPtr(Y), vec.DevPtr(Z), volPtr, N, cfg, eventList)
-
-	vec.SetEvent(X, event)
-	vec.SetEvent(Y, event)
-	vec.SetEvent(Z, event)
-
-	glist := []GSlice{}
-	if vol != nil {
-		glist = append(glist, vol)
-		InsertEventIntoGSlices(event, glist)
+	// Create the command queue to execute the command
+	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("normalize failed to create command queue: %+v \n", err)
+		return nil
 	}
+	defer cmdqueue.Release()
 
-	if Debug {
-		if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
-			fmt.Printf("WaitForEvents failed in normalize: %+v \n", err)
-		}
-		if len(glist) > 0 {
-			WaitAndUpdateDataSliceEvents(event, glist, false)
-		}
-		return
+	event := k_normalize2_async(vec.DevPtr(X), vec.DevPtr(Y), vec.DevPtr(Z),
+		volPtr, N, cfg, cmdqueue, nil)
+
+	wg_.Done()
+
+	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
+		fmt.Printf("WaitForEvents failed in normalize: %+v \n", err)
 	}
-
-	if len(glist) > 0 {
-		go WaitAndUpdateDataSliceEvents(event, glist, true)
-	}
-
 }
