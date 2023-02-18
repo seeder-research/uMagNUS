@@ -24,10 +24,6 @@ func AddOommfSlonczewskiTorque(torque, m *data.Slice, Msat, J, fixedP, alpha, pf
 }
 
 func addoommfslonczewskitorque__(torque, m *data.Slice, Msat, J, fixedP, alpha, pfix, pfree, λfix, λfree, ε_prime MSlice, mesh *data.Mesh, wg_ sync.WaitGroup) {
-	N := torque.Len()
-	cfg := make1DConf(N)
-	flt := float32(mesh.WorldSize()[Z])
-
 	torque.Lock(X)
 	torque.Lock(Y)
 	torque.Lock(Z)
@@ -84,6 +80,10 @@ func addoommfslonczewskitorque__(torque, m *data.Slice, Msat, J, fixedP, alpha, 
 		return nil
 	}
 	defer cmdqueue.Release()
+
+	N := torque.Len()
+	cfg := make1DConf(N)
+	flt := float32(mesh.WorldSize()[Z])
 
 	event := k_addoommfslonczewskitorque_async(
 		torque.DevPtr(X), torque.DevPtr(Y), torque.DevPtr(Z),
