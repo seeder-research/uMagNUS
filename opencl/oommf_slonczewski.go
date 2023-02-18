@@ -40,7 +40,6 @@ func addoommfslonczewskitorque__(torque, m *data.Slice, Msat, J, fixedP, alpha, 
 	defer m.RUnlock(X)
 	defer m.RUnlock(Y)
 	defer m.RUnlock(Z)
-
 	if J.GetSlicePtr() != nil {
 		J.RLock()
 		defer J.RUnlock()

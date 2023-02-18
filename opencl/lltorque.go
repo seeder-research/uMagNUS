@@ -68,7 +68,7 @@ func lltorque__(torque, m, B *data.Slice, alpha MSlice, wg_ sync.WaitGroup) {
 
 	wg_.Done()
 
-	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in lltorque: %+v \n", err)
 	}
 }
@@ -124,7 +124,7 @@ func llnoprocess__(torque, m, B *data.Slice, wg_ sync.WaitGroup) {
 
 	wg_.Done()
 
-	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in llnoprecess: %+v \n", err)
 	}
 }

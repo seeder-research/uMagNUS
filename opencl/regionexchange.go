@@ -153,7 +153,7 @@ func addregionexchangeedens__(Edens, m *data.Slice, Msat MSlice, regions *Bytes,
 
 	wg_.Done()
 
-	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in addtworegionexchange_edens: %+v", err)
 	}
 }

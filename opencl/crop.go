@@ -53,7 +53,7 @@ func crop__(dst, src *data.Slice, offX, offY, offZ, idx int, wg_ sync.WaitGroup)
 
 	wg_.Done()
 
-	if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+	if err = cl.WaitForEvents([]*cl.Event{ev}); err != nil {
 		fmt.Printf("WaitForEvents failed in crop: %+v \n", err)
 	}
 }
