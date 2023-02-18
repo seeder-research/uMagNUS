@@ -2,6 +2,7 @@ package opencl
 
 import (
 	"fmt"
+	"sync"
 	"unsafe"
 
 	cl "github.com/seeder-research/uMagNUS/cl"
@@ -12,182 +13,178 @@ import (
 // dst += LUT[region], for vectors. Used to add terms to excitation.
 func RegionAddV(dst *data.Slice, lut LUTPtrs, regions *Bytes) {
 	util.Argument(dst.NComp() == 3)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	if Synchronous {
+		regionaddv__(dst, lut, regions, wg)
+	} else {
+		go regionaddv__(dst, lut, regions, wg)
+	}
+	wg.Wait()
+}
+
+func regionaddv__(dst *data.Slice, lut LUTPtrs, regions *Bytes, wg_ sync.WaitGroup) {
+	dst.Lock(X)
+	dst.Lock(Y)
+	dst.Lock(Z)
+	defer dst.Unlock(X)
+	defer dst.Unlock(Y)
+	defer dst.Unlock(Z)
+	if regions != nil {
+		regions.RLock()
+		defer regions.RUnlLock()
+	}
+
+	// Create the command queue to execute the command
+	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("regionaddv failed to create command queue: %+v \n", err)
+		return nil
+	}
+	defer cmdqueue.Release()
+
 	N := dst.Len()
 	cfg := make1DConf(N)
 
-	eventsList := []*cl.Event{}
-	tmpEvtL := dst.GetAllEvents(X)
-	if len(tmpEvtL) > 0 {
-		eventsList = append(eventsList, tmpEvtL...)
-	}
-	tmpEvtL = dst.GetAllEvents(Y)
-	if len(tmpEvtL) > 0 {
-		eventsList = append(eventsList, tmpEvtL...)
-	}
-	tmpEvtL = dst.GetAllEvents(Z)
-	if len(tmpEvtL) > 0 {
-		eventsList = append(eventsList, tmpEvtL...)
-	}
-	tmpEvt := regions.GetEvent()
-	if tmpEvt != nil {
-		eventsList = append(eventsList, tmpEvt)
-	}
-	if len(eventsList) == 0 {
-		eventsList = nil
-	}
-
 	event := k_regionaddv_async(dst.DevPtr(X), dst.DevPtr(Y), dst.DevPtr(Z),
-		lut[X], lut[Y], lut[Z], regions.Ptr, N, cfg, eventsList)
+		lut[X], lut[Y], lut[Z], regions.Ptr, N, cfg,
+		cmdqueue, nil)
 
-	dst.SetEvent(X, event)
-	dst.SetEvent(Y, event)
-	dst.SetEvent(Z, event)
+	wg_.Done()
 
-	regions.InsertReadEvent(event)
-
-	if Debug {
-		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-			fmt.Printf("WaitForEvents in regionaddv failed: %+v \n", err)
-		}
-		regions.RemoveReadEvent(event)
-		return
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+		fmt.Printf("WaitForEvents in regionaddv failed: %+v \n", err)
 	}
-
-	go func(ev *cl.Event, b *Bytes) {
-		if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
-			fmt.Printf("WaitForEvents failed in regionaddv: %+v \n", err)
-		}
-		b.RemoveReadEvent(ev)
-	}(event, regions)
-
 }
 
 // dst += LUT[region], for scalar. Used to add terms to scalar excitation.
 func RegionAddS(dst *data.Slice, lut LUTPtr, regions *Bytes) {
 	util.Argument(dst.NComp() == 1)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	if Synchronous {
+		regionadds__(dst, lut, regions, wg)
+	} else {
+		go regionadds__(dst, lut, regions, wg)
+	}
+	wg.Wait()
+}
+
+func regionadds__(dst *data.Slice, lut LUTPtr, regions *Bytes, wg_ sync.WaitGroup) {
+	dst.Lock(0)
+	defer dst.Unlock(0)
+	if regions != nil {
+		regions.RLock()
+		defer regions.RUnlLock()
+	}
+
+	// Create the command queue to execute the command
+	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("regionadds failed to create command queue: %+v \n", err)
+		return nil
+	}
+	defer cmdqueue.Release()
+
 	N := dst.Len()
 	cfg := make1DConf(N)
 
-	eventsList := []*cl.Event{}
-	tmpEvtL := dst.GetAllEvents(0)
-	if len(tmpEvtL) > 0 {
-		eventsList = append(eventsList, tmpEvtL...)
-	}
-	tmpEvt := regions.GetEvent()
-	if tmpEvt != nil {
-		eventsList = append(eventsList, tmpEvt)
-	}
-	if len(eventsList) == 0 {
-		eventsList = nil
-	}
-
 	event := k_regionadds_async(dst.DevPtr(0), unsafe.Pointer(lut), regions.Ptr, N, cfg,
-		eventsList)
+		cmdqueue, nil)
 
-	dst.SetEvent(0, event)
-	regions.InsertReadEvent(event)
+	wg_.Done()
 
-	if Debug {
-		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-			fmt.Printf("WaitForEvents in regionadds failed: %+v \n", err)
-		}
-		regions.RemoveReadEvent(event)
-		return
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+		fmt.Printf("WaitForEvents in regionadds failed: %+v \n", err)
 	}
-
-	go func(ev *cl.Event, b *Bytes) {
-		if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
-			fmt.Printf("WaitForEvents in regionadds failed: %+v \n", err)
-		}
-		b.RemoveReadEvent(ev)
-	}(event, regions)
-
 }
 
 // decode the regions+LUT pair into an uncompressed array
 func RegionDecode(dst *data.Slice, lut LUTPtr, regions *Bytes) {
+	var wg sync.WaitGroup
+	wg.Add(1)
+	if Synchronous {
+		regiondecode__(dst, lut, regions, wg)
+	} else {
+		go regiondecode__(dst, lut, regions, wg)
+	}
+	wg.Wait()
+}
+
+func regiondecode__(dst *data.Slice, lut LUTPtr, regions *Bytes, wg_ sync.WaitGroup) {
+	dst.Lock(0)
+	defer dst.Unlock(0)
+	if regions != nil {
+		regions.RLock()
+		defer regions.RUnlock()
+	}
+
+	// Create the command queue to execute the command
+	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("addtworegionoommfslonczewskitorque failed to create command queue: %+v \n", err)
+		return nil
+	}
+	defer cmdqueue.Release()
+
 	N := dst.Len()
 	cfg := make1DConf(N)
 
-	eventsList := []*cl.Event{}
-	tmpEvtL := dst.GetAllEvents(0)
-	if len(tmpEvtL) > 0 {
-		eventsList = append(eventsList, tmpEvtL...)
-	}
-	tmpEvt := regions.GetEvent()
-	if tmpEvt != nil {
-		eventsList = append(eventsList, tmpEvt)
-	}
-	if len(eventsList) == 0 {
-		eventsList = nil
-	}
-
 	event := k_regiondecode_async(dst.DevPtr(0), unsafe.Pointer(lut), regions.Ptr, N, cfg,
-		eventsList)
+		cmdqueue, nil)
 
-	dst.SetEvent(0, event)
-	regions.InsertReadEvent(event)
+	wg_.Done()
 
-	if Debug {
-		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
-			fmt.Printf("WaitForEvents in regiondecode failed: %+v \n", err)
-		}
-		regions.RemoveReadEvent(event)
-		return
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+		fmt.Printf("WaitForEvents in regiondecode failed: %+v \n", err)
 	}
-
-	go func(ev *cl.Event, b *Bytes) {
-		if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
-			fmt.Printf("WaitForEvents in regiondecode failed: %+v \n", err)
-		}
-		b.RemoveReadEvent(ev)
-	}(event, regions)
-
 }
 
 // select the part of src within the specified region, set 0's everywhere else.
 func RegionSelect(dst, src *data.Slice, regions *Bytes, region byte) {
 	util.Argument(dst.NComp() == src.NComp())
+
+	var wg sync.WaitGroup
+	for c := 0; c < dst.NComp(); c++ {
+		wg.Add(1)
+		if Synchronous {
+			regionselect__(dst, src, regions, region, c, wg)
+		} else {
+			go regionselect__(dst, src, regions, region, c, wg)
+		}
+	}
+	wg.Wait()
+}
+
+func regionselect__(dst, src *data.Slice, regions *Bytes, region byte, c int, wg_ sync.WaitGroup) {
+	dst.Lock(c)
+	defer dst.Unlock(c)
+	src.RLock(c)
+	defer src.RUnlock(c)
+	if regions != nil {
+		regions.RLock()
+		defer regions.RUnlock()
+	}
+
+	// Create the command queue to execute the command
+	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("regionselect failed to create command queue: %+v \n", err)
+		return nil
+	}
+	defer cmdqueue.Release()
+
 	N := dst.Len()
 	cfg := make1DConf(N)
 
-	eventList := make([]*cl.Event, dst.NComp())
-	for c := 0; c < dst.NComp(); c++ {
-		intWaitList := []*cl.Event{}
-		tmpEvtL := dst.GetAllEvents(c)
-		if len(tmpEvtL) > 0 {
-			intWaitList = append(intWaitList, tmpEvtL...)
-		}
-		tmpEvt := src.GetEvent(c)
-		if tmpEvt != nil {
-			intWaitList = append(intWaitList, tmpEvt)
-		}
-		tmpEvt = regions.GetEvent()
-		if tmpEvt != nil {
-			intWaitList = append(intWaitList, tmpEvt)
-		}
-		if len(intWaitList) == 0 {
-			intWaitList = nil
-		}
+	event = k_regionselect_async(dst.DevPtr(c), src.DevPtr(c), regions.Ptr, region, N, cfg,
+		cmdqueue, nil)
 
-		eventList[c] = k_regionselect_async(dst.DevPtr(c), src.DevPtr(c), regions.Ptr, region, N, cfg,
-			intWaitList)
+	wg_.Done()
 
-		dst.SetEvent(c, eventList[c])
-		src.InsertReadEvent(c, eventList[c])
-		regions.InsertReadEvent(eventList[c])
-		go func(ev *cl.Event, id int, b *Bytes, sl *data.Slice) {
-			if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
-				fmt.Printf("WaitForEvents failed in regionselect: %+v \n", err)
-			}
-			b.RemoveReadEvent(ev)
-			sl.RemoveReadEvent(id, ev)
-		}(eventList[c], c, regions, src)
-
-	}
-	if Debug {
-		if err := cl.WaitForEvents(eventList); err != nil {
-			fmt.Printf("WaitForEvents in regionselect failed: %+v \n", err)
-		}
+	if err = cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+		fmt.Printf("WaitForEvents failed in regionselect: %+v \n", err)
 	}
 }
