@@ -66,9 +66,11 @@ func (c *MFMConvolution) initFFTKern3D() {
 	for i := 0; i < 3; i++ {
 		zero1_async(c.fftRBuf)
 		data.Copy(c.fftRBuf, c.kern[i])
-		err := c.fwPlan.ExecAsync(c.fftRBuf, c.fftCBuf)
-		if err != nil {
+		if err := c.fwPlan.ExecAsync(c.fftRBuf, c.fftCBuf); err != nil {
 			fmt.Printf("error enqueuing forward fft in initfftkern3d: %+v \n", err)
+		}
+		if err := c.fwPlan.Sync(); err != nil {
+			fmt.Printf("Failed to wait for command queue to complete in initfftkern3d: %+v \n", err)
 		}
 		scale := 2 / float32(c.fwPlan.InputLen()) // ??
 		zero1_async(c.gpuFFTKern[i])
@@ -81,18 +83,32 @@ func (c *MFMConvolution) Exec(outp, inp, vol *data.Slice, Msat MSlice) {
 	for i := 0; i < 3; i++ {
 		zero1_async(c.fftRBuf)
 		copyPadMul(c.fftRBuf, inp.Comp(i), vol, c.kernSize, c.size, Msat)
-		var err error
-		if err = c.fwPlan.ExecAsync(c.fftRBuf, c.fftCBuf); err != nil {
+		if err := ClCmdQueue.Finish(); err != nil {
+			fmt.Printf("Failed to wait for main command queue to finish in mfmconv exec: %+v \n", err)
+		}
+		if err := c.fwPlan.ExecAsync(c.fftRBuf, c.fftCBuf); err != nil {
 			fmt.Printf("error enqueuing forward fft in mfmconv exec: %+v \n", err)
+		}
+		if err := c.fwPlan.Sync(); err != nil {
+			fmt.Printf("error syncing queue for forward fft in mfmconv exec: %+v \n", err)
 		}
 
 		Nx, Ny := c.fftKernSize[X]/2, c.fftKernSize[Y] //   ??
 		kernMulC_async(c.fftCBuf, c.gpuFFTKern[i], Nx, Ny)
+		if err := ClCmdQueue.Finish(); err != nil {
+			fmt.Printf("Failed to wait for main command queue to finish in mfmconv exec: %+v \n", err)
+		}
 
-		if err = c.bwPlan.ExecAsync(c.fftCBuf, c.fftRBuf); err != nil {
+		if err := c.bwPlan.ExecAsync(c.fftCBuf, c.fftRBuf); err != nil {
 			fmt.Printf("error enqueuing backward fft in mfmconv exec: %+v \n", err)
 		}
+		if err := c.bwPlan.Sync(); err != nil {
+			fmt.Printf("error syncing queue for backward fft in mfmconv exec: %+v \n", err)
+		}
 		copyUnPad(outp.Comp(i), c.fftRBuf, c.size, c.kernSize)
+		if err := ClCmdQueue.Finish(); err != nil {
+			fmt.Printf("Failed to wait for main command queue to finish in mfmconv exec: %+v \n", err)
+		}
 	}
 }
 

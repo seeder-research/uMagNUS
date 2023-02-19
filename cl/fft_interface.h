@@ -119,6 +119,21 @@ interfaceFFTPlan* vkfftCreateDefaultFFTPlan(cl_context ctx) {
     return plan;
 }
 
+// Returns the context of a FFT plan
+cl_context vkfftGetPlanContext(interfaceFFTPlan* plan) {
+	return plan->context;
+}
+
+// Returns the device of a FFT plan
+cl_device_id vkfftGetPlanDevice(interfaceFFTPlan* plan) {
+	return plan->device;
+}
+
+// Returns the command queue of a FFT plan
+cl_command_queue vkfftGetPlanCommandQueue(interfaceFFTPlan* plan) {
+	return plan->commandQueue;
+}
+
 // A specialized function to return a FFT plan that computes
 // R2C (forward) and C2R (backward) transforms
 interfaceFFTPlan* vkfftCreateR2CFFTPlan(cl_context ctx) {
