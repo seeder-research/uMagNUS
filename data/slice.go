@@ -426,10 +426,10 @@ func Copy(dst, src *Slice) {
 		for c := 0; c < dst.NComp(); c++ {
 			wg_.Add(1)
 			go func(d0, s0 *Slice, comp int) {
-				defer d0.Unlock(comp)
-				defer s0.RUnlock(comp)
 				d0.Lock(comp)
 				s0.RLock(comp)
+				defer d0.Unlock(comp)
+				defer s0.RUnlock(comp)
 				eventsList := memCpy(d0.DevPtr(comp), s0.DevPtr(comp), bytes)
 				d0.SetEvent(comp, eventsList[0])
 				s0.InsertReadEvent(comp, eventsList[1])
@@ -438,8 +438,6 @@ func Copy(dst, src *Slice) {
 				if err != nil {
 					panic(fmt.Sprintf("WaitForEvents in slice copy failed: %+v \n", err))
 				}
-				d0.Unlock(comp)
-				s0.RUnlock(comp)
 			}(dst, src, c)
 		}
 		wg_.Wait()
@@ -447,10 +445,10 @@ func Copy(dst, src *Slice) {
 		for c := 0; c < dst.NComp(); c++ {
 			wg_.Add(1)
 			go func(d0, s0 *Slice, comp int) {
-				defer d0.Unlock(comp)
-				defer s0.RUnlock(comp)
 				d0.Lock(comp)
 				s0.RLock(comp)
+				defer d0.Unlock(comp)
+				defer s0.RUnlock(comp)
 				eventsList := memCpyDtoH(d0.ptrs[comp].Ptr, s0.DevPtr(comp), bytes)
 				s0.InsertReadEvent(comp, eventsList[0])
 				wg_.Done()
@@ -458,8 +456,6 @@ func Copy(dst, src *Slice) {
 				if err != nil {
 					panic(fmt.Sprintf("WaitForEvents in slice copy (device to host) failed: %+v \n", err))
 				}
-				d0.Unlock(comp)
-				s0.RUnlock(comp)
 			}(dst, src, c)
 		}
 		wg_.Wait()
@@ -467,10 +463,10 @@ func Copy(dst, src *Slice) {
 		for c := 0; c < dst.NComp(); c++ {
 			wg_.Add(1)
 			go func(d0, s0 *Slice, comp int) {
-				defer d0.Unlock(comp)
-				defer s0.RUnlock(comp)
 				d0.Lock(comp)
 				s0.RLock(comp)
+				defer d0.Unlock(comp)
+				defer s0.RUnlock(comp)
 				eventsList := memCpyHtoD(d0.DevPtr(comp), s0.ptrs[comp].Ptr, bytes)
 				d0.SetEvent(comp, eventsList[0])
 				wg_.Done()
@@ -478,8 +474,6 @@ func Copy(dst, src *Slice) {
 				if err != nil {
 					panic(fmt.Sprintf("WaitForEvents in slice copy (host to device) failed: %+v \n", err))
 				}
-				d0.Unlock(comp)
-				s0.RUnlock(comp)
 			}(dst, src, c)
 		}
 		wg_.Wait()
