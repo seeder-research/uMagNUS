@@ -246,6 +246,11 @@ func (p *VkfftPlan) VkFFTSetFFTPlanSize(lengths []int) {
 	C.vkfftSetFFTPlanSize(p.GetPlanPointer(), &cLengths[0])
 }
 
+func (p *VkfftPlan) VkFFTGetPlanCommandQueue() *CommandQueue {
+	planDevice := Device{C.vkfftGetPlanDevice(p.GetPlanPointer())}
+	return &CommandQueue{C.vkfftGetPlanCommandQueue(p.GetPlanPointer()), &planDevice}
+}
+
 func (p *VkfftPlan) VkFFTEnqueueTransformUnsafe(dir VkfftDirection, input []*MemObject, output []*MemObject) error {
 	return toError(C.vkfftEnqueueTransform(p.GetPlanPointer(), (C.vkfft_transform_dir)(dir), &(input[0].clMem), &(output[0].clMem)))
 }

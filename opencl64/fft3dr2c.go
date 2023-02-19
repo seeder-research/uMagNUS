@@ -12,7 +12,8 @@ import (
 // 3D single-precision real-to-complex FFT plan.
 type fft3DR2CPlan struct {
 	fftplan
-	size [3]int
+	size     [3]int
+	cmdqueue *cl.CommandQueue
 }
 
 // 3D single-precision real-to-complex FFT plan.
@@ -20,14 +21,17 @@ func newFFT3DR2C(Nx, Ny, Nz int) fft3DR2CPlan {
 	handle := cl.NewVkFFTPlanDouble(ClCtx)
 	handle.VkFFTSetFFTPlanSize([]int{Nx, Ny, Nz})
 
-	return fft3DR2CPlan{fftplan{handle}, [3]int{Nx, Ny, Nz}}
+	return fft3DR2CPlan{fftplan{handle}, [3]int{Nx, Ny, Nz}, handle.VkFFTGetPlanCommandQueue()}
 }
 
 // Execute the FFT plan, asynchronous.
 // src and dst are 3D arrays stored 1D arrays.
 func (p *fft3DR2CPlan) ExecAsync(src, dst *data.Slice) error {
+	var err error
 	if Synchronous {
-		ClCmdQueue.Finish()
+		if err = p.Sync(); err != nil {
+			log.Panicf("Failed to wait for command queue to clear before beginning R2C execution: %+v \n", err)
+		}
 		timer.Start("fft")
 	}
 	util.Argument(src.NComp() == 1 && dst.NComp() == 1)
@@ -44,48 +48,26 @@ func (p *fft3DR2CPlan) ExecAsync(src, dst *data.Slice) error {
 	tmpPtr = dst.DevPtr(0)
 	dstMemObj := *(*cl.MemObject)(tmpPtr)
 
-	// Synchronize in the beginning
-	var err error
-	eventList := []*cl.Event{}
-	tmpEvt := src.GetEvent(0)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvtL := dst.GetAllEvents(0)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	if len(eventList) != 0 {
-		if err = cl.WaitForEvents(eventList); err != nil {
-			log.Printf("WaitForEvents failed in fwPlan.ExecAsync: %+v \n", err)
-		}
+	// Asynchronously enqueue command
+	if err = p.handle.EnqueueForwardTransform([]*cl.MemObject{&srcMemObj}, []*cl.MemObject{&dstMemObj}); err != nil {
+		log.Panicf("Failed to enqueue command in fwPlan.ExecAsync: %+v \n", err)
 	}
 
-	err = p.handle.EnqueueForwardTransform([]*cl.MemObject{&srcMemObj}, []*cl.MemObject{&dstMemObj})
+	// Wait for the command to complete execution before returning
+	if err = p.Sync(); err != nil {
+		log.Panicf("Failed to wait for command queue to clear after enqueuing R2C execution: %+v \n", err)
+	}
+
 	if Synchronous {
-		ClCmdQueue.Finish()
 		timer.Stop("fft")
 	}
-	tmpEvt, err = ClCmdQueue.EnqueueMarkerWithWaitList(nil)
-	if err != nil {
-		log.Printf("Failed to enqueue marker in fwPlan.ExecAsync: %+v \n", err)
-	}
-	dst.SetEvent(0, tmpEvt)
-	src.InsertReadEvent(0, tmpEvt)
-	if Debug {
-		if err0 := cl.WaitForEvents([]*cl.Event{tmpEvt}); err0 != nil {
-			log.Printf("WaitForEvents failed before returning fwPlan.ExecAsync: %+v \n", err0)
-		}
-		src.RemoveReadEvent(0, tmpEvt)
-	} else {
-		go func(evt *cl.Event, sl *data.Slice) {
-			if err1 := cl.WaitForEvents([]*cl.Event{evt}); err1 != nil {
-				log.Printf("WaitForEvents failed before returning fwPlan.ExecAsync: %+v \n", err1)
-			}
-			sl.RemoveReadEvent(0, evt)
-		}(tmpEvt, src)
-	}
+
 	return err
+}
+
+// Queue synchronization
+func (p *fft3DR2CPlan) Sync() error {
+	return p.cmdqueue.Finish()
 }
 
 // 3D size of the input array.

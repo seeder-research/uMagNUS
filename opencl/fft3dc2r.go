@@ -1,7 +1,7 @@
 package opencl
 
 import (
-	"fmt"
+	"log"
 
 	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
@@ -11,7 +11,8 @@ import (
 // 3D single-precision real-to-complex FFT plan.
 type fft3DC2RPlan struct {
 	fftplan
-	size [3]int
+	size     [3]int
+	cmdqueue *cl.CommandQueue
 }
 
 // 3D single-precision real-to-complex FFT plan.
@@ -19,71 +20,53 @@ func newFFT3DC2R(Nx, Ny, Nz int) fft3DC2RPlan {
 	handle := cl.NewVkFFTPlan(ClCtx) // new xyz swap
 	handle.VkFFTSetFFTPlanSize([]int{Nx, Ny, Nz})
 
-	return fft3DC2RPlan{fftplan{handle}, [3]int{Nx, Ny, Nz}}
+	return fft3DC2RPlan{fftplan{handle}, [3]int{Nx, Ny, Nz}, handle.VkFFTGetPlanCommandQueue()}
 }
 
 // Execute the FFT plan, asynchronous.
 // src and dst are 3D arrays stored 1D arrays.
 func (p *fft3DC2RPlan) ExecAsync(src, dst *data.Slice) error {
+	var err error
 	if Synchronous {
-		ClCmdQueue.Finish()
+		if err = p.Sync(); err != nil {
+			log.Panicf("Failed to wait for command queue to clear before beginning C2R execution: %+v \n", err)
+		}
 		timer.Start("fft")
 	}
 	oksrclen := p.InputLenFloats()
 	if src.Len() != oksrclen {
-		panic(fmt.Errorf("fft size mismatch: expecting src len %v, got %v", oksrclen, src.Len()))
+		log.Panicf("fft size mismatch: expecting src len %v, got %v", oksrclen, src.Len())
 	}
 	okdstlen := p.OutputLenFloats()
 	if dst.Len() != okdstlen {
-		panic(fmt.Errorf("fft size mismatch: expecting dst len %v, got %v", okdstlen, dst.Len()))
+		log.Panicf("fft size mismatch: expecting dst len %v, got %v", okdstlen, dst.Len())
 	}
 	tmpPtr := src.DevPtr(0)
 	srcMemObj := *(*cl.MemObject)(tmpPtr)
 	tmpPtr = dst.DevPtr(0)
 	dstMemObj := *(*cl.MemObject)(tmpPtr)
 
-	// Synchronize in the beginning
-	var err error
-	eventList := []*cl.Event{}
-	tmpEvt := src.GetEvent(0)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvtL := dst.GetAllEvents(0)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	if len(eventList) != 0 {
-		if err = cl.WaitForEvents(eventList); err != nil {
-			fmt.Printf("WaitForEvents failed in bwPlan.ExecAsync: %+v \n", err)
-		}
+	// Asynchronously enqueue command
+	err = p.handle.EnqueueBackwardTransform([]*cl.MemObject{&srcMemObj}, []*cl.MemObject{&dstMemObj})
+	if err != nil {
+		log.Panicf("Failed to enqueue command in bwPlan.ExecAsync: %+v \n", err)
 	}
 
-	err = p.handle.EnqueueBackwardTransform([]*cl.MemObject{&srcMemObj}, []*cl.MemObject{&dstMemObj})
+	// Wait for the command to complete execution before returning
+	if err = p.Sync(); err != nil {
+		log.Panicf("Failed to wait for command queue to clear after enqueuing C2R execution: %+v \n", err)
+	}
+
 	if Synchronous {
-		ClCmdQueue.Finish()
 		timer.Stop("fft")
 	}
-	tmpEvt, err = ClCmdQueue.EnqueueMarkerWithWaitList(nil)
-	if err != nil {
-		fmt.Printf("Failed to enqueue marker in bwPlan.ExecAsync: %+v \n", err)
-	}
-	dst.SetEvent(0, tmpEvt)
-	src.InsertReadEvent(0, tmpEvt)
-	if Debug {
-		if err0 := cl.WaitForEvents([]*cl.Event{tmpEvt}); err0 != nil {
-			fmt.Printf("WaitForEvents failed before returning bwPlan.ExecAsync: %+v \n", err0)
-		}
-		src.RemoveReadEvent(0, tmpEvt)
-	} else {
-		go func(evt *cl.Event, sl *data.Slice) {
-			if err1 := cl.WaitForEvents([]*cl.Event{evt}); err1 != nil {
-				fmt.Printf("WaitForEvents failed before returning bwPlan.ExecAsync: %+v \n", err1)
-			}
-			sl.RemoveReadEvent(0, evt)
-		}(tmpEvt, src)
-	}
+
 	return err
+}
+
+// Queue synchronization
+func (p *fft3DC2RPlan) Sync() error {
+	return p.cmdqueue.Finish()
 }
 
 // 3D size of the input array.

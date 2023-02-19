@@ -26851,10 +26851,6 @@ static inline VkFFTResult dispatchEnhanced(VkFFTApplication* app, VkFFTAxis* axi
 				if (result != CL_SUCCESS) {
 					return VKFFT_ERROR_FAILED_TO_LAUNCH_KERNEL;
 				}
-				result = clWaitForEvents(1, &eventMarker);
-				if (result != CL_SUCCESS) {
-					return VKFFT_ERROR_FAILED_TO_SYNCHRONIZE;
-				}
 #endif
 			}
 		}
