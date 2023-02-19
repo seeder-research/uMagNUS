@@ -31,6 +31,7 @@ func Resize(dst, src *data.Slice, layer int) {
 
 func resize__(dst, src *data.Slice, layer int, wg_ sync.WaitGroup) {
 	dstsize := dst.Size()
+	srcsize := src.Size()
 	scalex := srcsize[X] / dstsize[X]
 	scaley := srcsize[Y] / dstsize[Y]
 
@@ -43,7 +44,7 @@ func resize__(dst, src *data.Slice, layer int, wg_ sync.WaitGroup) {
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("resize failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 

@@ -52,7 +52,7 @@ func addregionspintorque__(torque, m *data.Slice, Msat MSlice, regions *Bytes, r
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("addtworegionoommfslonczewskitorque failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 

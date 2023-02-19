@@ -45,7 +45,7 @@ func minimize__(m, m0, torque *data.Slice, dt float32, wg_ sync.WaitGroup) {
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("minimize failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 

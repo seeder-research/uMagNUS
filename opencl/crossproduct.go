@@ -47,7 +47,7 @@ func crossproduct__(dst, a, b *data.Slice, wg_ sync.WaitGroup) {
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("crossproduct failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
@@ -59,7 +59,7 @@ func crossproduct__(dst, a, b *data.Slice, wg_ sync.WaitGroup) {
 		b.DevPtr(X), b.DevPtr(Y), b.DevPtr(Z),
 		N, cfg, cmdqueue, nil)
 
-	wg.Done()
+	wg_.Done()
 
 	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in crossproduct: %+v \n", err)

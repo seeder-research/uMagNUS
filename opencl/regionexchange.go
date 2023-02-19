@@ -45,7 +45,7 @@ func addregionexchangefield__(B, m *data.Slice, Msat MSlice, regions *Bytes, reg
 		defer Msat.RUnlock()
 	}
 	if regions != nil {
-		regions.Rlock()
+		regions.RLock()
 		defer regions.RUnlock()
 	}
 
@@ -53,7 +53,7 @@ func addregionexchangefield__(B, m *data.Slice, Msat MSlice, regions *Bytes, reg
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("addtworegionexchange_field failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
@@ -123,7 +123,7 @@ func addregionexchangeedens__(Edens, m *data.Slice, Msat MSlice, regions *Bytes,
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("addtworegionexchange_edens failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 

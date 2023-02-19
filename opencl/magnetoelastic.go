@@ -2,6 +2,7 @@ package opencl
 
 import (
 	"fmt"
+	"sync"
 
 	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
@@ -83,7 +84,7 @@ func addmagnetoelasticfield__(Beff, m *data.Slice, exx, eyy, ezz, exy, exz, eyz,
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("addmagnetoelasticfield failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
@@ -100,7 +101,7 @@ func addmagnetoelasticfield__(Beff, m *data.Slice, exx, eyy, ezz, exy, exz, eyz,
 
 	wg_.Done()
 
-	if err = cl.WaitForEvent([]*cl.Event{event}); err != nil {
+	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in addmagnetoelasticfield: %+v \n", err)
 	}
 }
@@ -113,9 +114,9 @@ func GetMagnetoelasticForceDensity(out, m *data.Slice, B1, B2 MSlice, mesh *data
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		getmagnetoelasticforcedensity__(out, m, B1, B2, mesh, wg) {
+		getmagnetoelasticforcedensity__(out, m, B1, B2, mesh, wg)
 	} else {
-		go getmagnetoelasticforcedensity__(out, m, B1, B2, mesh, wg) {
+		go getmagnetoelasticforcedensity__(out, m, B1, B2, mesh, wg)
 	}
 	wg.Wait()
 }
@@ -146,7 +147,7 @@ func getmagnetoelasticforcedensity__(out, m *data.Slice, B1, B2 MSlice, mesh *da
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("getmagnetoelasticforcedensity failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
@@ -167,7 +168,7 @@ func getmagnetoelasticforcedensity__(out, m *data.Slice, B1, B2 MSlice, mesh *da
 
 	wg_.Done()
 
-	if err = cl.WaitForEvent([]*cl.Event{event}); err != nil {
+	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in getmagnetoelasticforcedensity: %+v \n", err)
 	}
 }

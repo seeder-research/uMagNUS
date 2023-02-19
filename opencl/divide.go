@@ -40,12 +40,11 @@ func divide__(dst, a, b *data.Slice, idx int, wg_ sync.WaitGroup) {
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("divide failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
 	N := dst.Len()
-	nComp := dst.NComp()
 	cfg := make1DConf(N)
 
 	ev := k_divide_async(dst.DevPtr(idx), a.DevPtr(idx), b.DevPtr(idx), N, cfg, cmdqueue, nil)

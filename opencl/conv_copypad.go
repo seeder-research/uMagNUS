@@ -35,7 +35,7 @@ func copyunpad__(dst, src *data.Slice, dstsize, srcsize [3]int, wg_ sync.WaitGro
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("copyunpad failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
@@ -85,7 +85,7 @@ func copypadmul__(dst, src, vol *data.Slice, dstsize, srcsize [3]int, Msat MSlic
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("copypadmul failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 

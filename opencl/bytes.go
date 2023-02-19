@@ -32,7 +32,10 @@ func NewBytes(Len int) *Bytes {
 	emptyMap := new(data.SliceEventMap)
 	emptyMap.Init()
 
-	outByte := &Bytes{unsafe.Pointer(ptr), Len, event, emptyMap}
+	outByte := new(Bytes)
+	outByte.Ptr = unsafe.Pointer(ptr)
+	outByte.Len = Len
+	outByte.RdEvt = emptyMap
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -58,20 +61,20 @@ func (dst *Bytes) Zero(wg_ sync.WaitGroup) {
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
-		fmt.Printf("bytes.zero failed to create command queue: %+v \n", err)
-		return nil
+		log.Printf("bytes.zero failed to create command queue: %+v \n", err)
+		return
 	}
 	defer cmdqueue.Release()
 
 	var event *cl.Event
-	event, err = cmdqueue.EnqueueFillBuffer(ptr, unsafe.Pointer(&zeroPattern), 1, 0, Len, nil)
+	event, err = cmdqueue.EnqueueFillBuffer((*cl.MemObject)(dst.Ptr), unsafe.Pointer(&zeroPattern), 1, 0, dst.Len, nil)
 	wg_.Done()
 	if err != nil {
 		panic(err)
 	}
 
 	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
-		log.Panic("WaitForEvents failed in bytes.zero:", err)
+		log.Panicf("WaitForEvents failed in bytes.zero:", err)
 	}
 }
 
@@ -79,21 +82,18 @@ func (dst *Bytes) Zero(wg_ sync.WaitGroup) {
 func (dst *Bytes) Upload(src []byte) {
 	util.Argument(dst.Len == len(src))
 	dst.Lock()
-	src.RLock()
 	ev := MemCpyHtoD(dst.Ptr, unsafe.Pointer(&src[0]), dst.Len)
 	if Synchronous {
-		if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+		if err := cl.WaitForEvents(ev); err != nil {
 			panic(err)
 		}
 		dst.Unlock()
-		src.RUnlock()
 	} else {
 		go func() {
-			if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+			if err := cl.WaitForEvents(ev); err != nil {
 				panic(err)
 			}
 			dst.Unlock()
-			src.RUnlock()
 		}()
 	}
 }
@@ -105,14 +105,14 @@ func (dst *Bytes) Copy(src *Bytes) {
 	src.RLock()
 	ev := MemCpy(dst.Ptr, src.Ptr, dst.Len)
 	if Synchronous {
-		if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+		if err := cl.WaitForEvents(ev); err != nil {
 			panic(err)
 		}
 		dst.Unlock()
 		src.RUnlock()
 	} else {
 		go func() {
-			if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+			if err := cl.WaitForEvents(ev); err != nil {
 				panic(err)
 			}
 			dst.Unlock()
@@ -124,13 +124,11 @@ func (dst *Bytes) Copy(src *Bytes) {
 // Copy to host: dst = src.
 func (src *Bytes) Download(dst []byte) {
 	util.Argument(src.Len == len(dst))
-	dst.Lock()
 	src.RLock()
 	ev := MemCpyDtoH(unsafe.Pointer(&dst[0]), src.Ptr, src.Len)
-	if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+	if err := cl.WaitForEvents(ev); err != nil {
 		panic(err)
 	}
-	dst.Unlock()
 	src.RUnlock()
 }
 
@@ -160,8 +158,8 @@ func bytes_set__(dst *Bytes, index int, value byte, wg_ sync.WaitGroup) {
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
-		fmt.Printf("MemCpyDoH failed to create command queue: %+v \n", err)
-		return nil
+		log.Panicf("MemCpyDoH failed to create command queue: %+v \n", err)
+		return
 	}
 	defer cmdqueue.Release()
 
@@ -172,7 +170,7 @@ func bytes_set__(dst *Bytes, index int, value byte, wg_ sync.WaitGroup) {
 		panic(err)
 	}
 	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
-		log.Panic("WaitForEvents failed in Bytes.Set():", err)
+		log.Panicf("WaitForEvents failed in Bytes.Set():", err)
 	}
 }
 
@@ -189,8 +187,8 @@ func (src *Bytes) Get(index int) byte {
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
-		fmt.Printf("MemCpyDoH failed to create command queue: %+v \n", err)
-		return nil
+		log.Panicf("MemCpyDoH failed to create command queue: %+v \n", err)
+		return byte(0)
 	}
 	defer cmdqueue.Release()
 

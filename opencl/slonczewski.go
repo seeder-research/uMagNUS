@@ -73,7 +73,7 @@ func addslonczewskitorque2__(torque, m *data.Slice, Msat, J, fixedP, alpha, pol,
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("addslonczewskitorque2 failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 

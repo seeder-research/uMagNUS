@@ -53,7 +53,7 @@ func lltorque__(torque, m, B *data.Slice, alpha MSlice, wg_ sync.WaitGroup) {
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("lltorque failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
@@ -110,7 +110,7 @@ func llnoprocess__(torque, m, B *data.Slice, wg_ sync.WaitGroup) {
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("llnoprecess failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 

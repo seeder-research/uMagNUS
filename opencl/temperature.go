@@ -25,7 +25,12 @@ func SetTemperature(Bth, noise *data.Slice, k2mu0_Mu0VgammaDt float64, Msat, Tem
 	wg.Done()
 }
 
-func settemperature__(Bth, noise *data.Slice, k2mu0_Mu0VgammaDt float64, Msat, Temp, Alpha MSlice) {
+func settemperature__(Bth, noise *data.Slice, k2mu0_Mu0VgammaDt float64, Msat, Temp, Alpha MSlice, wg_ sync.WaitGroup) {
+	var Beff unsafe.Pointer
+	var nois unsafe.Pointer
+	var Msat_X unsafe.Pointer
+	var Temp_X unsafe.Pointer
+	var Alpha_X unsafe.Pointer
 	if Bth != nil {
 		Bth.Lock(0)
 		defer Bth.Unlock(0)
@@ -56,7 +61,7 @@ func settemperature__(Bth, noise *data.Slice, k2mu0_Mu0VgammaDt float64, Msat, T
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("settemperature failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 

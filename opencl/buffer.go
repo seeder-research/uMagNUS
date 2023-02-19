@@ -76,15 +76,9 @@ func Buffer(nComp int, size [3]int) *data.Slice {
 // Returns a buffer obtained from GetBuffer to the pool.
 func Recycle(s *data.Slice) {
 	// Make sure nothing is using the slice
-	if s.ptrs != nil {
-		for _, ptr := range s.ptrs {
-			ptr.Lock()
-		}
-	}
-	if s.ptrs != nil {
-		for _, ptr := range s.ptrs {
-			ptr.Unlock()
-		}
+	for i := 0; i < s.NComp(); i++ {
+		s.Lock(i)
+		s.Unlock(i)
 	}
 	N := s.Len()
 	pool := buf_pool[N]

@@ -54,7 +54,7 @@ func adddmi__(Beff *data.Slice, m *data.Slice, Aex_red, Dex_red SymmLUT, Msat MS
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("adddmi failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 

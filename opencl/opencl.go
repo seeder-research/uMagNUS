@@ -17,7 +17,7 @@ const (
 )
 
 // Assumes kernel arguments set prior to launch
-func LaunchKernel(kernname string, gridDim, queue *cl.CommandQueue, workDim []int, events []*cl.Event) *cl.Event {
+func LaunchKernel(kernname string, queue *cl.CommandQueue, gridDim, workDim []int, events []*cl.Event) *cl.Event {
 	if KernList[kernname] == nil {
 		util.Fatal("Kernel " + kernname + " does not exist!")
 		return nil

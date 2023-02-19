@@ -63,13 +63,7 @@ func (m MSlice) RLock() {
 	if m.arr == nil {
 		return
 	}
-	if m.arr.ptrs == nil {
-		return
-	}
-	for c, ptr := range m.arr.ptrs {
-		if ptr == nil {
-			continue
-		}
+	for c := 0; c < m.NComp(); c++ {
 		m.arr.RLock(c)
 	}
 }
@@ -78,13 +72,7 @@ func (m MSlice) RUnlock() {
 	if m.arr == nil {
 		return
 	}
-	if m.arr.ptrs == nil {
-		return
-	}
-	for c, ptr := range m.arr.ptrs {
-		if ptr == nil {
-			continue
-		}
+	for c := 0; c < m.NComp(); c++ {
 		m.arr.RUnlock(c)
 	}
 }
@@ -93,13 +81,7 @@ func (m MSlice) Lock() {
 	if m.arr == nil {
 		return
 	}
-	if m.arr.ptrs == nil {
-		return
-	}
-	for c := range m.arr.ptrs {
-		if ptr == nil {
-			continue
-		}
+	for c := 0; c < m.NComp(); c++ {
 		m.arr.Lock(c)
 	}
 }
@@ -108,13 +90,7 @@ func (m MSlice) Unlock() {
 	if m.arr == nil {
 		return
 	}
-	if m.arr.ptrs == nil {
-		return
-	}
-	for c, ptr := range m.arr.ptrs {
-		if ptr == nil {
-			continue
-		}
+	for c := 0; c < m.NComp(); c++ {
 		m.arr.Unlock(c)
 	}
 }

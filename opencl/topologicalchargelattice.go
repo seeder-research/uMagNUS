@@ -38,7 +38,7 @@ func settopologicalcharglattice__(s *data.Slice, m *data.Slice, mesh *data.Mesh,
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("settopologicalchargelattice failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 

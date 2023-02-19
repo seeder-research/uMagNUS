@@ -48,7 +48,7 @@ func dotproduct__(dst *data.Slice, prefactor float32, a, b *data.Slice, wg_ sync
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("adddotproduct failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 

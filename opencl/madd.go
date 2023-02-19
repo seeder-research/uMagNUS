@@ -15,7 +15,6 @@ func Mul(dst, a, b *data.Slice) {
 	N := dst.Len()
 	nComp := dst.NComp()
 	util.Assert(a.Len() == N && a.NComp() == nComp && b.Len() == N && b.NComp() == nComp)
-	eventList := make([]*cl.Event, nComp)
 	var wg sync.WaitGroup
 	for c := 0; c < nComp; c++ {
 		wg.Add(1)
@@ -41,18 +40,17 @@ func mul__(dst, a, b *data.Slice, idx int, wg_ sync.WaitGroup) {
 	}
 
 	N := dst.Len()
-	nComp := dst.NComp()
 	cfg := make1DConf(N)
 
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("mul failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
-	event = k_mul_async(dst.DevPtr(idx), a.DevPtr(idx), b.DevPtr(idx), N, cfg,
+	event := k_mul_async(dst.DevPtr(idx), a.DevPtr(idx), b.DevPtr(idx), N, cfg,
 		cmdqueue, nil)
 
 	wg_.Done()
@@ -68,7 +66,6 @@ func Div(dst, a, b *data.Slice) {
 	N := dst.Len()
 	nComp := dst.NComp()
 	util.Assert(a.Len() == N && a.NComp() == nComp && b.Len() == N && b.NComp() == nComp)
-	cfg := make1DConf(N)
 
 	var wg sync.WaitGroup
 	for c := 0; c < nComp; c++ {
@@ -95,23 +92,22 @@ func div__(dst, a, b *data.Slice, idx int, wg_ sync.WaitGroup) {
 	}
 
 	N := dst.Len()
-	nComp := dst.NComp()
 	cfg := make1DConf(N)
 
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("div failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
-	eventList[c] = k_pointwise_div_async(dst.DevPtr(idx), a.DevPtr(idx), b.DevPtr(idx), N, cfg,
+	event := k_pointwise_div_async(dst.DevPtr(idx), a.DevPtr(idx), b.DevPtr(idx), N, cfg,
 		cmdqueue, nil)
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in div: %+v \n", err)
 	}
 }
@@ -132,9 +128,9 @@ func Madd2(dst, src1, src2 *data.Slice, factor1, factor2 float32) {
 	for c := 0; c < nComp; c++ {
 		wg.Add(1)
 		if Synchronous {
-			madd2__(dst, src1, src2, c, wg)
+			madd2__(dst, src1, src2, factor1, factor2, c, wg)
 		} else {
-			go madd2__(dst, src1, src2, c, wg)
+			go madd2__(dst, src1, src2, factor1, factor2, c, wg)
 		}
 	}
 	wg.Wait()
@@ -151,19 +147,19 @@ func madd2__(dst, src1, src2 *data.Slice, factor1, factor2 float32, idx int, wg_
 		src2.RLock(idx)
 		defer src2.RUnlock(idx)
 	}
-	
+
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("madd2 failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
 	N := dst.Len()
 	cfg := make1DConf(N)
 
-	event = k_madd2_async(dst.DevPtr(idx),
+	event := k_madd2_async(dst.DevPtr(idx),
 		src1.DevPtr(idx), factor1,
 		src2.DevPtr(idx), factor2, N, cfg,
 		cmdqueue, nil)
@@ -186,9 +182,9 @@ func Madd3(dst, src1, src2, src3 *data.Slice, factor1, factor2, factor3 float32)
 	for c := 0; c < nComp; c++ {
 		wg.Add(1)
 		if Synchronous {
-			madd3__(dst, src1, src2, src3, c, wg)
+			madd3__(dst, src1, src2, src3, factor1, factor2, factor3, c, wg)
 		} else {
-			go madd3__(dst, src1, src2, src3, c, wg)
+			go madd3__(dst, src1, src2, src3, factor1, factor2, factor3, c, wg)
 		}
 	}
 	wg.Wait()
@@ -209,19 +205,19 @@ func madd3__(dst, src1, src2, src3 *data.Slice, factor1, factor2, factor3 float3
 		src3.RLock(idx)
 		defer src3.RUnlock(idx)
 	}
-	
+
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("madd3 failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
 	N := dst.Len()
 	cfg := make1DConf(N)
 
-	event = k_madd3_async(dst.DevPtr(idx),
+	event := k_madd3_async(dst.DevPtr(idx),
 		src1.DevPtr(idx), factor1,
 		src2.DevPtr(idx), factor2,
 		src3.DevPtr(idx), factor3, N, cfg,
@@ -245,9 +241,9 @@ func Madd4(dst, src1, src2, src3, src4 *data.Slice, factor1, factor2, factor3, f
 	for c := 0; c < nComp; c++ {
 		wg.Add(1)
 		if Synchronous {
-			madd4__(dst, src1, src2, src3, src4, c, wg)
+			madd4__(dst, src1, src2, src3, src4, factor1, factor2, factor3, factor4, c, wg)
 		} else {
-			go madd4__(dst, src1, src2, src3, src4, c, wg)
+			go madd4__(dst, src1, src2, src3, src4, factor1, factor2, factor3, factor4, c, wg)
 		}
 	}
 	wg.Wait()
@@ -272,19 +268,19 @@ func madd4__(dst, src1, src2, src3, src4 *data.Slice, factor1, factor2, factor3,
 		src4.RLock(idx)
 		defer src4.RUnlock(idx)
 	}
-	
+
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("madd4 failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
 	N := dst.Len()
 	cfg := make1DConf(N)
 
-	event = k_madd4_async(dst.DevPtr(idx),
+	event := k_madd4_async(dst.DevPtr(idx),
 		src1.DevPtr(idx), factor1,
 		src2.DevPtr(idx), factor2,
 		src3.DevPtr(idx), factor3,
@@ -309,9 +305,9 @@ func Madd5(dst, src1, src2, src3, src4, src5 *data.Slice, factor1, factor2, fact
 	for c := 0; c < nComp; c++ {
 		wg.Add(1)
 		if Synchronous {
-			madd5__(dst, src1, src2, src3, src4, src5, c, wg)
+			madd5__(dst, src1, src2, src3, src4, src5, factor1, factor2, factor3, factor4, factor5, c, wg)
 		} else {
-			go madd5__(dst, src1, src2, src3, src4, src5, c, wg)
+			go madd5__(dst, src1, src2, src3, src4, src5, factor1, factor2, factor3, factor4, factor5, c, wg)
 		}
 	}
 	wg.Wait()
@@ -340,19 +336,19 @@ func madd5__(dst, src1, src2, src3, src4, src5 *data.Slice, factor1, factor2, fa
 		src5.RLock(idx)
 		defer src5.RUnlock(idx)
 	}
-	
+
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("madd5 failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
 	N := dst.Len()
 	cfg := make1DConf(N)
 
-	event = k_madd5_async(dst.DevPtr(idx),
+	event := k_madd5_async(dst.DevPtr(idx),
 		src1.DevPtr(idx), factor1,
 		src2.DevPtr(idx), factor2,
 		src3.DevPtr(idx), factor3,
@@ -378,9 +374,9 @@ func Madd6(dst, src1, src2, src3, src4, src5, src6 *data.Slice, factor1, factor2
 	for c := 0; c < nComp; c++ {
 		wg.Add(1)
 		if Synchronous {
-			madd6__(dst, src1, src2, src3, src4, src5, src6, c, wg)
+			madd6__(dst, src1, src2, src3, src4, src5, src6, factor1, factor2, factor3, factor4, factor5, factor6, c, wg)
 		} else {
-			go madd6__(dst, src1, src2, src3, src4, src5, src6, c, wg)
+			go madd6__(dst, src1, src2, src3, src4, src5, src6, factor1, factor2, factor3, factor4, factor5, factor6, c, wg)
 		}
 	}
 	wg.Wait()
@@ -413,19 +409,19 @@ func madd6__(dst, src1, src2, src3, src4, src5, src6 *data.Slice, factor1, facto
 		src6.RLock(idx)
 		defer src6.RUnlock(idx)
 	}
-	
+
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("madd6 failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
 	N := dst.Len()
 	cfg := make1DConf(N)
 
-	event = k_madd6_async(dst.DevPtr(idx),
+	event := k_madd6_async(dst.DevPtr(idx),
 		src1.DevPtr(idx), factor1,
 		src2.DevPtr(idx), factor2,
 		src3.DevPtr(idx), factor3,
@@ -452,9 +448,9 @@ func Madd7(dst, src1, src2, src3, src4, src5, src6, src7 *data.Slice, factor1, f
 	for c := 0; c < nComp; c++ {
 		wg.Add(1)
 		if Synchronous {
-			madd7__(dst, src1, src2, src3, src4, src5, src6, src7, c, wg)
+			madd7__(dst, src1, src2, src3, src4, src5, src6, src7, factor1, factor2, factor3, factor4, factor5, factor6, factor7, c, wg)
 		} else {
-			go madd7__(dst, src1, src2, src3, src4, src5, src6, src7, c, wg)
+			go madd7__(dst, src1, src2, src3, src4, src5, src6, src7, factor1, factor2, factor3, factor4, factor5, factor6, factor7, c, wg)
 		}
 	}
 	wg.Wait()
@@ -491,19 +487,19 @@ func madd7__(dst, src1, src2, src3, src4, src5, src6, src7 *data.Slice, factor1,
 		src7.RLock(idx)
 		defer src7.RUnlock(idx)
 	}
-	
+
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("madd7 failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
 	N := dst.Len()
 	cfg := make1DConf(N)
 
-	event = k_madd7_async(dst.DevPtr(idx),
+	event := k_madd7_async(dst.DevPtr(idx),
 		src1.DevPtr(idx), factor1,
 		src2.DevPtr(idx), factor2,
 		src3.DevPtr(idx), factor3,

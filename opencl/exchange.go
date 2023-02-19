@@ -51,7 +51,7 @@ func addexchange__(B, m *data.Slice, Aex_red SymmLUT, Msat MSlice, regions *Byte
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("adddmi failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
@@ -105,7 +105,7 @@ func exchangedecode__ (dst *data.Slice, Aex_red SymmLUT, regions *Bytes, mesh *d
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("exchangedecode failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 

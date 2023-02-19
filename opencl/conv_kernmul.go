@@ -50,7 +50,7 @@ func kernmulrsymm3d_async__(fftM [3]*data.Slice, Kxx, Kyy, Kzz, Kyz, Kxz, Kxy *d
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("kernmulrsymm3d_async failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
@@ -97,7 +97,7 @@ func kernmulrsymm2dxy_async__(fftMx, fftMy, Kxx, Kyy, Kxy *data.Slice, Nx, Ny in
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("kernmulrsymm2dxy_async failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
@@ -138,7 +138,7 @@ func kernmulrsymm2dz_async__(fftMz, Kzz *data.Slice, Nx, Ny int, wg_ sync.WaitGr
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("kernmulrsymm2dz_async failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
@@ -179,7 +179,7 @@ func kernmulc_async__(fftM, K *data.Slice, Nx, Ny int, wg_ sync.WaitGroup) {
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("kernmulrsymm2dz_async failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 

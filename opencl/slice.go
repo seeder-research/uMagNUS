@@ -2,6 +2,7 @@ package opencl
 
 import (
 	"fmt"
+	"sync"
 	"unsafe"
 
 	cl "github.com/seeder-research/uMagNUS/cl"
@@ -19,7 +20,7 @@ func newSlice(nComp int, size [3]int, memType int8) *data.Slice {
 	length := prod(size)
 	bytes := length * SIZEOF_FLOAT32
 	ptrs := make([]unsafe.Pointer, nComp)
-	initVal := float32(0.0)
+	//initVal := float32(0.0)
 	fillWait := make([]*cl.Event, nComp)
 	for c := range ptrs {
 		tmp_buf, err := ClCtx.CreateEmptyBuffer(cl.MemReadWrite, bytes)
@@ -173,8 +174,8 @@ func Memset(s *data.Slice, val ...float32) {
 }
 
 func memset_func(s *data.Slice, comp int, v *float32, ev *[]*cl.Event, wg__ sync.WaitGroup) {
-	s.ptrs[comp].Lock()
-	defer s.ptrs[comp].Unlock()
+	s.Lock(comp)
+	defer s.Unlock(comp)
 
 	var err error
 	// Create the command queue to execute the command
@@ -182,25 +183,21 @@ func memset_func(s *data.Slice, comp int, v *float32, ev *[]*cl.Event, wg__ sync
 	defer cmdqueue.Release()
 	if err != nil {
 		fmt.Printf("MemSet failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 
-	var evt *cl.Event
-	evt, err = cmdqueue.EnqueueFillBuffer((*cl.MemObject)(s.DevPtr(comp)), unsafe.Pointer(v), SIZEOF_FLOAT32, 0, s.Len()*SIZEOF_FLOAT32, nil)
+	var event *cl.Event
+	event, err = cmdqueue.EnqueueFillBuffer((*cl.MemObject)(s.DevPtr(comp)), unsafe.Pointer(v), SIZEOF_FLOAT32, 0, s.Len()*SIZEOF_FLOAT32, nil)
 	wg__.Done()
 	if err != nil {
 		fmt.Printf("MemSet failed to enqueue command: %+v \n", err)
 		cmdqueue.Release()
-		return nil
+		return
 	}
 
-	s.SetEvent(comp, evt)
-	ev[comp] = evt
-
-	err = cmdqueue.Finish()
-	if err != nil {
+	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("Wait for command to complete in MemCpy failed: %+v \n", err)
-		return nil
+		return
 	}
 }
 
@@ -214,68 +211,62 @@ func SetCell(s *data.Slice, comp int, ix, iy, iz int, value float32) {
 }
 
 func SetElem(s *data.Slice, comp int, index int, value float32) {
-	if s.ptrs == nil {
-		return
-	}
-	if s.ptrs[comp] == nil {
-		return
-	}
+	s.Lock(comp)
+	defer s.Unlock(comp)
 
-	var wg sync.WaitGroup()
+	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
 		setelem__(s, comp, index, value, wg)
-	} else
+	} else {
 		go setelem__(s, comp, index, value, wg)
-		wg.Wait()
 	}
+	wg.Wait()
 }
 
-func setelem__(s. *data.Slice, comp int, index int, value float32, wg__ sync.WaitGroup) {
-	s.ptrs[comp].Lock()
-	defer s.ptrs[comp].Unlock()
+func setelem__(s *data.Slice, comp, index int, value float32, wg__ sync.WaitGroup) {
+	s.Lock(comp)
+	defer s.Unlock(comp)
 
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	defer cmdqueue.Release()
 	if err != nil {
 		fmt.Printf("SetElem failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	var event *cl.Event
 	f := value
-	event, err := cmdqueue.EnqueueWriteBuffer((*cl.MemObject)(s.DevPtr(comp)), false, index*SIZEOF_FLOAT32, SIZEOF_FLOAT32, unsafe.Pointer(&f), nil)
+	event, err = cmdqueue.EnqueueWriteBuffer((*cl.MemObject)(s.DevPtr(comp)), false, index*SIZEOF_FLOAT32, SIZEOF_FLOAT32, unsafe.Pointer(&f), nil)
 	wg__.Done()
 	if err != nil {
 		fmt.Printf("EnqueueWriteBuffer failed: %+v \n", err)
 		return
 	}
 
-	s.SetEvent(comp, event)
-	err = cmdqueue.Finish()
-	if err != nil {
+	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("Wait for command to complete in SetElem failed: %+v \n", err)
 	}
 
 }
 
 func GetElem(s *data.Slice, comp int, index int) float32 {
-	s.ptrs[comp].RLock()
-	defer s.ptrs[comp].RUnlock()
+	s.RLock(comp)
+	defer s.RUnlock(comp)
 
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	defer cmdqueue.Release()
 	if err != nil {
 		fmt.Printf("GetElem failed to create command queue: %+v \n", err)
-		return nil
+		return -1.0
 	}
 	var event *cl.Event
 	var f float32
-	event, err := cmdqueue.EnqueueReadBuffer((*cl.MemObject)(s.DevPtr(comp)), false, index*SIZEOF_FLOAT32, SIZEOF_FLOAT32, unsafe.Pointer(&f), nil)
+	event, err = cmdqueue.EnqueueReadBuffer((*cl.MemObject)(s.DevPtr(comp)), false, index*SIZEOF_FLOAT32, SIZEOF_FLOAT32, unsafe.Pointer(&f), nil)
 	if err != nil {
 		fmt.Printf("EnqueueReadBuffer failed: %+v \n", err)
-		return
+		return -1.0
 	}
 
 	if err = cl.WaitForEvents([]*cl.Event{event});err != nil {

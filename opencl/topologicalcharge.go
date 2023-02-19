@@ -39,7 +39,7 @@ func settopologicalcharge__(s, m *data.Slice, mesh *data.Mesh, wg_ sync.WaitGrou
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("settopologicalcharge failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 

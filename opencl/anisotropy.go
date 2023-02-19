@@ -55,7 +55,7 @@ func addcubicanisotropy__(Beff, m *data.Slice, Msat, k1, k2, k3, c1, c2 MSlice, 
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("addcubicanisotropy2 failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
@@ -127,7 +127,7 @@ func adduniaxialanisotropy2__(Beff, m *data.Slice, Msat, k1, k2, u MSlice, wg_ s
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("adduniaxialanisotropy2 failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
@@ -193,7 +193,7 @@ func adduniaxialanisotropy__(Beff, m *data.Slice, Msat, k1, u MSlice, wg_ sync.W
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("adduniaxialanisotropy failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
@@ -268,7 +268,7 @@ func addvoltagecontrolledanisotropy__(Beff, m *data.Slice, Msat, vcmaCoeff, volt
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("addvoltagecontrolledanisotropy failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 

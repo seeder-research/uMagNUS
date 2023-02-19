@@ -35,7 +35,7 @@ func shiftx__(dst, src *data.Slice, shiftX int, clampL, clampR float32, wg_ sync
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("shiftx failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
@@ -76,7 +76,7 @@ func shifty__(dst, src *data.Slice, shiftY int, clampL, clampR float32, wg_ sync
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("shifty failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
@@ -117,7 +117,7 @@ func shiftz__(dst, src *data.Slice, shiftZ int, clampL, clampR float32, wg_ sync
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("shiftz failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
@@ -156,7 +156,7 @@ func shiftbytes__(dst, src *Bytes, m *data.Mesh, shiftX int, clamp byte, wg_ syn
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("shiftbytes failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
@@ -194,7 +194,7 @@ func shiftbytesy__(dst, src *Bytes, m *data.Mesh, shiftY int, clamp byte, wg_ sy
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("shiftbytes failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 

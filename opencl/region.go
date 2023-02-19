@@ -33,14 +33,14 @@ func regionaddv__(dst *data.Slice, lut LUTPtrs, regions *Bytes, wg_ sync.WaitGro
 	defer dst.Unlock(Z)
 	if regions != nil {
 		regions.RLock()
-		defer regions.RUnlLock()
+		defer regions.RUnlock()
 	}
 
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("regionaddv failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
@@ -77,14 +77,14 @@ func regionadds__(dst *data.Slice, lut LUTPtr, regions *Bytes, wg_ sync.WaitGrou
 	defer dst.Unlock(0)
 	if regions != nil {
 		regions.RLock()
-		defer regions.RUnlLock()
+		defer regions.RUnlock()
 	}
 
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("regionadds failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
@@ -125,7 +125,7 @@ func regiondecode__(dst *data.Slice, lut LUTPtr, regions *Bytes, wg_ sync.WaitGr
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("addtworegionoommfslonczewskitorque failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
@@ -172,19 +172,19 @@ func regionselect__(dst, src *data.Slice, regions *Bytes, region byte, c int, wg
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("regionselect failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
 	N := dst.Len()
 	cfg := make1DConf(N)
 
-	event = k_regionselect_async(dst.DevPtr(c), src.DevPtr(c), regions.Ptr, region, N, cfg,
+	event := k_regionselect_async(dst.DevPtr(c), src.DevPtr(c), regions.Ptr, region, N, cfg,
 		cmdqueue, nil)
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in regionselect: %+v \n", err)
 	}
 }

@@ -53,7 +53,7 @@ func adddmibulk__(Beff *data.Slice, m *data.Slice, Aex_red, D_red SymmLUT, Msat 
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("adddmibulk failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 

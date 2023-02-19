@@ -59,7 +59,7 @@ func addzhanglitorque__(torque, m *data.Slice, Msat, J, alpha, xi, pol MSlice, m
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("addzhanglitorque failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 

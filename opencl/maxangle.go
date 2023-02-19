@@ -32,13 +32,13 @@ func maxangle__(dst, m *data.Slice, Aex_red SymmLUT, regions *Bytes, mesh *data.
 	defer m.RUnlock(Y)
 	defer m.RUnlock(Z)
 	regions.RLock()
-	defer regions.RUnLock()
+	defer regions.RUnlock()
 
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("setmaxangle failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 

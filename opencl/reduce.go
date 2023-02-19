@@ -27,15 +27,18 @@ func Sum(in *data.Slice) float32 {
 	util.Argument(in.NComp() == 1)
 	out := reduceBuf(0)
 	// check input slice for event to synchronize (if any)
-	var event *cl.Event
-	syncEvent := in.GetEvent(0)
-	if syncEvent == nil {
-		event = k_reducesum_async(in.DevPtr(0), out, 0,
-			in.Len(), reducecfg, nil)
-	} else {
-		event = k_reducesum_async(in.DevPtr(0), out, 0,
-			in.Len(), reducecfg, []*cl.Event{syncEvent})
+	in.RLock(0)
+	defer in.RUnlock(0)
+	// Create the command queue to execute the command
+	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("sum failed to create command queue: %+v \n", err)
+		return -1.0
 	}
+	defer cmdqueue.Release()
+
+	event := k_reducesum_async(in.DevPtr(0), out, 0,
+		in.Len(), reducecfg, cmdqueue, nil)
 	// Must synchronize since out is copied from device back to host
 	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in sum: %+v \n", err)
@@ -60,42 +63,16 @@ func Dot(a, b *data.Slice) float32 {
 	for c := 0; c < numComp; c++ {
 		out[c] = reduceBuf(0)
 	}
-	eventSync := make([]*cl.Event, numComp)
 	hostResult := make([]float32, numComp)
 	var wg sync.WaitGroup
 	// async over components
 	for c := 0; c < numComp; c++ {
-		eventIntList := []*cl.Event{}
-		tmpEvt := a.GetEvent(c)
-		if tmpEvt != nil {
-			eventIntList = append(eventIntList, tmpEvt)
-		}
-		tmpEvt = b.GetEvent(c)
-		if tmpEvt != nil {
-			eventIntList = append(eventIntList, tmpEvt)
-		}
-		if len(eventIntList) > 0 {
-			eventSync[c] = k_reducedot_async(a.DevPtr(c), b.DevPtr(c), out[c], 0,
-				a.Len(), reducecfg, eventIntList) // all components add to out
-		} else {
-			eventSync[c] = k_reducedot_async(a.DevPtr(c), b.DevPtr(c), out[c], 0,
-				a.Len(), reducecfg, nil) // all components add to out
-		}
 		wg.Add(1)
-		go func(idx int, eventList []*cl.Event, outBufferPtr unsafe.Pointer, res *float32) {
-			defer wg.Done()
-			if err := cl.WaitForEvents(eventList); err != nil {
-				fmt.Printf("WaitForEvents failed at index %d in dot: %+v \n", idx, err)
-			}
-			//			results := copybackSlice(outBufferPtr)
-			//			tmp := float32(0)
-			//			for _, v := range results {
-			//				tmp += v
-			//			}
-			//			*res = tmp
-			results := copyback(outBufferPtr)
-			*res = results
-		}(c, []*cl.Event{eventSync[c]}, out[c], &hostResult[c])
+		if Synchronous {
+			dot__(a, b, out[c], &hostResult[c], c, wg)
+		} else {
+			go dot__(a, b, out[c], &hostResult[c], c, wg)
+		}
 	}
 	// Must synchronize since result is copied from device back to host
 	wg.Wait()
@@ -105,20 +82,57 @@ func Dot(a, b *data.Slice) float32 {
 	return result
 }
 
+func dot__(a, b *data.Slice, outBufferPtr unsafe.Pointer, res *float32, idx int, wg_ sync.WaitGroup) {
+	defer wg_.Done()
+
+	a.RLock(idx)
+	b.RLock(idx)
+	defer a.RUnlock(idx)
+	defer b.RUnlock(idx)
+
+	// Create the command queue to execute the command
+	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("adddotproduct failed to create command queue: %+v \n", err)
+		return
+	}
+	defer cmdqueue.Release()
+
+	event := k_reducedot_async(a.DevPtr(idx), b.DevPtr(idx), outBufferPtr, 0,
+		a.Len(), reducecfg, cmdqueue, nil) // all components add to out
+
+	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
+		fmt.Printf("WaitForEvents failed at index %d in adddotproduct: %+v \n", idx, err)
+	}
+	//			results := copybackSlice(outBufferPtr)
+	//			tmp := float32(0)
+	//			for _, v := range results {
+	//				tmp += v
+	//			}
+	//			*res = tmp
+	results := copyback(outBufferPtr)
+	*res = results
+}
+
 // Maximum of absolute values of all elements.
 func MaxAbs(in *data.Slice) float32 {
 	util.Argument(in.NComp() == 1)
 	out := reduceBuf(0)
-	// check input slice for event to synchronize (if any)
-	var event *cl.Event
-	syncEvent := in.GetEvent(0)
-	if syncEvent == nil {
-		event = k_reducemaxabs_async(in.DevPtr(0), out, 0,
-			in.Len(), reducecfg, nil)
-	} else {
-		event = k_reducemaxabs_async(in.DevPtr(0), out, 0,
-			in.Len(), reducecfg, [](*cl.Event){syncEvent})
+
+	in.RLock(0)
+	defer in.RUnlock(0)
+
+	// Create the command queue to execute the command
+	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("adddotproduct failed to create command queue: %+v \n", err)
+		return -1.0
 	}
+	defer cmdqueue.Release()
+
+	event := k_reducemaxabs_async(in.DevPtr(0), out, 0,
+		in.Len(), reducecfg, cmdqueue, nil)
+
 	// Must synchronize since out is copied from device back to host
 	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in maxabs: %+v \n", err)
@@ -143,44 +157,51 @@ func MaxDiff(a, b *data.Slice) []float32 {
 	for c := 0; c < numComp; c++ {
 		out[c] = reduceBuf(0)
 	}
-	eventSync := make([]*cl.Event, numComp)
 	var wg sync.WaitGroup
 	for c := 0; c < numComp; c++ {
-		eventIntList := []*cl.Event{}
-		tmpEvent := a.GetEvent(c)
-		if tmpEvent != nil {
-			eventIntList = append(eventIntList, tmpEvent)
-		}
-		tmpEvent = b.GetEvent(c)
-		if tmpEvent != nil {
-			eventIntList = append(eventIntList, tmpEvent)
-		}
-		if len(eventIntList) > 0 {
-			eventSync[c] = k_reducemaxdiff_async(a.DevPtr(c), b.DevPtr(c), out[c], 0,
-				a.Len(), reducecfg, eventIntList)
-		} else {
-			eventSync[c] = k_reducemaxdiff_async(a.DevPtr(c), b.DevPtr(c), out[c], 0,
-				a.Len(), reducecfg, nil)
-		}
 		wg.Add(1)
-		go func(eventList []*cl.Event, outBufferPtr unsafe.Pointer, res *float32) {
-			defer wg.Done()
-			if err := cl.WaitForEvents(eventList); err != nil {
-				fmt.Printf("WaitForEvents failed in maxabs: %+v \n", err)
-			}
-			//			results := copybackSlice(outBufferPtr)
-			//			tmp := float64(results[0])
-			//			for idx := 1; idx < ReduceWorkgroups; idx++ {
-			//				tmp = math.Max(tmp, float64(results[idx]))
-			//			}
-			//			*res = float32(tmp)
-			results := copyback(outBufferPtr)
-			*res = float32(results)
-		}([]*cl.Event{eventSync[c]}, out[c], &returnVal[c])
+		if Synchronous {
+			maxdiff__(a, b, out[c], &returnVal[c], c, wg)
+		} else {
+			go maxdiff__(a, b, out[c], &returnVal[c], c, wg)
+		}
 	}
 	// Must synchronize since returnVal is copied from device back to host
 	wg.Wait()
 	return returnVal
+}
+
+func maxdiff__(a, b *data.Slice, outBufferPtr unsafe.Pointer, res *float32, idx int, wg_ sync.WaitGroup){
+	defer wg_.Done()
+
+	a.RLock(idx)
+	b.RLock(idx)
+	defer a.RUnlock(idx)
+	defer b.RUnlock(idx)
+
+	// Create the command queue to execute the command
+	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("maxabs failed to create command queue: %+v \n", err)
+		return
+	}
+	defer cmdqueue.Release()
+
+	event := k_reducemaxdiff_async(a.DevPtr(idx), b.DevPtr(idx), outBufferPtr, 0,
+		a.Len(), reducecfg, cmdqueue, nil)
+
+	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
+		fmt.Printf("WaitForEvents failed in maxabs: %+v \n", err)
+	}
+
+	//			results := copybackSlice(outBufferPtr)
+	//			tmp := float64(results[0])
+	//			for idx := 1; idx < ReduceWorkgroups; idx++ {
+	//				tmp = math.Max(tmp, float64(results[idx]))
+	//			}
+	//			*res = float32(tmp)
+	results := copyback(outBufferPtr)
+	*res = float32(results)
 }
 
 // Maximum of the norms of all vectors (x[i], y[i], z[i]).
@@ -189,22 +210,25 @@ func MaxDiff(a, b *data.Slice) []float32 {
 func MaxVecNorm(v *data.Slice) float64 {
 	util.Argument(v.NComp() == 3)
 	out := reduceBuf(0)
-	// check input slice for events to synchronize (if any)
-	var event *cl.Event
-	syncEvent := []*cl.Event{}
-	for c := 0; c < v.NComp(); c++ {
-		tmpEvent := v.GetEvent(c)
-		if tmpEvent != nil {
-			syncEvent = append(syncEvent, tmpEvent)
-		}
+
+	v.RLock(X)
+	v.RLock(Y)
+	v.RLock(Z)
+	defer v.RLock(X)
+	defer v.RLock(Y)
+	defer v.RLock(Z)
+
+	// Create the command queue to execute the command
+	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("maxvecnorm failed to create command queue: %+v \n", err)
+		return -1.0
 	}
-	if len(syncEvent) > 0 {
-		event = k_reducemaxvecnorm2_async(v.DevPtr(0), v.DevPtr(1), v.DevPtr(2),
-			out, 0, v.Len(), reducecfg, syncEvent)
-	} else {
-		event = k_reducemaxvecnorm2_async(v.DevPtr(0), v.DevPtr(1), v.DevPtr(2),
-			out, 0, v.Len(), reducecfg, nil)
-	}
+	defer cmdqueue.Release()
+
+	event := k_reducemaxvecnorm2_async(v.DevPtr(0), v.DevPtr(1), v.DevPtr(2),
+		out, 0, v.Len(), reducecfg, cmdqueue, nil)
+
 	// Must synchronize since out is copied from device back to host
 	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in maxvecnorm: %+v \n", err)
@@ -228,28 +252,32 @@ func MaxVecDiff(x, y *data.Slice) float64 {
 	util.Argument(x.NComp() == 3)
 	util.Argument(y.NComp() == 3)
 	out := reduceBuf(0)
-	// check input slice for event to synchronize (if any)
-	var event *cl.Event
-	syncEvent := []*cl.Event{}
-	for c := 0; c < 3; c++ {
-		tmpEvent := x.GetEvent(c)
-		if tmpEvent != nil {
-			syncEvent = append(syncEvent, tmpEvent)
-		}
-		tmpEvent = y.GetEvent(c)
-		if tmpEvent != nil {
-			syncEvent = append(syncEvent, tmpEvent)
-		}
+
+	x.RLock(X)
+	x.RLock(Y)
+	x.RLock(Z)
+	y.RLock(X)
+	y.RLock(Y)
+	y.RLock(Z)
+	defer x.RUnlock(X)
+	defer x.RUnlock(Y)
+	defer x.RUnlock(Z)
+	defer y.RUnlock(X)
+	defer y.RUnlock(Y)
+	defer y.RUnlock(Z)
+
+	// Create the command queue to execute the command
+	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("maxvecdiff failed to create command queue: %+v \n", err)
+		return -1.0
 	}
-	if len(syncEvent) > 0 {
-		event = k_reducemaxvecdiff2_async(x.DevPtr(0), x.DevPtr(1), x.DevPtr(2),
-			y.DevPtr(0), y.DevPtr(1), y.DevPtr(2),
-			out, 0, x.Len(), reducecfg, syncEvent)
-	} else {
-		event = k_reducemaxvecdiff2_async(x.DevPtr(0), x.DevPtr(1), x.DevPtr(2),
-			y.DevPtr(0), y.DevPtr(1), y.DevPtr(2),
-			out, 0, x.Len(), reducecfg, nil)
-	}
+	defer cmdqueue.Release()
+
+	event := k_reducemaxvecdiff2_async(x.DevPtr(0), x.DevPtr(1), x.DevPtr(2),
+		y.DevPtr(0), y.DevPtr(1), y.DevPtr(2),
+		out, 0, x.Len(), reducecfg, cmdqueue, nil)
+
 	// Must synchronize since out is copied from device back to host
 	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in maxvecdiff: %+v \n", err)

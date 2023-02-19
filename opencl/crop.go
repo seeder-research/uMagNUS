@@ -39,7 +39,7 @@ func crop__(dst, src *data.Slice, offX, offY, offZ, idx int, wg_ sync.WaitGroup)
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("crop failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 

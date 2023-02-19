@@ -11,7 +11,7 @@ import (
 
 // Sets vector dst to zero where mask != 0.
 func ZeroMask(dst *data.Slice, mask LUTPtr, regions *Bytes) {
-	var wg syncWaitGroup
+	var wg sync.WaitGroup
 	for c := 0; c < dst.NComp(); c++ {
 		wg.Add(1)
 		if Synchronous {
@@ -35,19 +35,19 @@ func zeromask__(dst *data.Slice, mask LUTPtr, regions *Bytes, c int, wg_ sync.Wa
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("zeromask failed to create command queue: %+v \n", err)
-		return nil
+		return
 	}
 	defer cmdqueue.Release()
 
 	N := dst.Len()
 	cfg := make1DConf(N)
 
-	event = k_zeromask_async(dst.DevPtr(c), unsafe.Pointer(mask), regions.Ptr, N, cfg,
+	event := k_zeromask_async(dst.DevPtr(c), unsafe.Pointer(mask), regions.Ptr, N, cfg,
 		cmdqueue, nil)
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in zeromask: %+v \n", err)
 	}
 }
