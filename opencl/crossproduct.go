@@ -30,18 +30,30 @@ func crossproduct__(dst, a, b *data.Slice, wg_ *sync.WaitGroup) {
 	defer dst.Unlock(X)
 	defer dst.Unlock(Y)
 	defer dst.Unlock(Z)
-	a.RLock(X)
-	a.RLock(Y)
-	a.RLock(Z)
-	defer a.RUnlock(X)
-	defer a.RUnlock(Y)
-	defer a.RUnlock(Z)
-	b.RLock(X)
-	b.RLock(Y)
-	b.RLock(Z)
-	defer b.RUnlock(X)
-	defer b.RUnlock(Y)
-	defer b.RUnlock(Z)
+	if dst.DevPtr(X) != a.DevPtr(X) {
+		a.RLock(X)
+		defer a.RUnlock(X)
+	}
+	if dst.DevPtr(Y) != a.DevPtr(Y) {
+		a.RLock(Y)
+		defer a.RUnlock(Y)
+	}
+	if dst.DevPtr(Z) != a.DevPtr(Z) {
+		a.RLock(Z)
+		defer a.RUnlock(Z)
+	}
+	if dst.DevPtr(X) != b.DevPtr(X) {
+		b.RLock(X)
+		defer b.RUnlock(X)
+	}
+	if dst.DevPtr(Y) != b.DevPtr(Y) {
+		b.RLock(Y)
+		defer b.RUnlock(Y)
+	}
+	if dst.DevPtr(Z) != b.DevPtr(Z) {
+		b.RLock(Z)
+		defer b.RUnlock(Z)
+	}
 
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)

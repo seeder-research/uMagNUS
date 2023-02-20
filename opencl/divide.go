@@ -31,10 +31,14 @@ func Divide(dst, a, b *data.Slice) {
 func divide__(dst, a, b *data.Slice, idx int, wg_ *sync.WaitGroup) {
 	dst.Lock(idx)
 	defer dst.Unlock(idx)
-	a.RLock(idx)
-	defer a.RUnlock(idx)
-	b.RLock(idx)
-	defer b.RUnlock(idx)
+	if dst.DevPtr(idx) != a.DevPtr(idx) {
+		a.RLock(idx)
+		defer a.RUnlock(idx)
+	}
+	if dst.DevPtr(idx) != b.DevPtr(idx) {
+		b.RLock(idx)
+		defer b.RUnlock(idx)
+	}
 
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)

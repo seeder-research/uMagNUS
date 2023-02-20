@@ -32,8 +32,10 @@ func Crop(dst, src *data.Slice, offX, offY, offZ int) {
 func crop__(dst, src *data.Slice, offX, offY, offZ, idx int, wg_ *sync.WaitGroup) {
 	dst.Lock(idx)
 	defer dst.Unlock(idx)
-	src.RLock(idx)
-	defer src.RUnlock(idx)
+	if dst.DevPtr(idx) != src.DevPtr(idx) {
+		src.RLock(idx)
+		defer src.RUnlock(idx)
+	}
 
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
