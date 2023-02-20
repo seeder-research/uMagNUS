@@ -304,8 +304,6 @@ func Copy(dst, src *Slice) {
 	case d && s:
 		wg.Add(dst.NComp())
 		for c := 0; c < dst.NComp(); c++ {
-			dst.Lock(c)
-			src.RLock(c)
 			if Synchronous {
 				memcpy__(dst, src, bytes, c, &wg)
 			} else {
@@ -316,7 +314,6 @@ func Copy(dst, src *Slice) {
 	case s && !d:
 		wg.Add(dst.NComp())
 		for c := 0; c < dst.NComp(); c++ {
-			src.RLock(c)
 			if Synchronous {
 				memcpydtoh__(dst, src, bytes, c, &wg)
 			} else {
@@ -327,7 +324,6 @@ func Copy(dst, src *Slice) {
 	case !s && d:
 		wg.Add(dst.NComp())
 		for c := 0; c < dst.NComp(); c++ {
-			dst.Lock(c)
 			if Synchronous {
 				memcpyhtod__(dst, src, bytes, c, &wg)
 			} else {
@@ -344,6 +340,8 @@ func Copy(dst, src *Slice) {
 }
 
 func memcpy__(d0, s0 *Slice, bytes, comp int, wg_ *sync.WaitGroup) {
+	d0.Lock(comp)
+	s0.RLock(comp)
 	defer d0.Unlock(comp)
 	defer s0.RUnlock(comp)
 	eventsList := memCpy(d0.DevPtr(comp), s0.DevPtr(comp), bytes)
@@ -354,6 +352,7 @@ func memcpy__(d0, s0 *Slice, bytes, comp int, wg_ *sync.WaitGroup) {
 }
 
 func memcpydtoh__(d0, s0 *Slice, bytes, comp int, wg_ *sync.WaitGroup) {
+	s0.RLock(comp)
 	defer s0.RUnlock(comp)
 	eventsList := memCpyDtoH(d0.ptrs[comp].Ptr, s0.DevPtr(comp), bytes)
 	wg_.Done()
@@ -363,6 +362,7 @@ func memcpydtoh__(d0, s0 *Slice, bytes, comp int, wg_ *sync.WaitGroup) {
 }
 
 func memcpyhtod__(d0, s0 *Slice, bytes, comp int, wg_ *sync.WaitGroup) {
+	d0.Lock(comp)
 	defer d0.Unlock(comp)
 	eventsList := memCpyHtoD(d0.DevPtr(comp), s0.ptrs[comp].Ptr, bytes)
 	wg_.Done()

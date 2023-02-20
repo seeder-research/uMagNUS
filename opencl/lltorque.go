@@ -32,18 +32,30 @@ func lltorque__(torque, m, B *data.Slice, alpha MSlice, wg_ *sync.WaitGroup) {
 	defer torque.Unlock(X)
 	defer torque.Unlock(Y)
 	defer torque.Unlock(Z)
-	m.RLock(X)
-	m.RLock(Y)
-	m.RLock(Z)
-	defer m.RUnlock(X)
-	defer m.RUnlock(Y)
-	defer m.RUnlock(Z)
-	B.RLock(X)
-	B.RLock(Y)
-	B.RLock(Z)
-	defer B.RUnlock(X)
-	defer B.RUnlock(Y)
-	defer B.RUnlock(Z)
+	if torque.DevPtr(X) != m.DevPtr(X) {
+		m.RLock(X)
+		defer m.RUnlock(X)
+	}
+	if torque.DevPtr(Y) != m.DevPtr(Y) {
+		m.RLock(Y)
+		defer m.RUnlock(Y)
+	}
+	if torque.DevPtr(Z) != m.DevPtr(Z) {
+		m.RLock(Z)
+		defer m.RUnlock(Z)
+	}
+	if torque.DevPtr(X) != B.DevPtr(X) {
+		B.RLock(X)
+		defer B.RUnlock(X)
+	}
+	if torque.DevPtr(Y) != B.DevPtr(Y) {
+		B.RLock(Y)
+		defer B.RUnlock(Y)
+	}
+	if torque.DevPtr(Z) != B.DevPtr(Z) {
+		B.RLock(Z)
+		defer B.RUnlock(Z)
+	}
 	if alpha.GetSlicePtr() != nil {
 		alpha.RLock()
 		defer alpha.RUnlock()
@@ -93,18 +105,30 @@ func llnoprocess__(torque, m, B *data.Slice, wg_ *sync.WaitGroup) {
 	defer torque.Unlock(X)
 	defer torque.Unlock(Y)
 	defer torque.Unlock(Z)
-	m.RLock(X)
-	m.RLock(Y)
-	m.RLock(Z)
-	defer m.RUnlock(X)
-	defer m.RUnlock(Y)
-	defer m.RUnlock(Z)
-	B.RLock(X)
-	B.RLock(Y)
-	B.RLock(Z)
-	defer B.RUnlock(X)
-	defer B.RUnlock(Y)
-	defer B.RUnlock(Z)
+	if torque.DevPtr(X) != m.DevPtr(X) {
+		m.RLock(X)
+		defer m.RUnlock(X)
+	}
+	if torque.DevPtr(Y) != m.DevPtr(Y) {
+		m.RLock(Y)
+		defer m.RUnlock(Y)
+	}
+	if torque.DevPtr(Z) != m.DevPtr(Z) {
+		m.RLock(Z)
+		defer m.RUnlock(Z)
+	}
+	if torque.DevPtr(X) != B.DevPtr(X) {
+		B.RLock(X)
+		defer B.RUnlock(X)
+	}
+	if torque.DevPtr(Y) != B.DevPtr(Y) {
+		B.RLock(Y)
+		defer B.RUnlock(Y)
+	}
+	if torque.DevPtr(Z) != B.DevPtr(Z) {
+		B.RLock(Z)
+		defer B.RUnlock(Z)
+	}
 
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)

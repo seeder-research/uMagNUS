@@ -66,8 +66,8 @@ func Dot(a, b *data.Slice) float32 {
 	hostResult := make([]float32, numComp)
 	var wg sync.WaitGroup
 	// async over components
+	wg.Add(numComp)
 	for c := 0; c < numComp; c++ {
-		wg.Add(1)
 		if Synchronous {
 			dot__(a, b, out[c], &hostResult[c], c, &wg)
 		} else {
@@ -214,9 +214,9 @@ func MaxVecNorm(v *data.Slice) float64 {
 	v.RLock(X)
 	v.RLock(Y)
 	v.RLock(Z)
-	defer v.RLock(X)
-	defer v.RLock(Y)
-	defer v.RLock(Z)
+	defer v.RUnlock(X)
+	defer v.RUnlock(Y)
+	defer v.RUnlock(Z)
 
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
@@ -318,7 +318,10 @@ func reduceBuf(initVal float32) unsafe.Pointer {
 // copy back single float result from GPU and recycle buffer
 func copyback(buf unsafe.Pointer) float32 {
 	var result float32
-	MemCpyDtoH(unsafe.Pointer(&result), buf, SIZEOF_FLOAT32)
+	ev := MemCpyDtoH(unsafe.Pointer(&result), buf, SIZEOF_FLOAT32)
+	if err := cl.WaitForEvents(ev); err != nil {
+		fmt.Printf("WaitForEvents failed in copyback: %+v \n", err)
+	}
 	reduceBuffers <- (*cl.MemObject)(buf)
 	return result
 }
@@ -326,7 +329,10 @@ func copyback(buf unsafe.Pointer) float32 {
 // copy back float slice result from GPU and recycle buffer
 func copybackSlice(buf unsafe.Pointer) []float32 {
 	result := make([]float32, ReduceWorkgroups)
-	MemCpyDtoH(unsafe.Pointer(&result[0]), buf, ReduceWorkgroups*SIZEOF_FLOAT32)
+	ev := MemCpyDtoH(unsafe.Pointer(&result[0]), buf, ReduceWorkgroups*SIZEOF_FLOAT32)
+	if err := cl.WaitForEvents(ev); err != nil {
+		fmt.Printf("WaitForEvents failed in copyback: %+v \n", err)
+	}
 	reduceBuffers <- (*cl.MemObject)(buf)
 	return result
 }

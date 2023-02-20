@@ -322,7 +322,10 @@ func (s *GPU) getGpuPlatform() *cl.Platform {
 }
 
 func ReleaseAndClean() {
+	fmt.Printf("Attempting to Release and Clean... \n")
 	ClCmdQueue.Release()
+	ClD2HQueue.Release()
+	ClH2DQueue.Release()
 	ClProgram.Release()
 	ClCtx.Release()
 }
