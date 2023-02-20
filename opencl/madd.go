@@ -18,7 +18,6 @@ func Mul(dst, a, b *data.Slice) {
 	var wg sync.WaitGroup
 	wg.Add(nComp)
 	for c := 0; c < nComp; c++ {
-		fmt.Println("Calling mul__")
 		if Synchronous {
 			mul__(dst, a, b, c, &wg)
 		} else {
@@ -29,21 +28,16 @@ func Mul(dst, a, b *data.Slice) {
 }
 
 func mul__(dst, a, b *data.Slice, idx int, wg_ *sync.WaitGroup) {
-	fmt.Printf("dst: %+v ; a: %+v ; b: %+v \n", dst, a, b)
-	fmt.Printf("Entered mul__ on: %+v \n", idx)
 	dst.Lock(idx)
 	defer dst.Unlock(idx)
-	fmt.Println("Got lock...")
-	if dst != a {
+	if dst.DevPtr(idx) != a.DevPtr(idx) {
 		a.RLock(idx)
 		defer a.RUnlock(idx)
 	}
-	fmt.Println("Got lock on a...")
-	if dst != b {
+	if dst.DevPtr(idx) != b.DevPtr(idx) {
 		b.RLock(idx)
 		defer b.RUnlock(idx)
 	}
-	fmt.Println("Got all locks...")
 
 	N := dst.Len()
 	cfg := make1DConf(N)
@@ -74,8 +68,8 @@ func Div(dst, a, b *data.Slice) {
 	util.Assert(a.Len() == N && a.NComp() == nComp && b.Len() == N && b.NComp() == nComp)
 
 	var wg sync.WaitGroup
+	wg.Add(nComp)
 	for c := 0; c < nComp; c++ {
-		wg.Add(1)
 		if Synchronous {
 			div__(dst, a, b, c, &wg)
 		} else {
@@ -88,11 +82,11 @@ func Div(dst, a, b *data.Slice) {
 func div__(dst, a, b *data.Slice, idx int, wg_ *sync.WaitGroup) {
 	dst.Lock(idx)
 	defer dst.Unlock(idx)
-	if dst != a {
+	if dst.DevPtr(idx) != a.DevPtr(idx) {
 		a.RLock(idx)
 		defer a.RUnlock(idx)
 	}
-	if dst != b {
+	if dst.DevPtr(idx) != b.DevPtr(idx) {
 		b.RLock(idx)
 		defer b.RUnlock(idx)
 	}
@@ -145,11 +139,11 @@ func Madd2(dst, src1, src2 *data.Slice, factor1, factor2 float32) {
 func madd2__(dst, src1, src2 *data.Slice, factor1, factor2 float32, idx int, wg_ *sync.WaitGroup) {
 	dst.Lock(idx)
 	defer dst.Unlock(idx)
-	if dst != src1 {
+	if dst.DevPtr(idx) != src1.DevPtr(idx) {
 		src1.RLock(idx)
 		defer src1.RUnlock(idx)
 	}
-	if dst != src2 {
+	if dst.DevPtr(idx) != src2.DevPtr(idx) {
 		src2.RLock(idx)
 		defer src2.RUnlock(idx)
 	}
@@ -185,8 +179,8 @@ func Madd3(dst, src1, src2, src3 *data.Slice, factor1, factor2, factor3 float32)
 	util.Assert(src1.NComp() == nComp && src2.NComp() == nComp && src3.NComp() == nComp)
 
 	var wg sync.WaitGroup
+	wg.Add(nComp)
 	for c := 0; c < nComp; c++ {
-		wg.Add(1)
 		if Synchronous {
 			madd3__(dst, src1, src2, src3, factor1, factor2, factor3, c, &wg)
 		} else {
@@ -199,7 +193,7 @@ func Madd3(dst, src1, src2, src3 *data.Slice, factor1, factor2, factor3 float32)
 func madd3__(dst, src1, src2, src3 *data.Slice, factor1, factor2, factor3 float32, idx int, wg_ *sync.WaitGroup) {
 	dst.Lock(idx)
 	defer dst.Unlock(idx)
-	if dst != src1 {
+	if dst.DevPtr(idx) != src1 {
 		src1.RLock(idx)
 		defer src1.RUnlock(idx)
 	}
