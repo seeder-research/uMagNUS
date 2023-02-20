@@ -3,8 +3,6 @@ package engine
 // Magnetocrystalline anisotropy.
 
 import (
-	"fmt"
-
 	data "github.com/seeder-research/uMagNUS/data"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
 )
@@ -164,7 +162,6 @@ func AddAnisotropyField(dst *data.Slice) {
 
 // Add the anisotropy energy density to dst
 func AddAnisotropyEnergyDensity(dst *data.Slice) {
-	fmt.Println("Getting anisotropy energy density...")
 	haveUnixial := Ku1.nonZero() || Ku2.nonZero()
 	haveCubic := Kc1.nonZero() || Kc2.nonZero() || Kc3.nonZero()
 
@@ -172,16 +169,13 @@ func AddAnisotropyEnergyDensity(dst *data.Slice) {
 		return
 	}
 
-	fmt.Println("Creating buffer...")
 	buf := opencl.Buffer(B_anis.NComp(), Mesh().Size())
 	defer opencl.Recycle(buf)
 
-	fmt.Println("Getting Mf...")
 	// unnormalized magnetization:
 	Mf := ValueOf(M_full)
 	defer opencl.Recycle(Mf)
 
-	fmt.Println("Checking uniaxial...")
 	if haveUnixial {
 		// 1st
 		opencl.Zero(buf)
@@ -194,7 +188,6 @@ func AddAnisotropyEnergyDensity(dst *data.Slice) {
 		opencl.AddDotProduct(dst, -1./4., buf, Mf)
 	}
 
-	fmt.Println("Checking cubic...")
 	if haveCubic {
 		// 1st
 		opencl.Zero(buf)
@@ -215,15 +208,10 @@ func AddAnisotropyEnergyDensity(dst *data.Slice) {
 
 // Returns anisotropy energy in joules.
 func GetAnisotropyEnergy() float64 {
-	fmt.Println("Getting Anisotropy energy...")
 	buf := opencl.Buffer(1, Mesh().Size())
-	fmt.Println("Making buffer...")
 	defer opencl.Recycle(buf)
 
-	fmt.Println("Zeroing buffer...")
 	opencl.Zero(buf)
-	fmt.Println("Computing energy density...")
 	AddAnisotropyEnergyDensity(buf)
-	fmt.Println("Reduce summing...")
 	return cellVolume() * float64(opencl.Sum(buf))
 }

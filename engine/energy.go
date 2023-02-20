@@ -3,7 +3,6 @@ package engine
 // Total energy calculation
 
 import (
-	"fmt"
 	data "github.com/seeder-research/uMagNUS/data"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
 )
@@ -26,7 +25,6 @@ func registerEnergy(term func() float64, dens func(*data.Slice)) {
 
 // Returns the total energy in J.
 func GetTotalEnergy() float64 {
-	fmt.Println("Getting total energy...")
 	E := 0.
 	for _, f := range energyTerms {
 		E += f()
@@ -37,7 +35,6 @@ func GetTotalEnergy() float64 {
 
 // Set dst to total energy density in J/m3
 func SetTotalEdens(dst *data.Slice) {
-	fmt.Println("Getting total energy density...")
 	opencl.Zero(dst)
 	for _, addTerm := range edensTerms {
 		addTerm(dst)

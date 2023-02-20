@@ -99,29 +99,22 @@ func setMaskedDemagField(dst *data.Slice, msat opencl.MSlice) {
 
 // Sets dst to the full (unnormalized) magnetization in A/m
 func SetMFull(dst *data.Slice) {
-	log.Println("setting mfull")
 	// scale m by Msat...
 	msat, rM := Msat.Slice()
-	log.Println("got slice")
 	if rM {
 		defer opencl.Recycle(msat)
 	}
-	log.Println("muling..")
 	for c := 0; c < 3; c++ {
-		log.Printf("iteration %+v \n", c)
 		opencl.Mul(dst.Comp(c), M.Buffer().Comp(c), msat)
 	}
 
-	log.Println("getting slice..")
 	// ...and by cell volume if applicable
 	vol, rV := geometry.Slice()
 	if rV {
 		defer opencl.Recycle(vol)
 	}
 	if !vol.IsNil() {
-		log.Println("muling again..")
 		for c := 0; c < 3; c++ {
-			log.Printf("again iteration %+v \n", c)
 			opencl.Mul(dst.Comp(c), dst.Comp(c), vol)
 		}
 	}

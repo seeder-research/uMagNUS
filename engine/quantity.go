@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"fmt"
 	"reflect"
 
 	data "github.com/seeder-research/uMagNUS/data"
@@ -75,7 +74,6 @@ func MeshOf(q Quantity) *data.Mesh {
 func ValueOf(q Quantity) *data.Slice {
 	// TODO: check for Buffered() implementation
 	buf := opencl.Buffer(q.NComp(), SizeOf(q))
-	fmt.Println("created buffer, evaluating to...")
 	q.EvalTo(buf)
 	return buf
 }
@@ -84,12 +82,9 @@ func ValueOf(q Quantity) *data.Slice {
 func EvalTo(q interface {
 	Slice() (*data.Slice, bool)
 }, dst *data.Slice) {
-	fmt.Println("here??")
 	v, r := q.Slice()
-	fmt.Println("here????")
 	if r {
 		defer opencl.Recycle(v)
 	}
-	fmt.Println("copying to dst...")
 	data.Copy(dst, v)
 }

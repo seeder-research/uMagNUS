@@ -1,6 +1,8 @@
 package engine
 
 import (
+	"fmt"
+
 	data "github.com/seeder-research/uMagNUS/data"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
 )
@@ -52,36 +54,42 @@ func (rk *RK45DP) Step() {
 	// there is no explicit stage 1: k1 from previous step
 
 	// stage 2
+	fmt.Printf("    stage 2")
 	Time = t0 + (1./5.)*Dt_si
 	opencl.Madd2(m, m, rk.k1, 1, (1./5.)*h) // m = m*1 + k1*h/5
 	M.normalize()
 	torqueFn(k2)
 
 	// stage 3
+	fmt.Printf("    stage 3")
 	Time = t0 + (3./10.)*Dt_si
 	opencl.Madd3(m, m0, rk.k1, k2, 1, (3./40.)*h, (9./40.)*h)
 	M.normalize()
 	torqueFn(k3)
 
 	// stage 4
+	fmt.Printf("    stage 4")
 	Time = t0 + (4./5.)*Dt_si
 	opencl.Madd4(m, m0, rk.k1, k2, k3, 1, (44./45.)*h, (-56./15.)*h, (32./9.)*h)
 	M.normalize()
 	torqueFn(k4)
 
 	// stage 5
+	fmt.Printf("    stage 5")
 	Time = t0 + (8./9.)*Dt_si
 	opencl.Madd5(m, m0, rk.k1, k2, k3, k4, 1, (19372./6561.)*h, (-25360./2187.)*h, (64448./6561.)*h, (-212./729.)*h)
 	M.normalize()
 	torqueFn(k5)
 
 	// stage 6
+	fmt.Printf("    stage 6")
 	Time = t0 + (1.)*Dt_si
 	opencl.Madd6(m, m0, rk.k1, k2, k3, k4, k5, 1, (9017./3168.)*h, (-355./33.)*h, (46732./5247.)*h, (49./176.)*h, (-5103./18656.)*h)
 	M.normalize()
 	torqueFn(k6)
 
 	// stage 7: 5th order solution
+	fmt.Printf("    stage 7")
 	Time = t0 + (1.)*Dt_si
 	// no k2
 	opencl.Madd6(m, m0, rk.k1, k3, k4, k5, k6, 1, (35./384.)*h, (500./1113.)*h, (125./192.)*h, (-2187./6784.)*h, (11./84.)*h) // 5th
@@ -90,6 +98,7 @@ func (rk *RK45DP) Step() {
 	torqueFn(k7) // next torque if OK
 
 	// error estimate
+	fmt.Printf("    estimating error")
 	Err := opencl.Buffer(3, size) //k3 // re-use k3 as error estimate
 	defer opencl.Recycle(Err)
 	opencl.Madd6(Err, rk.k1, k3, k4, k5, k6, k7, (35./384.)-(5179./57600.), (500./1113.)-(7571./16695.), (125./192.)-(393./640.), (-2187./6784.)-(-92097./339200.), (11./84.)-(187./2100.), (0.)-(1./40.))
