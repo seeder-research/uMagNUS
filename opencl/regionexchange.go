@@ -19,15 +19,15 @@ func AddRegionExchangeField(B, m *data.Slice, Msat MSlice, regions *Bytes, regio
 	wg.Add(1)
 	if Synchronous {
 		addregionexchangefield__(B, m, Msat, regions, regionA, regionB,
-			sX, sY, sZ, sig, sig2, mesh, wg)
+			sX, sY, sZ, sig, sig2, mesh, &wg)
 	} else {
 		go addregionexchangefield__(B, m, Msat, regions, regionA, regionB,
-			sX, sY, sZ, sig, sig2, mesh, wg)
+			sX, sY, sZ, sig, sig2, mesh, &wg)
 	}
 	wg.Wait()
 }
 
-func addregionexchangefield__(B, m *data.Slice, Msat MSlice, regions *Bytes, regionA, regionB uint8, sX, sY, sZ int, sig, sig2 float32, mesh *data.Mesh, wg_ sync.WaitGroup) {
+func addregionexchangefield__(B, m *data.Slice, Msat MSlice, regions *Bytes, regionA, regionB uint8, sX, sY, sZ int, sig, sig2 float32, mesh *data.Mesh, wg_ *sync.WaitGroup) {
 	B.Lock(X)
 	B.Lock(Y)
 	B.Lock(Z)
@@ -93,15 +93,15 @@ func AddRegionExchangeEdens(Edens, m *data.Slice, Msat MSlice, regions *Bytes, r
 	wg.Add(1)
 	if Synchronous {
 		addregionexchangeedens__(Edens, m, Msat, regions, regionA, regionB,
-			sX, sY, sZ, sig, sig2, mesh, wg)
+			sX, sY, sZ, sig, sig2, mesh, &wg)
 	} else {
 		go addregionexchangeedens__(Edens, m, Msat, regions, regionA, regionB,
-			sX, sY, sZ, sig, sig2, mesh, wg)
+			sX, sY, sZ, sig, sig2, mesh, &wg)
 	}
 	wg.Wait()
 }
 
-func addregionexchangeedens__(Edens, m *data.Slice, Msat MSlice, regions *Bytes, regionA, regionB uint8, sX, sY, sZ int, sig, sig2 float32, mesh *data.Mesh, wg_ sync.WaitGroup) {
+func addregionexchangeedens__(Edens, m *data.Slice, Msat MSlice, regions *Bytes, regionA, regionB uint8, sX, sY, sZ int, sig, sig2 float32, mesh *data.Mesh, wg_ *sync.WaitGroup) {
 	Edens.Lock(0)
 	defer Edens.Unlock(0)
 	m.RLock(X)

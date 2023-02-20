@@ -18,14 +18,14 @@ func AddExchange(B, m *data.Slice, Aex_red SymmLUT, Msat MSlice, regions *Bytes,
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		addexchange__(B, m, Aex_red, Msat, regions, mesh, wg)
+		addexchange__(B, m, Aex_red, Msat, regions, mesh, &wg)
 	} else {
-		go addexchange__(B, m, Aex_red, Msat, regions, mesh, wg)
+		go addexchange__(B, m, Aex_red, Msat, regions, mesh, &wg)
 	}
 	wg.Wait()
 }
 
-func addexchange__(B, m *data.Slice, Aex_red SymmLUT, Msat MSlice, regions *Bytes, mesh *data.Mesh, wg_ sync.WaitGroup) {
+func addexchange__(B, m *data.Slice, Aex_red SymmLUT, Msat MSlice, regions *Bytes, mesh *data.Mesh, wg_ *sync.WaitGroup) {
 	B.Lock(X)
 	B.Lock(Y)
 	B.Lock(Z)
@@ -82,14 +82,14 @@ func ExchangeDecode(dst *data.Slice, Aex_red SymmLUT, regions *Bytes, mesh *data
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		exchangedecode__(dst, Aex_red, regions, mesh, wg)
+		exchangedecode__(dst, Aex_red, regions, mesh, &wg)
 	} else {
-		go exchangedecode__(dst, Aex_red, regions, mesh, wg)
+		go exchangedecode__(dst, Aex_red, regions, mesh, &wg)
 	}
 	wg.Wait()
 }
 
-func exchangedecode__ (dst *data.Slice, Aex_red SymmLUT, regions *Bytes, mesh *data.Mesh, wg_ sync.WaitGroup) {
+func exchangedecode__ (dst *data.Slice, Aex_red SymmLUT, regions *Bytes, mesh *data.Mesh, wg_ *sync.WaitGroup) {
 	dst.Lock(X)
 	dst.Lock(Y)
 	dst.Lock(Z)

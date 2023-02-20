@@ -17,14 +17,14 @@ func SetTopologicalChargeLattice(s *data.Slice, m *data.Slice, mesh *data.Mesh) 
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		settopologicalcharglattice__(s, m, mesh, wg)
+		settopologicalcharglattice__(s, m, mesh, &wg)
 	} else {
-		go settopologicalcharglattice__(s, m, mesh, wg)
+		go settopologicalcharglattice__(s, m, mesh, &wg)
 	}
 	wg.Wait()
 }
 
-func settopologicalcharglattice__(s *data.Slice, m *data.Slice, mesh *data.Mesh, wg_ sync.WaitGroup) {
+func settopologicalcharglattice__(s *data.Slice, m *data.Slice, mesh *data.Mesh, wg_ *sync.WaitGroup) {
 	s.Lock(0)
 	defer s.Unlock(0)
 	m.RLock(X)

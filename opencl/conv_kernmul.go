@@ -19,14 +19,14 @@ func kernMulRSymm3D_async(fftM [3]*data.Slice, Kxx, Kyy, Kzz, Kyz, Kxz, Kxy *dat
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		kernmulrsymm3d_async__(fftM, Kxx, Kyy, Kzz, Kyz, Kxz, Kxy, Nx, Ny, Nz, wg)
+		kernmulrsymm3d_async__(fftM, Kxx, Kyy, Kzz, Kyz, Kxz, Kxy, Nx, Ny, Nz, &wg)
 	} else {
-		go kernmulrsymm3d_async__(fftM, Kxx, Kyy, Kzz, Kyz, Kxz, Kxy, Nx, Ny, Nz, wg)
+		go kernmulrsymm3d_async__(fftM, Kxx, Kyy, Kzz, Kyz, Kxz, Kxy, Nx, Ny, Nz, &wg)
 	}
 	wg.Wait()
 }
 
-func kernmulrsymm3d_async__(fftM [3]*data.Slice, Kxx, Kyy, Kzz, Kyz, Kxz, Kxy *data.Slice, Nx, Ny, Nz int, wg_ sync.WaitGroup) {
+func kernmulrsymm3d_async__(fftM [3]*data.Slice, Kxx, Kyy, Kzz, Kyz, Kxz, Kxy *data.Slice, Nx, Ny, Nz int, wg_ *sync.WaitGroup) {
 	fftM[X].Lock(0)
 	fftM[Y].Lock(0)
 	fftM[Z].Lock(0)
@@ -74,14 +74,14 @@ func kernMulRSymm2Dxy_async(fftMx, fftMy, Kxx, Kyy, Kxy *data.Slice, Nx, Ny int)
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		kernmulrsymm2dxy_async__(fftMx, fftMy, Kxx, Kyy, Kxy, Nx, Ny, wg)
+		kernmulrsymm2dxy_async__(fftMx, fftMy, Kxx, Kyy, Kxy, Nx, Ny, &wg)
 	} else {
-		go kernmulrsymm2dxy_async__(fftMx, fftMy, Kxx, Kyy, Kxy, Nx, Ny, wg)
+		go kernmulrsymm2dxy_async__(fftMx, fftMy, Kxx, Kyy, Kxy, Nx, Ny, &wg)
 	}
 	wg.Wait()
 }
 
-func kernmulrsymm2dxy_async__(fftMx, fftMy, Kxx, Kyy, Kxy *data.Slice, Nx, Ny int, wg_ sync.WaitGroup) {
+func kernmulrsymm2dxy_async__(fftMx, fftMy, Kxx, Kyy, Kxy *data.Slice, Nx, Ny int, wg_ *sync.WaitGroup) {
 	fftMx.Lock(0)
 	fftMy.Lock(0)
 	defer fftMx.Unlock(0)
@@ -121,14 +121,14 @@ func kernMulRSymm2Dz_async(fftMz, Kzz *data.Slice, Nx, Ny int) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		kernmulrsymm2dz_async__(fftMz, Kzz, Nx, Ny, wg)
+		kernmulrsymm2dz_async__(fftMz, Kzz, Nx, Ny, &wg)
 	} else {
-		go kernmulrsymm2dz_async__(fftMz, Kzz, Nx, Ny, wg)
+		go kernmulrsymm2dz_async__(fftMz, Kzz, Nx, Ny, &wg)
 	}
 	wg.Wait()
 }
 
-func kernmulrsymm2dz_async__(fftMz, Kzz *data.Slice, Nx, Ny int, wg_ sync.WaitGroup) {
+func kernmulrsymm2dz_async__(fftMz, Kzz *data.Slice, Nx, Ny int, wg_ *sync.WaitGroup) {
 	fftMz.Lock(0)
 	defer fftMz.Unlock(0)
 	Kzz.RLock(0)
@@ -162,14 +162,14 @@ func kernMulC_async(fftM, K *data.Slice, Nx, Ny int) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		kernmulc_async__(fftM, K, Nx, Ny, wg)
+		kernmulc_async__(fftM, K, Nx, Ny, &wg)
 	} else {
-		go kernmulc_async__(fftM, K, Nx, Ny, wg)
+		go kernmulc_async__(fftM, K, Nx, Ny, &wg)
 	}
 	wg.Wait()
 }
 
-func kernmulc_async__(fftM, K *data.Slice, Nx, Ny int, wg_ sync.WaitGroup) {
+func kernmulc_async__(fftM, K *data.Slice, Nx, Ny int, wg_ *sync.WaitGroup) {
 	fftM.Lock(0)
 	defer fftM.Unlock(0)
 	K.RLock(0)

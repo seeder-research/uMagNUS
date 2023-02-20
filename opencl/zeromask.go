@@ -15,15 +15,15 @@ func ZeroMask(dst *data.Slice, mask LUTPtr, regions *Bytes) {
 	for c := 0; c < dst.NComp(); c++ {
 		wg.Add(1)
 		if Synchronous {
-			zeromask__(dst, mask, regions, c, wg)
+			zeromask__(dst, mask, regions, c, &wg)
 		} else {
-			go zeromask__(dst, mask, regions, c, wg)
+			go zeromask__(dst, mask, regions, c, &wg)
 		}
 	}
 	wg.Wait()
 }
 
-func zeromask__(dst *data.Slice, mask LUTPtr, regions *Bytes, c int, wg_ sync.WaitGroup) {
+func zeromask__(dst *data.Slice, mask LUTPtr, regions *Bytes, c int, wg_ *sync.WaitGroup) {
 	dst.Lock(c)
 	defer dst.Unlock(c)
 	if regions != nil {

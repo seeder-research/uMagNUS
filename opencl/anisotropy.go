@@ -16,14 +16,14 @@ func AddCubicAnisotropy2(Beff, m *data.Slice, Msat, k1, k2, k3, c1, c2 MSlice) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		addcubicanisotropy__(Beff, m, Msat, k1, k2, k3, c1, c2, wg)
+		addcubicanisotropy__(Beff, m, Msat, k1, k2, k3, c1, c2, &wg)
 	} else {
-		go addcubicanisotropy__(Beff, m, Msat, k1, k2, k3, c1, c2, wg)
+		go addcubicanisotropy__(Beff, m, Msat, k1, k2, k3, c1, c2, &wg)
 	}
 	wg.Wait()
 }
 
-func addcubicanisotropy__(Beff, m *data.Slice, Msat, k1, k2, k3, c1, c2 MSlice, wg_ sync.WaitGroup) {
+func addcubicanisotropy__(Beff, m *data.Slice, Msat, k1, k2, k3, c1, c2 MSlice, wg_ *sync.WaitGroup) {
 	Beff.Lock(X)
 	Beff.Lock(Y)
 	Beff.Lock(Z)
@@ -40,16 +40,26 @@ func addcubicanisotropy__(Beff, m *data.Slice, Msat, k1, k2, k3, c1, c2 MSlice, 
 		Msat.RLock()
 		defer Msat.RUnlock()
 	}
-	k1.RLock()
-	k2.RLock()
-	k3.RLock()
-	defer k1.RUnlock()
-	defer k2.RUnlock()
-	defer k3.RUnlock()
-	c1.RLock()
-	c2.RLock()
-	defer c1.RUnlock()
-	defer c2.RUnlock()
+	if k1.GetSlicePtr() != nil {
+		k1.RLock()
+		defer k1.RUnlock()
+	}
+	if k2.GetSlicePtr() != nil {
+		k2.RLock()
+		defer k2.RUnlock()
+	}
+	if k3.GetSlicePtr() != nil {
+		k3.RLock()
+		defer k3.RUnlock()
+	}
+	if c1.GetSlicePtr() != nil {
+		c1.RLock()
+		defer c1.RUnlock()
+	}
+	if c2.GetSlicePtr() != nil {
+		c2.RLock()
+		defer c2.RUnlock()
+	}
 
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
@@ -92,14 +102,14 @@ func AddUniaxialAnisotropy2(Beff, m *data.Slice, Msat, k1, k2, u MSlice) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		adduniaxialanisotropy2__(Beff, m, Msat, k1, k2, u, wg)
+		adduniaxialanisotropy2__(Beff, m, Msat, k1, k2, u, &wg)
 	} else {
-		go adduniaxialanisotropy2__(Beff, m, Msat, k1, k2, u, wg)
+		go adduniaxialanisotropy2__(Beff, m, Msat, k1, k2, u, &wg)
 	}
 	wg.Wait()
 }
 
-func adduniaxialanisotropy2__(Beff, m *data.Slice, Msat, k1, k2, u MSlice, wg_ sync.WaitGroup) {
+func adduniaxialanisotropy2__(Beff, m *data.Slice, Msat, k1, k2, u MSlice, wg_ *sync.WaitGroup) {
 	Beff.Lock(X)
 	Beff.Lock(Y)
 	Beff.Lock(Z)
@@ -116,12 +126,18 @@ func adduniaxialanisotropy2__(Beff, m *data.Slice, Msat, k1, k2, u MSlice, wg_ s
 		Msat.RLock()
 		defer Msat.RUnlock()
 	}
-	k1.RLock()
-	k2.RLock()
-	defer k1.RUnlock()
-	defer k2.RUnlock()
-	u.RLock()
-	defer u.RUnlock()
+	if k1.GetSlicePtr() != nil {
+		k1.RLock()
+		defer k1.RUnlock()
+	}
+	if k2.GetSlicePtr() != nil {
+		k2.RLock()
+		defer k2.RUnlock()
+	}
+	if u.GetSlicePtr() != nil {
+		u.RLock()
+		defer u.RUnlock()
+	}
 
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
@@ -160,14 +176,14 @@ func AddUniaxialAnisotropy(Beff, m *data.Slice, Msat, k1, u MSlice) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		adduniaxialanisotropy__(Beff, m, Msat, k1, u, wg)
+		adduniaxialanisotropy__(Beff, m, Msat, k1, u, &wg)
 	} else {
-		go adduniaxialanisotropy__(Beff, m, Msat, k1, u, wg)
+		go adduniaxialanisotropy__(Beff, m, Msat, k1, u, &wg)
 	}
 	wg.Wait()
 }
 
-func adduniaxialanisotropy__(Beff, m *data.Slice, Msat, k1, u MSlice, wg_ sync.WaitGroup) {
+func adduniaxialanisotropy__(Beff, m *data.Slice, Msat, k1, u MSlice, wg_ *sync.WaitGroup) {
 	Beff.Lock(X)
 	Beff.Lock(Y)
 	Beff.Lock(Z)
@@ -184,10 +200,14 @@ func adduniaxialanisotropy__(Beff, m *data.Slice, Msat, k1, u MSlice, wg_ sync.W
 		Msat.RLock()
 		defer Msat.RUnlock()
 	}
-	k1.RLock()
-	defer k1.RUnlock()
-	u.RLock()
-	defer u.RUnlock()
+	if k1.GetSlicePtr() != nil {
+		k1.RLock()
+		defer k1.RUnlock()
+	}
+	if u.GetSlicePtr() != nil {
+		u.RLock()
+		defer u.RUnlock()
+	}
 
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
@@ -227,14 +247,14 @@ func AddVoltageControlledAnisotropy(Beff, m *data.Slice, Msat, vcmaCoeff, voltag
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		addvoltagecontrolledanisotropy__(Beff, m, Msat, vcmaCoeff, voltage, u, wg)
+		addvoltagecontrolledanisotropy__(Beff, m, Msat, vcmaCoeff, voltage, u, &wg)
 	} else {
-		go addvoltagecontrolledanisotropy__(Beff, m, Msat, vcmaCoeff, voltage, u, wg)
+		go addvoltagecontrolledanisotropy__(Beff, m, Msat, vcmaCoeff, voltage, u, &wg)
 	}
 	wg.Wait()
 }
 
-func addvoltagecontrolledanisotropy__(Beff, m *data.Slice, Msat, vcmaCoeff, voltage, u MSlice, wg_ sync.WaitGroup) {
+func addvoltagecontrolledanisotropy__(Beff, m *data.Slice, Msat, vcmaCoeff, voltage, u MSlice, wg_ *sync.WaitGroup) {
 	Beff.Lock(X)
 	Beff.Lock(Y)
 	Beff.Lock(Z)

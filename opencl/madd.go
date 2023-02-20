@@ -19,15 +19,15 @@ func Mul(dst, a, b *data.Slice) {
 	for c := 0; c < nComp; c++ {
 		wg.Add(1)
 		if Synchronous {
-			mul__(dst, a, b, c, wg)
+			mul__(dst, a, b, c, &wg)
 		} else {
-			go mul__(dst, a, b, c, wg)
+			go mul__(dst, a, b, c, &wg)
 		}
 	}
 	wg.Wait()
 }
 
-func mul__(dst, a, b *data.Slice, idx int, wg_ sync.WaitGroup) {
+func mul__(dst, a, b *data.Slice, idx int, wg_ *sync.WaitGroup) {
 	dst.Lock(idx)
 	defer dst.Unlock(idx)
 	if dst != a {
@@ -71,15 +71,15 @@ func Div(dst, a, b *data.Slice) {
 	for c := 0; c < nComp; c++ {
 		wg.Add(1)
 		if Synchronous {
-			div__(dst, a, b, c, wg)
+			div__(dst, a, b, c, &wg)
 		} else {
-			go div__(dst, a, b, c, wg)
+			go div__(dst, a, b, c, &wg)
 		}
 	}
 	wg.Wait()
 }
 
-func div__(dst, a, b *data.Slice, idx int, wg_ sync.WaitGroup) {
+func div__(dst, a, b *data.Slice, idx int, wg_ *sync.WaitGroup) {
 	dst.Lock(idx)
 	defer dst.Unlock(idx)
 	if dst != a {
@@ -128,15 +128,15 @@ func Madd2(dst, src1, src2 *data.Slice, factor1, factor2 float32) {
 	for c := 0; c < nComp; c++ {
 		wg.Add(1)
 		if Synchronous {
-			madd2__(dst, src1, src2, factor1, factor2, c, wg)
+			madd2__(dst, src1, src2, factor1, factor2, c, &wg)
 		} else {
-			go madd2__(dst, src1, src2, factor1, factor2, c, wg)
+			go madd2__(dst, src1, src2, factor1, factor2, c, &wg)
 		}
 	}
 	wg.Wait()
 }
 
-func madd2__(dst, src1, src2 *data.Slice, factor1, factor2 float32, idx int, wg_ sync.WaitGroup) {
+func madd2__(dst, src1, src2 *data.Slice, factor1, factor2 float32, idx int, wg_ *sync.WaitGroup) {
 	dst.Lock(idx)
 	defer dst.Unlock(idx)
 	if dst != src1 {
@@ -182,15 +182,15 @@ func Madd3(dst, src1, src2, src3 *data.Slice, factor1, factor2, factor3 float32)
 	for c := 0; c < nComp; c++ {
 		wg.Add(1)
 		if Synchronous {
-			madd3__(dst, src1, src2, src3, factor1, factor2, factor3, c, wg)
+			madd3__(dst, src1, src2, src3, factor1, factor2, factor3, c, &wg)
 		} else {
-			go madd3__(dst, src1, src2, src3, factor1, factor2, factor3, c, wg)
+			go madd3__(dst, src1, src2, src3, factor1, factor2, factor3, c, &wg)
 		}
 	}
 	wg.Wait()
 }
 
-func madd3__(dst, src1, src2, src3 *data.Slice, factor1, factor2, factor3 float32, idx int, wg_ sync.WaitGroup) {
+func madd3__(dst, src1, src2, src3 *data.Slice, factor1, factor2, factor3 float32, idx int, wg_ *sync.WaitGroup) {
 	dst.Lock(idx)
 	defer dst.Unlock(idx)
 	if dst != src1 {
@@ -241,15 +241,15 @@ func Madd4(dst, src1, src2, src3, src4 *data.Slice, factor1, factor2, factor3, f
 	for c := 0; c < nComp; c++ {
 		wg.Add(1)
 		if Synchronous {
-			madd4__(dst, src1, src2, src3, src4, factor1, factor2, factor3, factor4, c, wg)
+			madd4__(dst, src1, src2, src3, src4, factor1, factor2, factor3, factor4, c, &wg)
 		} else {
-			go madd4__(dst, src1, src2, src3, src4, factor1, factor2, factor3, factor4, c, wg)
+			go madd4__(dst, src1, src2, src3, src4, factor1, factor2, factor3, factor4, c, &wg)
 		}
 	}
 	wg.Wait()
 }
 
-func madd4__(dst, src1, src2, src3, src4 *data.Slice, factor1, factor2, factor3, factor4 float32, idx int, wg_ sync.WaitGroup) {
+func madd4__(dst, src1, src2, src3, src4 *data.Slice, factor1, factor2, factor3, factor4 float32, idx int, wg_ *sync.WaitGroup) {
 	dst.Lock(idx)
 	defer dst.Unlock(idx)
 	if dst != src1 {
@@ -305,15 +305,15 @@ func Madd5(dst, src1, src2, src3, src4, src5 *data.Slice, factor1, factor2, fact
 	for c := 0; c < nComp; c++ {
 		wg.Add(1)
 		if Synchronous {
-			madd5__(dst, src1, src2, src3, src4, src5, factor1, factor2, factor3, factor4, factor5, c, wg)
+			madd5__(dst, src1, src2, src3, src4, src5, factor1, factor2, factor3, factor4, factor5, c, &wg)
 		} else {
-			go madd5__(dst, src1, src2, src3, src4, src5, factor1, factor2, factor3, factor4, factor5, c, wg)
+			go madd5__(dst, src1, src2, src3, src4, src5, factor1, factor2, factor3, factor4, factor5, c, &wg)
 		}
 	}
 	wg.Wait()
 }
 
-func madd5__(dst, src1, src2, src3, src4, src5 *data.Slice, factor1, factor2, factor3, factor4, factor5 float32, idx int, wg_ sync.WaitGroup) {
+func madd5__(dst, src1, src2, src3, src4, src5 *data.Slice, factor1, factor2, factor3, factor4, factor5 float32, idx int, wg_ *sync.WaitGroup) {
 	dst.Lock(idx)
 	defer dst.Unlock(idx)
 	if dst != src1 {
@@ -374,15 +374,15 @@ func Madd6(dst, src1, src2, src3, src4, src5, src6 *data.Slice, factor1, factor2
 	for c := 0; c < nComp; c++ {
 		wg.Add(1)
 		if Synchronous {
-			madd6__(dst, src1, src2, src3, src4, src5, src6, factor1, factor2, factor3, factor4, factor5, factor6, c, wg)
+			madd6__(dst, src1, src2, src3, src4, src5, src6, factor1, factor2, factor3, factor4, factor5, factor6, c, &wg)
 		} else {
-			go madd6__(dst, src1, src2, src3, src4, src5, src6, factor1, factor2, factor3, factor4, factor5, factor6, c, wg)
+			go madd6__(dst, src1, src2, src3, src4, src5, src6, factor1, factor2, factor3, factor4, factor5, factor6, c, &wg)
 		}
 	}
 	wg.Wait()
 }
 
-func madd6__(dst, src1, src2, src3, src4, src5, src6 *data.Slice, factor1, factor2, factor3, factor4, factor5, factor6 float32, idx int, wg_ sync.WaitGroup) {
+func madd6__(dst, src1, src2, src3, src4, src5, src6 *data.Slice, factor1, factor2, factor3, factor4, factor5, factor6 float32, idx int, wg_ *sync.WaitGroup) {
 	dst.Lock(idx)
 	defer dst.Unlock(idx)
 	if dst != src1 {
@@ -448,15 +448,15 @@ func Madd7(dst, src1, src2, src3, src4, src5, src6, src7 *data.Slice, factor1, f
 	for c := 0; c < nComp; c++ {
 		wg.Add(1)
 		if Synchronous {
-			madd7__(dst, src1, src2, src3, src4, src5, src6, src7, factor1, factor2, factor3, factor4, factor5, factor6, factor7, c, wg)
+			madd7__(dst, src1, src2, src3, src4, src5, src6, src7, factor1, factor2, factor3, factor4, factor5, factor6, factor7, c, &wg)
 		} else {
-			go madd7__(dst, src1, src2, src3, src4, src5, src6, src7, factor1, factor2, factor3, factor4, factor5, factor6, factor7, c, wg)
+			go madd7__(dst, src1, src2, src3, src4, src5, src6, src7, factor1, factor2, factor3, factor4, factor5, factor6, factor7, c, &wg)
 		}
 	}
 	wg.Wait()
 }
 
-func madd7__(dst, src1, src2, src3, src4, src5, src6, src7 *data.Slice, factor1, factor2, factor3, factor4, factor5, factor6, factor7 float32, idx int, wg_ sync.WaitGroup) {
+func madd7__(dst, src1, src2, src3, src4, src5, src6, src7 *data.Slice, factor1, factor2, factor3, factor4, factor5, factor6, factor7 float32, idx int, wg_ *sync.WaitGroup) {
 	dst.Lock(idx)
 	defer dst.Unlock(idx)
 	if dst != src1 {

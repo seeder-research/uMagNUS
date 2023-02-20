@@ -17,14 +17,14 @@ func RegionAddV(dst *data.Slice, lut LUTPtrs, regions *Bytes) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		regionaddv__(dst, lut, regions, wg)
+		regionaddv__(dst, lut, regions, &wg)
 	} else {
-		go regionaddv__(dst, lut, regions, wg)
+		go regionaddv__(dst, lut, regions, &wg)
 	}
 	wg.Wait()
 }
 
-func regionaddv__(dst *data.Slice, lut LUTPtrs, regions *Bytes, wg_ sync.WaitGroup) {
+func regionaddv__(dst *data.Slice, lut LUTPtrs, regions *Bytes, wg_ *sync.WaitGroup) {
 	dst.Lock(X)
 	dst.Lock(Y)
 	dst.Lock(Z)
@@ -65,14 +65,14 @@ func RegionAddS(dst *data.Slice, lut LUTPtr, regions *Bytes) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		regionadds__(dst, lut, regions, wg)
+		regionadds__(dst, lut, regions, &wg)
 	} else {
-		go regionadds__(dst, lut, regions, wg)
+		go regionadds__(dst, lut, regions, &wg)
 	}
 	wg.Wait()
 }
 
-func regionadds__(dst *data.Slice, lut LUTPtr, regions *Bytes, wg_ sync.WaitGroup) {
+func regionadds__(dst *data.Slice, lut LUTPtr, regions *Bytes, wg_ *sync.WaitGroup) {
 	dst.Lock(0)
 	defer dst.Unlock(0)
 	if regions != nil {
@@ -106,14 +106,14 @@ func RegionDecode(dst *data.Slice, lut LUTPtr, regions *Bytes) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		regiondecode__(dst, lut, regions, wg)
+		regiondecode__(dst, lut, regions, &wg)
 	} else {
-		go regiondecode__(dst, lut, regions, wg)
+		go regiondecode__(dst, lut, regions, &wg)
 	}
 	wg.Wait()
 }
 
-func regiondecode__(dst *data.Slice, lut LUTPtr, regions *Bytes, wg_ sync.WaitGroup) {
+func regiondecode__(dst *data.Slice, lut LUTPtr, regions *Bytes, wg_ *sync.WaitGroup) {
 	dst.Lock(0)
 	defer dst.Unlock(0)
 	if regions != nil {
@@ -150,15 +150,15 @@ func RegionSelect(dst, src *data.Slice, regions *Bytes, region byte) {
 	for c := 0; c < dst.NComp(); c++ {
 		wg.Add(1)
 		if Synchronous {
-			regionselect__(dst, src, regions, region, c, wg)
+			regionselect__(dst, src, regions, region, c, &wg)
 		} else {
-			go regionselect__(dst, src, regions, region, c, wg)
+			go regionselect__(dst, src, regions, region, c, &wg)
 		}
 	}
 	wg.Wait()
 }
 
-func regionselect__(dst, src *data.Slice, regions *Bytes, region byte, c int, wg_ sync.WaitGroup) {
+func regionselect__(dst, src *data.Slice, regions *Bytes, region byte, c int, wg_ *sync.WaitGroup) {
 	dst.Lock(c)
 	defer dst.Unlock(c)
 	src.RLock(c)

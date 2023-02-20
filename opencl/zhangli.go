@@ -14,14 +14,14 @@ func AddZhangLiTorque(torque, m *data.Slice, Msat, J, alpha, xi, pol MSlice, mes
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		addzhanglitorque__(torque, m, Msat, J, alpha, xi, pol, mesh, wg)
+		addzhanglitorque__(torque, m, Msat, J, alpha, xi, pol, mesh, &wg)
 	} else {
-		go addzhanglitorque__(torque, m, Msat, J, alpha, xi, pol, mesh, wg)
+		go addzhanglitorque__(torque, m, Msat, J, alpha, xi, pol, mesh, &wg)
 	}
 	wg.Wait()
 }
 
-func addzhanglitorque__(torque, m *data.Slice, Msat, J, alpha, xi, pol MSlice, mesh *data.Mesh, wg_ sync.WaitGroup) {
+func addzhanglitorque__(torque, m *data.Slice, Msat, J, alpha, xi, pol MSlice, mesh *data.Mesh, wg_ *sync.WaitGroup) {
 	torque.Lock(X)
 	torque.Lock(Y)
 	torque.Lock(Z)

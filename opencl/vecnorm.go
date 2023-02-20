@@ -17,14 +17,14 @@ func VecNorm(dst *data.Slice, a *data.Slice) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		vecnorm__(dst, a, wg)
+		vecnorm__(dst, a, &wg)
 	} else {
-		go vecnorm__(dst, a, wg)
+		go vecnorm__(dst, a, &wg)
 	}
 	wg.Wait()
 }
 
-func vecnorm__(dst *data.Slice, a *data.Slice, wg_ sync.WaitGroup) {
+func vecnorm__(dst *data.Slice, a *data.Slice, wg_ *sync.WaitGroup) {
 	dst.Lock(0)
 	defer dst.Unlock(0)
 	a.RLock(X)

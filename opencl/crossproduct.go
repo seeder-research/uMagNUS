@@ -16,14 +16,14 @@ func CrossProduct(dst, a, b *data.Slice) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		crossproduct__(dst, a, b, wg)
+		crossproduct__(dst, a, b, &wg)
 	} else {
-		go crossproduct__(dst, a, b, wg)
+		go crossproduct__(dst, a, b, &wg)
 	}
 	wg.Wait()
 }
 
-func crossproduct__(dst, a, b *data.Slice, wg_ sync.WaitGroup) {
+func crossproduct__(dst, a, b *data.Slice, wg_ *sync.WaitGroup) {
 	dst.Lock(X)
 	dst.Lock(Y)
 	dst.Lock(Z)

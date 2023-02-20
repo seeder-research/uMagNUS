@@ -82,7 +82,7 @@ func SliceFromPtrs(size [3]int, memType int8, ptrs []unsafe.Pointer) *Slice {
 		s.ptrs[c] = newInternalSlice()
 		s.ptrs[c].SetPtr(ptrs[c])
 		s.ptrs[c].SetSize(size)
-		s.ptrs[c].ClearAllEvents()
+		//s.ptrs[c].ClearAllEvents()
 		s.ptrs[c].SetMemType(memType)
 	}
 	s.memType = memType
@@ -425,56 +425,49 @@ func Copy(dst, src *Slice) {
 	case d && s:
 		for c := 0; c < dst.NComp(); c++ {
 			wg_.Add(1)
-			go func(d0, s0 *Slice, comp int) {
+			go func(d0, s0 *Slice, comp int, wg_ *sync.WaitGroup) {
 				d0.Lock(comp)
 				s0.RLock(comp)
 				defer d0.Unlock(comp)
 				defer s0.RUnlock(comp)
 				eventsList := memCpy(d0.DevPtr(comp), s0.DevPtr(comp), bytes)
-				d0.SetEvent(comp, eventsList[0])
-				s0.InsertReadEvent(comp, eventsList[1])
 				wg_.Done()
-				err := cl.WaitForEvents(eventsList)
-				if err != nil {
+				if err := cl.WaitForEvents(eventsList); err != nil {
 					panic(fmt.Sprintf("WaitForEvents in slice copy failed: %+v \n", err))
 				}
-			}(dst, src, c)
+			}(dst, src, c, &wg_)
 		}
 		wg_.Wait()
 	case s && !d:
 		for c := 0; c < dst.NComp(); c++ {
 			wg_.Add(1)
-			go func(d0, s0 *Slice, comp int) {
+			go func(d0, s0 *Slice, comp int, wg_ *sync.WaitGroup) {
 				d0.Lock(comp)
 				s0.RLock(comp)
 				defer d0.Unlock(comp)
 				defer s0.RUnlock(comp)
 				eventsList := memCpyDtoH(d0.ptrs[comp].Ptr, s0.DevPtr(comp), bytes)
-				s0.InsertReadEvent(comp, eventsList[0])
 				wg_.Done()
-				err := cl.WaitForEvents([]*cl.Event{eventsList[0]})
-				if err != nil {
+				if err := cl.WaitForEvents([]*cl.Event{eventsList[0]}); err != nil {
 					panic(fmt.Sprintf("WaitForEvents in slice copy (device to host) failed: %+v \n", err))
 				}
-			}(dst, src, c)
+			}(dst, src, c, &wg_)
 		}
 		wg_.Wait()
 	case !s && d:
 		for c := 0; c < dst.NComp(); c++ {
 			wg_.Add(1)
-			go func(d0, s0 *Slice, comp int) {
+			go func(d0, s0 *Slice, comp int, wg_ *sync.WaitGroup) {
 				d0.Lock(comp)
 				s0.RLock(comp)
 				defer d0.Unlock(comp)
 				defer s0.RUnlock(comp)
 				eventsList := memCpyHtoD(d0.DevPtr(comp), s0.ptrs[comp].Ptr, bytes)
-				d0.SetEvent(comp, eventsList[0])
 				wg_.Done()
-				err := cl.WaitForEvents([]*cl.Event{eventsList[0]})
-				if err != nil {
+				if err := cl.WaitForEvents([]*cl.Event{eventsList[0]}); err != nil {
 					panic(fmt.Sprintf("WaitForEvents in slice copy (host to device) failed: %+v \n", err))
 				}
-			}(dst, src, c)
+			}(dst, src, c, &wg_)
 		}
 		wg_.Wait()
 	case !d && !s:

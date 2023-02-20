@@ -69,9 +69,9 @@ func Dot(a, b *data.Slice) float32 {
 	for c := 0; c < numComp; c++ {
 		wg.Add(1)
 		if Synchronous {
-			dot__(a, b, out[c], &hostResult[c], c, wg)
+			dot__(a, b, out[c], &hostResult[c], c, &wg)
 		} else {
-			go dot__(a, b, out[c], &hostResult[c], c, wg)
+			go dot__(a, b, out[c], &hostResult[c], c, &wg)
 		}
 	}
 	// Must synchronize since result is copied from device back to host
@@ -82,7 +82,7 @@ func Dot(a, b *data.Slice) float32 {
 	return result
 }
 
-func dot__(a, b *data.Slice, outBufferPtr unsafe.Pointer, res *float32, idx int, wg_ sync.WaitGroup) {
+func dot__(a, b *data.Slice, outBufferPtr unsafe.Pointer, res *float32, idx int, wg_ *sync.WaitGroup) {
 	defer wg_.Done()
 
 	a.RLock(idx)
@@ -161,9 +161,9 @@ func MaxDiff(a, b *data.Slice) []float32 {
 	for c := 0; c < numComp; c++ {
 		wg.Add(1)
 		if Synchronous {
-			maxdiff__(a, b, out[c], &returnVal[c], c, wg)
+			maxdiff__(a, b, out[c], &returnVal[c], c, &wg)
 		} else {
-			go maxdiff__(a, b, out[c], &returnVal[c], c, wg)
+			go maxdiff__(a, b, out[c], &returnVal[c], c, &wg)
 		}
 	}
 	// Must synchronize since returnVal is copied from device back to host
@@ -171,7 +171,7 @@ func MaxDiff(a, b *data.Slice) []float32 {
 	return returnVal
 }
 
-func maxdiff__(a, b *data.Slice, outBufferPtr unsafe.Pointer, res *float32, idx int, wg_ sync.WaitGroup){
+func maxdiff__(a, b *data.Slice, outBufferPtr unsafe.Pointer, res *float32, idx int, wg_ *sync.WaitGroup){
 	defer wg_.Done()
 
 	a.RLock(idx)

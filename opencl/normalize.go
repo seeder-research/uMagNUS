@@ -17,14 +17,14 @@ func Normalize(vec, vol *data.Slice) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		normalize__(vec, vol, wg)
+		normalize__(vec, vol, &wg)
 	} else {
-		go normalize__(vec, vol, wg)
+		go normalize__(vec, vol, &wg)
 	}
 	wg.Wait()
 }
 
-func normalize__(vec, vol *data.Slice, wg_ sync.WaitGroup) {
+func normalize__(vec, vol *data.Slice, wg_ *sync.WaitGroup) {
 	N := vec.Len()
 	cfg := make1DConf(N)
 

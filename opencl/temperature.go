@@ -18,14 +18,14 @@ func SetTemperature(Bth, noise *data.Slice, k2mu0_Mu0VgammaDt float64, Msat, Tem
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		settemperature__(Bth, noise, k2mu0_Mu0VgammaDt, Msat, Temp, Alpha, wg)
+		settemperature__(Bth, noise, k2mu0_Mu0VgammaDt, Msat, Temp, Alpha, &wg)
 	} else {
-		go settemperature__(Bth, noise, k2mu0_Mu0VgammaDt, Msat, Temp, Alpha, wg)
+		go settemperature__(Bth, noise, k2mu0_Mu0VgammaDt, Msat, Temp, Alpha, &wg)
 	}
 	wg.Done()
 }
 
-func settemperature__(Bth, noise *data.Slice, k2mu0_Mu0VgammaDt float64, Msat, Temp, Alpha MSlice, wg_ sync.WaitGroup) {
+func settemperature__(Bth, noise *data.Slice, k2mu0_Mu0VgammaDt float64, Msat, Temp, Alpha MSlice, wg_ *sync.WaitGroup) {
 	var Beff unsafe.Pointer
 	var nois unsafe.Pointer
 	var Msat_X unsafe.Pointer

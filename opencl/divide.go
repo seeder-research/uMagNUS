@@ -20,15 +20,15 @@ func Divide(dst, a, b *data.Slice) {
 	for c := 0; c < nComp; c++ {
 		wg.Add(1)
 		if Synchronous {
-			divide__(dst, a, b, c, wg)
+			divide__(dst, a, b, c, &wg)
 		} else {
-			go divide__(dst, a, b, c, wg)
+			go divide__(dst, a, b, c, &wg)
 		}
 	}
 	wg.Wait()
 }
 
-func divide__(dst, a, b *data.Slice, idx int, wg_ sync.WaitGroup) {
+func divide__(dst, a, b *data.Slice, idx int, wg_ *sync.WaitGroup) {
 	dst.Lock(idx)
 	defer dst.Unlock(idx)
 	a.RLock(idx)

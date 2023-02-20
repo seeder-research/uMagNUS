@@ -17,14 +17,14 @@ func AddDotProduct(dst *data.Slice, prefactor float32, a, b *data.Slice) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		dotproduct__(dst, prefactor, a, b, wg)
+		dotproduct__(dst, prefactor, a, b, &wg)
 	} else {
-		go dotproduct__(dst, prefactor, a, b, wg)
+		go dotproduct__(dst, prefactor, a, b, &wg)
 	}
 	wg.Wait()
 }
 
-func dotproduct__(dst *data.Slice, prefactor float32, a, b *data.Slice, wg_ sync.WaitGroup) {
+func dotproduct__(dst *data.Slice, prefactor float32, a, b *data.Slice, wg_ *sync.WaitGroup) {
 	dst.Lock(X)
 	dst.Lock(Y)
 	dst.Lock(Z)

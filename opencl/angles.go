@@ -16,14 +16,14 @@ func SetPhi(s *data.Slice, m *data.Slice) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		setphi__(s, m, wg)
+		setphi__(s, m, &wg)
 	} else {
-		go setphi__(s, m, wg)
+		go setphi__(s, m, &wg)
 	}
 	wg.Wait()
 }
 
-func setphi__(s *data.Slice, m *data.Slice, wg_ sync.WaitGroup) {
+func setphi__(s *data.Slice, m *data.Slice, wg_ *sync.WaitGroup) {
 	s.Lock(X)
 	defer s.Unlock(X)
 	m.RLock(X)
@@ -62,14 +62,14 @@ func SetTheta(s *data.Slice, m *data.Slice) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		settheta__(s, m, wg)
+		settheta__(s, m, &wg)
 	} else {
-		go settheta__(s, m, wg)
+		go settheta__(s, m, &wg)
 	}
 	wg.Wait()
 }
 
-func settheta__(s *data.Slice, m *data.Slice, wg_ sync.WaitGroup) {
+func settheta__(s *data.Slice, m *data.Slice, wg_ *sync.WaitGroup) {
 	s.Lock(X)
 	defer s.Unlock(X)
 	m.RLock(Z)

@@ -15,15 +15,15 @@ func AddSlonczewskiTorque2(torque, m *data.Slice, Msat, J, fixedP, alpha, pol, �
 	wg.Add(1)
 	if Synchronous {
 		addslonczewskitorque2__(torque, m, Msat, J,
-			fixedP, alpha, pol, λ, ε_prime, thickness, flp, mesh, wg)
+			fixedP, alpha, pol, λ, ε_prime, thickness, flp, mesh, &wg)
 	} else {
 		go addslonczewskitorque2__(torque, m, Msat, J,
-			fixedP, alpha, pol, λ, ε_prime, thickness, flp, mesh, wg)
+			fixedP, alpha, pol, λ, ε_prime, thickness, flp, mesh, &wg)
 	}
 	wg.Wait()
 }
 
-func addslonczewskitorque2__(torque, m *data.Slice, Msat, J, fixedP, alpha, pol, λ, ε_prime, thickness MSlice, flp float64, mesh *data.Mesh, wg_ sync.WaitGroup) {
+func addslonczewskitorque2__(torque, m *data.Slice, Msat, J, fixedP, alpha, pol, λ, ε_prime, thickness MSlice, flp float64, mesh *data.Mesh, wg_ *sync.WaitGroup) {
 	torque.Lock(X)
 	torque.Lock(Y)
 	torque.Lock(Z)

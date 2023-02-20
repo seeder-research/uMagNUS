@@ -17,16 +17,16 @@ func AddRegionSpinTorque(torque, m *data.Slice, Msat MSlice, regions *Bytes, reg
 	if Synchronous {
 		addregionspintorque__(torque, m, Msat, regions, regionA, regionB,
 			sX, sY, sZ, J, alpha, pfix, pfree, λfix, λfree, ε_prime,
-			mesh, wg)
+			mesh, &wg)
 	} else {
 		go addregionspintorque__(torque, m, Msat, regions, regionA, regionB,
 			sX, sY, sZ, J, alpha, pfix, pfree, λfix, λfree, ε_prime,
-			mesh, wg)
+			mesh, &wg)
 	}
 	wg.Wait()
 }
 
-func addregionspintorque__(torque, m *data.Slice, Msat MSlice, regions *Bytes, regionA, regionB uint8, sX, sY, sZ int, J, alpha, pfix, pfree, λfix, λfree, ε_prime float32, mesh *data.Mesh, wg_ sync.WaitGroup) {
+func addregionspintorque__(torque, m *data.Slice, Msat MSlice, regions *Bytes, regionA, regionB uint8, sX, sY, sZ int, J, alpha, pfix, pfree, λfix, λfree, ε_prime float32, mesh *data.Mesh, wg_ *sync.WaitGroup) {
 	torque.Lock(X)
 	torque.Lock(Y)
 	torque.Lock(Z)

@@ -15,14 +15,14 @@ func SetMaxAngle(dst, m *data.Slice, Aex_red SymmLUT, regions *Bytes, mesh *data
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		maxangle__(dst, m, Aex_red, regions, mesh, wg)
+		maxangle__(dst, m, Aex_red, regions, mesh, &wg)
 	} else {
-		go maxangle__(dst, m, Aex_red, regions, mesh, wg)
+		go maxangle__(dst, m, Aex_red, regions, mesh, &wg)
 	}
 	wg.Wait()
 }
 
-func maxangle__(dst, m *data.Slice, Aex_red SymmLUT, regions *Bytes, mesh *data.Mesh, wg_ sync.WaitGroup) {
+func maxangle__(dst, m *data.Slice, Aex_red SymmLUT, regions *Bytes, mesh *data.Mesh, wg_ *sync.WaitGroup) {
 	dst.Lock(X)
 	defer dst.Unlock(X)
 	m.RLock(X)

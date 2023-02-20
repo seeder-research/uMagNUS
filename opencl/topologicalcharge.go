@@ -18,14 +18,14 @@ func SetTopologicalCharge(s, m *data.Slice, mesh *data.Mesh) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		settopologicalcharge__(s, m, mesh, wg)
+		settopologicalcharge__(s, m, mesh, &wg)
 	} else {
-		go settopologicalcharge__(s, m, mesh, wg)
+		go settopologicalcharge__(s, m, mesh, &wg)
 	}
 	wg.Wait()
 }
 
-func settopologicalcharge__(s, m *data.Slice, mesh *data.Mesh, wg_ sync.WaitGroup) {
+func settopologicalcharge__(s, m *data.Slice, mesh *data.Mesh, wg_ *sync.WaitGroup) {
 	s.Lock(0)
 	defer s.Unlock(0)
 	m.RLock(X)

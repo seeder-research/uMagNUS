@@ -21,15 +21,15 @@ func Crop(dst, src *data.Slice, offX, offY, offZ int) {
 	for c := 0; c < dst.NComp(); c++ {
 		wg.Add(1)
 		if Synchronous {
-			crop__(dst, src, offX, offY, offZ, c, wg)
+			crop__(dst, src, offX, offY, offZ, c, &wg)
 		} else {
-			go crop__(dst, src, offX, offY, offZ, c, wg)
+			go crop__(dst, src, offX, offY, offZ, c, &wg)
 		}
 	}
 	wg.Wait()
 }
 
-func crop__(dst, src *data.Slice, offX, offY, offZ, idx int, wg_ sync.WaitGroup) {
+func crop__(dst, src *data.Slice, offX, offY, offZ, idx int, wg_ *sync.WaitGroup) {
 	dst.Lock(idx)
 	defer dst.Unlock(idx)
 	src.RLock(idx)

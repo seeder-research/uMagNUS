@@ -14,14 +14,14 @@ func Minimize(m, m0, torque *data.Slice, dt float32) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		minimize__(m, m0, torque, dt, wg)
+		minimize__(m, m0, torque, dt, &wg)
 	} else {
-		go minimize__(m, m0, torque, dt, wg)
+		go minimize__(m, m0, torque, dt, &wg)
 	}
 	wg.Wait()
 }
 
-func minimize__(m, m0, torque *data.Slice, dt float32, wg_ sync.WaitGroup) {
+func minimize__(m, m0, torque *data.Slice, dt float32, wg_ *sync.WaitGroup) {
 	m.Lock(X)
 	m.Lock(Y)
 	m.Lock(Z)

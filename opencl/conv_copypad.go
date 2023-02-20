@@ -18,14 +18,14 @@ func copyUnPad(dst, src *data.Slice, dstsize, srcsize [3]int) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		copyunpad__(dst, src, dstsize, srcsize, wg)
+		copyunpad__(dst, src, dstsize, srcsize, &wg)
 	} else {
-		go copyunpad__(dst, src, dstsize, srcsize, wg)
+		go copyunpad__(dst, src, dstsize, srcsize, &wg)
 	}
 	wg.Wait()
 }
 
-func copyunpad__(dst, src *data.Slice, dstsize, srcsize [3]int, wg_ sync.WaitGroup) {
+func copyunpad__(dst, src *data.Slice, dstsize, srcsize [3]int, wg_ *sync.WaitGroup) {
 	dst.Lock(0)
 	defer dst.Unlock(0)
 	src.RLock(0)
@@ -62,14 +62,14 @@ func copyPadMul(dst, src, vol *data.Slice, dstsize, srcsize [3]int, Msat MSlice)
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		copypadmul__(dst, src, vol, dstsize, srcsize, Msat, wg)
+		copypadmul__(dst, src, vol, dstsize, srcsize, Msat, &wg)
 	} else {
-		go copypadmul__(dst, src, vol, dstsize, srcsize, Msat, wg)
+		go copypadmul__(dst, src, vol, dstsize, srcsize, Msat, &wg)
 	}
 	wg.Wait()
 }
 
-func copypadmul__(dst, src, vol *data.Slice, dstsize, srcsize [3]int, Msat MSlice, wg_ sync.WaitGroup) {
+func copypadmul__(dst, src, vol *data.Slice, dstsize, srcsize [3]int, Msat MSlice, wg_ *sync.WaitGroup) {
 	dst.Lock(0)
 	defer dst.Unlock(0)
 	src.RLock(0)

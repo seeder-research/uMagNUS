@@ -18,14 +18,14 @@ func LLTorque(torque, m, B *data.Slice, alpha MSlice) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		lltorque__(torque, m, B, alpha, wg)
+		lltorque__(torque, m, B, alpha, &wg)
 	} else {
-		go lltorque__(torque, m, B, alpha, wg)
+		go lltorque__(torque, m, B, alpha, &wg)
 	}
 	wg.Wait()
 }
 
-func lltorque__(torque, m, B *data.Slice, alpha MSlice, wg_ sync.WaitGroup) {
+func lltorque__(torque, m, B *data.Slice, alpha MSlice, wg_ *sync.WaitGroup) {
 	torque.Lock(X)
 	torque.Lock(Y)
 	torque.Lock(Z)
@@ -79,14 +79,14 @@ func LLNoPrecess(torque, m, B *data.Slice) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		llnoprocess__(torque, m, B, wg)
+		llnoprocess__(torque, m, B, &wg)
 	} else {
-		go llnoprocess__(torque, m, B, wg)
+		go llnoprocess__(torque, m, B, &wg)
 	}
 	wg.Wait()
 }
 
-func llnoprocess__(torque, m, B *data.Slice, wg_ sync.WaitGroup) {
+func llnoprocess__(torque, m, B *data.Slice, wg_ *sync.WaitGroup) {
 	torque.Lock(X)
 	torque.Lock(Y)
 	torque.Lock(Z)

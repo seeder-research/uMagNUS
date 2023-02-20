@@ -22,14 +22,14 @@ func Resize(dst, src *data.Slice, layer int) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		resize__(dst, src, layer, wg)
+		resize__(dst, src, layer, &wg)
 	} else {
-		go resize__(dst, src, layer, wg)
+		go resize__(dst, src, layer, &wg)
 	}
 	wg.Wait()
 }
 
-func resize__(dst, src *data.Slice, layer int, wg_ sync.WaitGroup) {
+func resize__(dst, src *data.Slice, layer int, wg_ *sync.WaitGroup) {
 	dstsize := dst.Size()
 	srcsize := src.Size()
 	scalex := srcsize[X] / dstsize[X]

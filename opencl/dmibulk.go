@@ -19,14 +19,14 @@ func AddDMIBulk(Beff *data.Slice, m *data.Slice, Aex_red, D_red SymmLUT, Msat MS
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		adddmibulk__(Beff, m, Aex_red, D_red, Msat, regions, mesh, OpenBC, wg)
+		adddmibulk__(Beff, m, Aex_red, D_red, Msat, regions, mesh, OpenBC, &wg)
 	} else {
-		go adddmibulk__(Beff, m, Aex_red, D_red, Msat, regions, mesh, OpenBC, wg)
+		go adddmibulk__(Beff, m, Aex_red, D_red, Msat, regions, mesh, OpenBC, &wg)
 	}
 	wg.Done()
 }
 
-func adddmibulk__(Beff *data.Slice, m *data.Slice, Aex_red, D_red SymmLUT, Msat MSlice, regions *Bytes, mesh *data.Mesh, OpenBC bool, wg_ sync.WaitGroup) {
+func adddmibulk__(Beff *data.Slice, m *data.Slice, Aex_red, D_red SymmLUT, Msat MSlice, regions *Bytes, mesh *data.Mesh, OpenBC bool, wg_ *sync.WaitGroup) {
 	var openBC byte
 	if OpenBC {
 		openBC = 1

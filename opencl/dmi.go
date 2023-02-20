@@ -20,14 +20,14 @@ func AddDMI(Beff *data.Slice, m *data.Slice, Aex_red, Dex_red SymmLUT, Msat MSli
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		adddmi__(Beff, m, Aex_red, Dex_red, Msat, regions, mesh, OpenBC, wg)
+		adddmi__(Beff, m, Aex_red, Dex_red, Msat, regions, mesh, OpenBC, &wg)
 	} else {
-		go adddmi__(Beff, m, Aex_red, Dex_red, Msat, regions, mesh, OpenBC, wg)
+		go adddmi__(Beff, m, Aex_red, Dex_red, Msat, regions, mesh, OpenBC, &wg)
 	}
 	wg.Wait()
 }
 
-func adddmi__(Beff *data.Slice, m *data.Slice, Aex_red, Dex_red SymmLUT, Msat MSlice, regions *Bytes, mesh *data.Mesh, OpenBC bool, wg_ sync.WaitGroup) {
+func adddmi__(Beff *data.Slice, m *data.Slice, Aex_red, Dex_red SymmLUT, Msat MSlice, regions *Bytes, mesh *data.Mesh, OpenBC bool, wg_ *sync.WaitGroup) {
 	var openBC byte
 	if OpenBC {
 		openBC = 1

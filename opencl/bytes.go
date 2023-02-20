@@ -40,19 +40,19 @@ func NewBytes(Len int) *Bytes {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		byte_zero__(outByte, wg)
+		byte_zero__(outByte, &wg)
 	} else {
-		go byte_zero__(outByte, wg)
+		go byte_zero__(outByte, &wg)
 	}
 	wg.Wait()
 	return outByte
 }
 
-func byte_zero__(b *Bytes, wg_ sync.WaitGroup) {
+func byte_zero__(b *Bytes, wg_ *sync.WaitGroup) {
 	b.Zero(wg_)
 }
 
-func (dst *Bytes) Zero(wg_ sync.WaitGroup) {
+func (dst *Bytes) Zero(wg_ *sync.WaitGroup) {
 	dst.Lock()
 	defer dst.Unlock()
 
@@ -142,14 +142,14 @@ func (dst *Bytes) Set(index int, value byte) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		bytes_set__(dst, index, value, wg)
+		bytes_set__(dst, index, value, &wg)
 	} else {
-		go bytes_set__(dst, index, value, wg)
+		go bytes_set__(dst, index, value, &wg)
 	}
 	wg.Wait()
 }
 
-func bytes_set__(dst *Bytes, index int, value byte, wg_ sync.WaitGroup) {
+func bytes_set__(dst *Bytes, index int, value byte, wg_ *sync.WaitGroup) {
 	dst.Lock()
 	defer dst.Unlock()
 

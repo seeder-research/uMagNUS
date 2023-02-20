@@ -39,7 +39,7 @@ func newSlice(nComp int, size [3]int, memType int8) *data.Slice {
 	}
 
 	dataPtr := data.SliceFromPtrs(size, memType, ptrs)
-	dataPtr.SetEvents(fillWait)
+	//dataPtr.SetEvents(fillWait)
 	return dataPtr
 }
 
@@ -163,9 +163,9 @@ func Memset(s *data.Slice, val ...float32) {
 	for c, v := range val {
 		wg_.Add(1)
 		if Synchronous {
-			memset_func(s, c, &v, &eventListFill, wg_)
+			memset_func(s, c, &v, &eventListFill, &wg_)
 		} else {
-			go memset_func(s, c, &v, &eventListFill, wg_)
+			go memset_func(s, c, &v, &eventListFill, &wg_)
 		}
 	}
 	wg_.Wait()
@@ -173,7 +173,7 @@ func Memset(s *data.Slice, val ...float32) {
 	timer.Stop("memset")
 }
 
-func memset_func(s *data.Slice, comp int, v *float32, ev *[]*cl.Event, wg__ sync.WaitGroup) {
+func memset_func(s *data.Slice, comp int, v *float32, ev *[]*cl.Event, wg__ *sync.WaitGroup) {
 	s.Lock(comp)
 	defer s.Unlock(comp)
 
@@ -217,14 +217,14 @@ func SetElem(s *data.Slice, comp int, index int, value float32) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		setelem__(s, comp, index, value, wg)
+		setelem__(s, comp, index, value, &wg)
 	} else {
-		go setelem__(s, comp, index, value, wg)
+		go setelem__(s, comp, index, value, &wg)
 	}
 	wg.Wait()
 }
 
-func setelem__(s *data.Slice, comp, index int, value float32, wg__ sync.WaitGroup) {
+func setelem__(s *data.Slice, comp, index int, value float32, wg__ *sync.WaitGroup) {
 	s.Lock(comp)
 	defer s.Unlock(comp)
 

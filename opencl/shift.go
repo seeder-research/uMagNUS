@@ -18,14 +18,14 @@ func ShiftX(dst, src *data.Slice, shiftX int, clampL, clampR float32) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		shiftx__(dst, src, shiftX, clampL, clampR, wg)
+		shiftx__(dst, src, shiftX, clampL, clampR, &wg)
 	} else {
-		go shiftx__(dst, src, shiftX, clampL, clampR, wg)
+		go shiftx__(dst, src, shiftX, clampL, clampR, &wg)
 	}
 	wg.Wait()
 }
 
-func shiftx__(dst, src *data.Slice, shiftX int, clampL, clampR float32, wg_ sync.WaitGroup) {
+func shiftx__(dst, src *data.Slice, shiftX int, clampL, clampR float32, wg_ *sync.WaitGroup) {
 	dst.Lock(0)
 	defer dst.Unlock(0)
 	src.RLock(0)
@@ -59,14 +59,14 @@ func ShiftY(dst, src *data.Slice, shiftY int, clampL, clampR float32) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		shifty__(dst, src, shiftY, clampL, clampR, wg)
+		shifty__(dst, src, shiftY, clampL, clampR, &wg)
 	} else {
-		go shifty__(dst, src, shiftY, clampL, clampR, wg)
+		go shifty__(dst, src, shiftY, clampL, clampR, &wg)
 	}
 	wg.Wait()
 }
 
-func shifty__(dst, src *data.Slice, shiftY int, clampL, clampR float32, wg_ sync.WaitGroup) {
+func shifty__(dst, src *data.Slice, shiftY int, clampL, clampR float32, wg_ *sync.WaitGroup) {
 	dst.Lock(0)
 	defer dst.Unlock(0)
 	src.RLock(0)
@@ -100,14 +100,14 @@ func ShiftZ(dst, src *data.Slice, shiftZ int, clampL, clampR float32) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		shiftz__(dst, src, shiftZ, clampL, clampR, wg)
+		shiftz__(dst, src, shiftZ, clampL, clampR, &wg)
 	} else {
-		go shiftz__(dst, src, shiftZ, clampL, clampR, wg)
+		go shiftz__(dst, src, shiftZ, clampL, clampR, &wg)
 	}
 	wg.Wait()
 }
 
-func shiftz__(dst, src *data.Slice, shiftZ int, clampL, clampR float32, wg_ sync.WaitGroup) {
+func shiftz__(dst, src *data.Slice, shiftZ int, clampL, clampR float32, wg_ *sync.WaitGroup) {
 	dst.Lock(0)
 	defer dst.Unlock(0)
 	src.RLock(0)
@@ -139,14 +139,14 @@ func ShiftBytes(dst, src *Bytes, m *data.Mesh, shiftX int, clamp byte) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		shiftbytes__(dst, src, m, shiftX, clamp, wg)
+		shiftbytes__(dst, src, m, shiftX, clamp, &wg)
 	} else {
-		go shiftbytes__(dst, src, m, shiftX, clamp, wg)
+		go shiftbytes__(dst, src, m, shiftX, clamp, &wg)
 	}
 	wg.Wait()
 }
 
-func shiftbytes__(dst, src *Bytes, m *data.Mesh, shiftX int, clamp byte, wg_ sync.WaitGroup) {
+func shiftbytes__(dst, src *Bytes, m *data.Mesh, shiftX int, clamp byte, wg_ *sync.WaitGroup) {
 	dst.Lock()
 	defer dst.Unlock()
 	src.RLock()
@@ -177,14 +177,14 @@ func ShiftBytesY(dst, src *Bytes, m *data.Mesh, shiftY int, clamp byte) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	if Synchronous {
-		shiftbytesy__(dst, src, m, shiftY, clamp, wg)
+		shiftbytesy__(dst, src, m, shiftY, clamp, &wg)
 	} else {
-		go shiftbytesy__(dst, src, m, shiftY, clamp, wg)
+		go shiftbytesy__(dst, src, m, shiftY, clamp, &wg)
 	}
 	wg.Wait()
 }
 
-func shiftbytesy__(dst, src *Bytes, m *data.Mesh, shiftY int, clamp byte, wg_ sync.WaitGroup) {
+func shiftbytesy__(dst, src *Bytes, m *data.Mesh, shiftY int, clamp byte, wg_ *sync.WaitGroup) {
 	dst.Lock()
 	defer dst.Unlock()
 	src.RLock()
