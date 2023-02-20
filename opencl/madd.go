@@ -193,15 +193,15 @@ func Madd3(dst, src1, src2, src3 *data.Slice, factor1, factor2, factor3 float32)
 func madd3__(dst, src1, src2, src3 *data.Slice, factor1, factor2, factor3 float32, idx int, wg_ *sync.WaitGroup) {
 	dst.Lock(idx)
 	defer dst.Unlock(idx)
-	if dst.DevPtr(idx) != src1 {
+	if dst.DevPtr(idx) != src1.DevPtr(idx) {
 		src1.RLock(idx)
 		defer src1.RUnlock(idx)
 	}
-	if dst != src2 {
+	if dst.DevPtr(idx) != src2.DevPtr(idx) {
 		src2.RLock(idx)
 		defer src2.RUnlock(idx)
 	}
-	if dst != src3 {
+	if dst.DevPtr(idx) != src3.DevPtr(idx) {
 		src3.RLock(idx)
 		defer src3.RUnlock(idx)
 	}
@@ -238,8 +238,8 @@ func Madd4(dst, src1, src2, src3, src4 *data.Slice, factor1, factor2, factor3, f
 	util.Assert(src1.NComp() == nComp && src2.NComp() == nComp && src3.NComp() == nComp && src4.NComp() == nComp)
 
 	var wg sync.WaitGroup
+	wg.Add(nComp)
 	for c := 0; c < nComp; c++ {
-		wg.Add(1)
 		if Synchronous {
 			madd4__(dst, src1, src2, src3, src4, factor1, factor2, factor3, factor4, c, &wg)
 		} else {
@@ -252,19 +252,19 @@ func Madd4(dst, src1, src2, src3, src4 *data.Slice, factor1, factor2, factor3, f
 func madd4__(dst, src1, src2, src3, src4 *data.Slice, factor1, factor2, factor3, factor4 float32, idx int, wg_ *sync.WaitGroup) {
 	dst.Lock(idx)
 	defer dst.Unlock(idx)
-	if dst != src1 {
+	if dst.DevPtr(idx) != src1.DevPtr(idx) {
 		src1.RLock(idx)
 		defer src1.RUnlock(idx)
 	}
-	if dst != src2 {
+	if dst.DevPtr(idx) != src2.DevPtr(idx) {
 		src2.RLock(idx)
 		defer src2.RUnlock(idx)
 	}
-	if dst != src3 {
+	if dst.DevPtr(idx) != src3.DevPtr(idx) {
 		src3.RLock(idx)
 		defer src3.RUnlock(idx)
 	}
-	if dst != src4 {
+	if dst.DevPtr(idx) != src4.DevPtr(idx) {
 		src4.RLock(idx)
 		defer src4.RUnlock(idx)
 	}
@@ -302,8 +302,8 @@ func Madd5(dst, src1, src2, src3, src4, src5 *data.Slice, factor1, factor2, fact
 	util.Assert(src1.NComp() == nComp && src2.NComp() == nComp && src3.NComp() == nComp && src4.NComp() == nComp && src5.NComp() == nComp)
 
 	var wg sync.WaitGroup
+	wg.Add(nComp)
 	for c := 0; c < nComp; c++ {
-		wg.Add(1)
 		if Synchronous {
 			madd5__(dst, src1, src2, src3, src4, src5, factor1, factor2, factor3, factor4, factor5, c, &wg)
 		} else {
@@ -316,23 +316,23 @@ func Madd5(dst, src1, src2, src3, src4, src5 *data.Slice, factor1, factor2, fact
 func madd5__(dst, src1, src2, src3, src4, src5 *data.Slice, factor1, factor2, factor3, factor4, factor5 float32, idx int, wg_ *sync.WaitGroup) {
 	dst.Lock(idx)
 	defer dst.Unlock(idx)
-	if dst != src1 {
+	if dst.DevPtr(idx) != src1.DevPtr(idx) {
 		src1.RLock(idx)
 		defer src1.RUnlock(idx)
 	}
-	if dst != src2 {
+	if dst.DevPtr(idx) != src2.DevPtr(idx) {
 		src2.RLock(idx)
 		defer src2.RUnlock(idx)
 	}
-	if dst != src3 {
+	if dst.DevPtr(idx) != src3.DevPtr(idx) {
 		src3.RLock(idx)
 		defer src3.RUnlock(idx)
 	}
-	if dst != src4 {
+	if dst.DevPtr(idx) != src4.DevPtr(idx) {
 		src4.RLock(idx)
 		defer src4.RUnlock(idx)
 	}
-	if dst != src5 {
+	if dst.DevPtr(idx) != src5.DevPtr(idx) {
 		src5.RLock(idx)
 		defer src5.RUnlock(idx)
 	}
@@ -371,8 +371,8 @@ func Madd6(dst, src1, src2, src3, src4, src5, src6 *data.Slice, factor1, factor2
 	util.Assert(src1.NComp() == nComp && src2.NComp() == nComp && src3.NComp() == nComp && src4.NComp() == nComp && src5.NComp() == nComp && src6.NComp() == nComp)
 
 	var wg sync.WaitGroup
+	wg.Add(nComp)
 	for c := 0; c < nComp; c++ {
-		wg.Add(1)
 		if Synchronous {
 			madd6__(dst, src1, src2, src3, src4, src5, src6, factor1, factor2, factor3, factor4, factor5, factor6, c, &wg)
 		} else {
@@ -385,27 +385,27 @@ func Madd6(dst, src1, src2, src3, src4, src5, src6 *data.Slice, factor1, factor2
 func madd6__(dst, src1, src2, src3, src4, src5, src6 *data.Slice, factor1, factor2, factor3, factor4, factor5, factor6 float32, idx int, wg_ *sync.WaitGroup) {
 	dst.Lock(idx)
 	defer dst.Unlock(idx)
-	if dst != src1 {
+	if dst.DevPtr(idx) != src1.DevPtr(idx) {
 		src1.RLock(idx)
 		defer src1.RUnlock(idx)
 	}
-	if dst != src2 {
+	if dst.DevPtr(idx) != src2.DevPtr(idx) {
 		src2.RLock(idx)
 		defer src2.RUnlock(idx)
 	}
-	if dst != src3 {
+	if dst.DevPtr(idx) != src3.DevPtr(idx) {
 		src3.RLock(idx)
 		defer src3.RUnlock(idx)
 	}
-	if dst != src4 {
+	if dst.DevPtr(idx) != src4.DevPtr(idx) {
 		src4.RLock(idx)
 		defer src4.RUnlock(idx)
 	}
-	if dst != src5 {
+	if dst.DevPtr(idx) != src5.DevPtr(idx) {
 		src5.RLock(idx)
 		defer src5.RUnlock(idx)
 	}
-	if dst != src6 {
+	if dst.DevPtr(idx) != src6.DevPtr(idx) {
 		src6.RLock(idx)
 		defer src6.RUnlock(idx)
 	}
@@ -445,8 +445,8 @@ func Madd7(dst, src1, src2, src3, src4, src5, src6, src7 *data.Slice, factor1, f
 	util.Assert(src1.NComp() == nComp && src2.NComp() == nComp && src3.NComp() == nComp && src4.NComp() == nComp && src5.NComp() == nComp && src6.NComp() == nComp && src7.NComp() == nComp)
 
 	var wg sync.WaitGroup
+	wg.Add(nComp)
 	for c := 0; c < nComp; c++ {
-		wg.Add(1)
 		if Synchronous {
 			madd7__(dst, src1, src2, src3, src4, src5, src6, src7, factor1, factor2, factor3, factor4, factor5, factor6, factor7, c, &wg)
 		} else {
@@ -459,31 +459,31 @@ func Madd7(dst, src1, src2, src3, src4, src5, src6, src7 *data.Slice, factor1, f
 func madd7__(dst, src1, src2, src3, src4, src5, src6, src7 *data.Slice, factor1, factor2, factor3, factor4, factor5, factor6, factor7 float32, idx int, wg_ *sync.WaitGroup) {
 	dst.Lock(idx)
 	defer dst.Unlock(idx)
-	if dst != src1 {
+	if dst.DevPtr(idx) != src1.DevPtr(idx) {
 		src1.RLock(idx)
 		defer src1.RUnlock(idx)
 	}
-	if dst != src2 {
+	if dst.DevPtr(idx) != src2.DevPtr(idx) {
 		src2.RLock(idx)
 		defer src2.RUnlock(idx)
 	}
-	if dst != src3 {
+	if dst.DevPtr(idx) != src3.DevPtr(idx) {
 		src3.RLock(idx)
 		defer src3.RUnlock(idx)
 	}
-	if dst != src4 {
+	if dst.DevPtr(idx) != src4.DevPtr(idx) {
 		src4.RLock(idx)
 		defer src4.RUnlock(idx)
 	}
-	if dst != src5 {
+	if dst.DevPtr(idx) != src5.DevPtr(idx) {
 		src5.RLock(idx)
 		defer src5.RUnlock(idx)
 	}
-	if dst != src6 {
+	if dst.DevPtr(idx) != src6.DevPtr(idx) {
 		src6.RLock(idx)
 		defer src6.RUnlock(idx)
 	}
-	if dst != src7 {
+	if dst.DevPtr(idx) != src7.DevPtr(idx) {
 		src7.RLock(idx)
 		defer src7.RUnlock(idx)
 	}

@@ -25,12 +25,8 @@ func AddDotProduct(dst *data.Slice, prefactor float32, a, b *data.Slice) {
 }
 
 func dotproduct__(dst *data.Slice, prefactor float32, a, b *data.Slice, wg_ *sync.WaitGroup) {
-	dst.Lock(X)
-	dst.Lock(Y)
-	dst.Lock(Z)
-	defer dst.Unlock(X)
-	defer dst.Unlock(Y)
-	defer dst.Unlock(Z)
+	dst.Lock(0)
+	defer dst.Unlock(0)
 	a.RLock(X)
 	a.RLock(Y)
 	a.RLock(Z)
