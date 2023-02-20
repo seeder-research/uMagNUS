@@ -16,8 +16,9 @@ func Mul(dst, a, b *data.Slice) {
 	nComp := dst.NComp()
 	util.Assert(a.Len() == N && a.NComp() == nComp && b.Len() == N && b.NComp() == nComp)
 	var wg sync.WaitGroup
+	wg.Add(nComp)
 	for c := 0; c < nComp; c++ {
-		wg.Add(1)
+		fmt.Println("Calling mul__")
 		if Synchronous {
 			mul__(dst, a, b, c, &wg)
 		} else {
@@ -28,27 +29,32 @@ func Mul(dst, a, b *data.Slice) {
 }
 
 func mul__(dst, a, b *data.Slice, idx int, wg_ *sync.WaitGroup) {
+	fmt.Printf("dst: %+v ; a: %+v ; b: %+v \n", dst, a, b)
+	fmt.Printf("Entered mul__ on: %+v \n", idx)
 	dst.Lock(idx)
 	defer dst.Unlock(idx)
+	fmt.Println("Got lock...")
 	if dst != a {
 		a.RLock(idx)
 		defer a.RUnlock(idx)
 	}
+	fmt.Println("Got lock on a...")
 	if dst != b {
 		b.RLock(idx)
 		defer b.RUnlock(idx)
 	}
+	fmt.Println("Got all locks...")
 
 	N := dst.Len()
 	cfg := make1DConf(N)
 
 	// Create the command queue to execute the command
 	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	defer cmdqueue.Release()
 	if err != nil {
 		fmt.Printf("mul failed to create command queue: %+v \n", err)
 		return
 	}
-	defer cmdqueue.Release()
 
 	event := k_mul_async(dst.DevPtr(idx), a.DevPtr(idx), b.DevPtr(idx), N, cfg,
 		cmdqueue, nil)
