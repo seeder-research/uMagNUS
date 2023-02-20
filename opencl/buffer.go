@@ -67,9 +67,6 @@ func Buffer(nComp int, size [3]int) *data.Slice {
 	}
 
 	outBuffer := data.SliceFromPtrs(size, data.GPUMemory, ptrs)
-	for i := 0; i < nComp; i++ {
-		outBuffer.ClearAllEvents(i)
-	}
 	return outBuffer
 }
 

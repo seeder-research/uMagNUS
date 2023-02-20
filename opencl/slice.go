@@ -53,102 +53,36 @@ func memFree(ptr unsafe.Pointer) {
 }
 
 func MemCpyDtoH(dst, src unsafe.Pointer, bytes int) []*cl.Event {
-	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("MemCpyDoH failed to create command queue: %+v \n", err)
-		return nil
-	}
-	timer.Start("memcpyDtoH")
-
 	// execute
-	var event *cl.Event
-	event, err = cmdqueue.EnqueueReadBuffer((*cl.MemObject)(src), false, 0, bytes, dst, nil)
+	event, err := ClD2HQueue.EnqueueReadBuffer((*cl.MemObject)(src), false, 0, bytes, dst, nil)
 	if err != nil {
 		fmt.Printf("EnqueueReadBuffer in MemCpyDtoH failed: %+v \n", err)
 		return nil
 	}
 
-	// sync copy
-	if Synchronous {
-		err = cmdqueue.Finish()
-		if err != nil {
-			fmt.Printf("Wait for command to complete in MemCpyDtoH failed: %+v \n", err)
-			cmdqueue.Release()
-			return nil
-		}
-	}
-	timer.Stop("memcpyDtoH")
-
-	cmdqueue.Release()
 	return []*cl.Event{event}
 }
 
 func MemCpyHtoD(dst, src unsafe.Pointer, bytes int) []*cl.Event {
-	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("MemCpyDoH failed to create command queue: %+v \n", err)
-		return nil
-	}
-	timer.Start("memcpyHtoD")
-
 	// execute
-	var event *cl.Event
-	event, err = cmdqueue.EnqueueWriteBuffer((*cl.MemObject)(dst), false, 0, bytes, src, nil)
+	event, err := ClH2DQueue.EnqueueWriteBuffer((*cl.MemObject)(dst), false, 0, bytes, src, nil)
 	if err != nil {
 		fmt.Printf("EnqueueWriteBuffer in MemCpyHtoD failed: %+v \n", err)
 		return nil
 	}
 
-	// sync copy
-	if Synchronous {
-		err = cmdqueue.Finish()
-		if err != nil {
-			fmt.Printf("Wait for command to complete in MemCpyHtoD failed: %+v \n", err)
-			cmdqueue.Release()
-			return nil
-		}
-	}
-
-	timer.Stop("memcpyHtoD")
-
-	cmdqueue.Release()
 	return []*cl.Event{event}
 }
 
 func MemCpy(dst, src unsafe.Pointer, bytes int) []*cl.Event {
-	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	defer cmdqueue.Release()
-	if err != nil {
-		fmt.Printf("MemCpyDoH failed to create command queue: %+v \n", err)
-		return nil
-	}
-	timer.Start("memcpy")
-
 	// execute
-	var event *cl.Event
-	event, err = cmdqueue.EnqueueCopyBuffer((*cl.MemObject)(src), (*cl.MemObject)(dst), 0, 0, bytes, nil)
+	event, err := ClCmdQueue.EnqueueCopyBuffer((*cl.MemObject)(src), (*cl.MemObject)(dst), 0, 0, bytes, nil)
 	if err != nil {
 		fmt.Printf("EnqueueCopyBuffer failed: %+v \n", err)
 		return nil
 	}
 
-	// sync copy
-	if Synchronous {
-		err = cmdqueue.Finish()
-		if err != nil {
-			fmt.Printf("Wait for command to complete in MemCpy failed: %+v \n", err)
-			cmdqueue.Finish()
-			return nil
-		}
-	}
-	timer.Stop("memcpy")
-
-	returnList := make([]*cl.Event, 2)
-	returnList[0], returnList[1] = event, event
-	return returnList
+	return []*cl.Event{event}
 }
 
 // Memset sets the Slice's components to the specified values.
@@ -278,24 +212,4 @@ func GetElem(s *data.Slice, comp int, index int) float32 {
 
 func GetCell(s *data.Slice, comp, ix, iy, iz int) float32 {
 	return GetElem(s, comp, s.Index(ix, iy, iz))
-}
-
-func updateSlicesWithRdEvent(s []*data.Slice, e *cl.Event) {
-	for _, ds := range s {
-		if ds != nil {
-			for idx := 0; idx < ds.NComp(); idx++ {
-				ds.InsertReadEvent(idx, e)
-			}
-		}
-	}
-}
-
-func removeRdEventFromSlices(s []*data.Slice, e *cl.Event) {
-	for _, ds := range s {
-		if ds != nil {
-			for idx := 0; idx < ds.NComp(); idx++ {
-				ds.RemoveReadEvent(idx, e)
-			}
-		}
-	}
 }

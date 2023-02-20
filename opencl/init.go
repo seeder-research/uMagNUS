@@ -49,6 +49,7 @@ var (
 // Locks to an OS thread and initializes CUDA for that thread.
 func Init(gpu int) {
 	defer func() {
+		data.Synchronous = Synchronous
 		initialized = true
 	}()
 

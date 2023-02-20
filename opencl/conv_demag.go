@@ -116,13 +116,9 @@ func zero1_async(dst *data.Slice) {
 	if dst == nil {
 		panic("ERROR (zero1_async): dst pointer cannot be nil")
 	}
-	evtL := dst.GetAllEvents(0)
-	waitList := evtL
-	if len(evtL) == 0 {
-		waitList = nil
-	}
-	event, err := ClCmdQueue.EnqueueFillBuffer((*cl.MemObject)(dst.DevPtr(0)), unsafe.Pointer(&val), SIZEOF_FLOAT32, 0, dst.Len()*SIZEOF_FLOAT32, waitList)
-	dst.SetEvent(0, event)
+	dst.Lock(0)
+	defer dst.Unlock(0)
+	event, err := ClCmdQueue.EnqueueFillBuffer((*cl.MemObject)(dst.DevPtr(0)), unsafe.Pointer(&val), SIZEOF_FLOAT32, 0, dst.Len()*SIZEOF_FLOAT32, nil)
 	if err != nil {
 		fmt.Printf("EnqueueFillBuffer failed: %+v \n", err)
 	}

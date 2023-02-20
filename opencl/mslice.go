@@ -3,7 +3,6 @@ package opencl
 import (
 	"unsafe"
 
-	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
 )
 
@@ -93,39 +92,6 @@ func (m MSlice) Unlock() {
 	for c := 0; c < m.NComp(); c++ {
 		m.arr.Unlock(c)
 	}
-}
-
-func (m MSlice) SetEvent(index int, event *cl.Event) {
-	m.arr.SetEvent(index, event)
-}
-
-func (m MSlice) GetEvent(index int) *cl.Event {
-	return m.arr.GetEvent(index)
-}
-
-// Sets the rdEvent of the slice
-func (m MSlice) SetReadEvents(index int, eventList []*cl.Event) {
-	m.arr.SetReadEvents(index, eventList)
-}
-
-// Insert a cl.Event to rdEvent of the slice
-func (m MSlice) InsertReadEvent(index int, event *cl.Event) {
-	m.arr.InsertReadEvent(index, event)
-}
-
-// Remove a cl.Event from rdEvent of the slice
-func (m MSlice) RemoveReadEvent(index int, event *cl.Event) {
-	m.arr.RemoveReadEvent(index, event)
-}
-
-// Returns rdEvent of the slice as a slice
-func (m MSlice) GetReadEvents(index int) []*cl.Event {
-	return m.arr.GetReadEvents(index)
-}
-
-// Returns all events of the slice (for syncing kernels writing to the slice)
-func (m MSlice) GetAllEvents(index int) []*cl.Event {
-	return m.arr.GetAllEvents(index)
 }
 
 var _ones = [4]float64{1, 1, 1, 1}

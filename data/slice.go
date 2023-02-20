@@ -30,6 +30,7 @@ type Slice struct {
 var (
 	memFree, memFreeHost           func(unsafe.Pointer)
 	memCpy, memCpyDtoH, memCpyHtoD func(dst, src unsafe.Pointer, bytes int) []*cl.Event
+	Synchronous = false
 )
 
 // Internal: enables slices on GPU. Called upon opencl init.
@@ -82,7 +83,6 @@ func SliceFromPtrs(size [3]int, memType int8, ptrs []unsafe.Pointer) *Slice {
 		s.ptrs[c] = newInternalSlice()
 		s.ptrs[c].SetPtr(ptrs[c])
 		s.ptrs[c].SetSize(size)
-		//s.ptrs[c].ClearAllEvents()
 		s.ptrs[c].SetMemType(memType)
 	}
 	s.memType = memType
@@ -290,191 +290,84 @@ func (s *Slice) HostCopy() *Slice {
 	return cpy
 }
 
-// Associate a list of events to the slice
-func (s *Slice) SetEvents(events []*cl.Event) {
-	if s.NComp() != len(events) {
-		log.Panic("size of event list does not match number of components in slice")
-	}
-	if s.ptrs == nil {
-		return
-	}
-	for idx, event := range events {
-		if s.ptrs[idx] == nil {
-			continue
-		}
-		s.ptrs[idx].SetEvent(event)
-		s.ptrs[idx].ClearReadEvents()
-	}
-}
-
-// Associate a cl.Event to the slice (for events that are writing into slice)
-func (s *Slice) SetEvent(index int, event *cl.Event) {
-	if s.ptrs == nil {
-		return
-	}
-	if s.ptrs[index] == nil {
-		return
-	}
-	s.ptrs[index].SetEvent(event)
-	s.ptrs[index].ClearReadEvents()
-}
-
-// Returns cl.Event associated with the slice (for events that are writing into slice)
-func (s *Slice) GetEvent(index int) *cl.Event {
-	if s.ptrs == nil {
-		return nil
-	}
-	if s.ptrs[index] == nil {
-		return nil
-	}
-	return s.ptrs[index].GetEvent()
-}
-
-// Sets the rdEvent of the slice
-func (s *Slice) SetReadEvents(index int, eventList []*cl.Event) {
-	if s.ptrs == nil {
-		return
-	}
-	if s.ptrs[index] == nil {
-		return
-	}
-	s.ptrs[index].SetReadEvents(eventList)
-}
-
-// Insert a cl.Event to rdEvent of the slice
-func (s *Slice) InsertReadEvent(index int, event *cl.Event) {
-	if s.ptrs == nil {
-		return
-	}
-	if s.ptrs[index] == nil {
-		return
-	}
-	s.ptrs[index].InsertReadEvent(event)
-}
-
-// Remove a cl.Event from rdEvent of the slice
-func (s *Slice) RemoveReadEvent(index int, event *cl.Event) {
-	if s.ptrs == nil {
-		return
-	}
-	if s.ptrs[index] == nil {
-		return
-	}
-	s.ptrs[index].RemoveReadEvent(event)
-}
-
-// Returns ReadEvents of the slice component as a slice
-func (s *Slice) GetReadEvents(index int) []*cl.Event {
-	if s.ptrs == nil {
-		return []*cl.Event{}
-	}
-	if s.ptrs[index] == nil {
-		return []*cl.Event{}
-	}
-	return s.ptrs[index].GetReadEvents()
-}
-
-// Removes all ReadEvents of the slice
-func (s *Slice) ClearReadEvents(index int) {
-	if s.ptrs == nil {
-		return
-	}
-	if s.ptrs[index] == nil {
-		return
-	}
-	s.ptrs[index].ClearReadEvents()
-}
-
-// Returns all events of the slice (for syncing kernels writing to the slice)
-func (s *Slice) GetAllEvents(index int) []*cl.Event {
-	if s.ptrs == nil {
-		return []*cl.Event{}
-	}
-	if s.ptrs[index] == nil {
-		return []*cl.Event{}
-	}
-	eventList := s.GetReadEvents(index)
-	if s.ptrs[index].Event != nil {
-		eventList = append(eventList, s.ptrs[index].Event)
-	}
-	return eventList
-}
-
-// Removes all events of the slice component
-func (s *Slice) ClearAllEvents(index int) {
-	if s.ptrs == nil {
-		return
-	}
-	if s.ptrs[index] == nil {
-		return
-	}
-	s.ptrs[index].SetEvent(nil)
-	s.ptrs[index].ClearReadEvents()
-}
-
 func Copy(dst, src *Slice) {
 	if dst.NComp() != src.NComp() || dst.Len() != src.Len() {
 		panic(fmt.Sprintf("slice copy: illegal sizes: dst: %vx%v, src: %vx%v", dst.NComp(), dst.Len(), src.NComp(), src.Len()))
 	}
 	d, s := dst.GPUAccess(), src.GPUAccess()
 	bytes := SIZEOF_FLOAT32 * dst.Len()
-	var wg_ sync.WaitGroup
+
+	var wg sync.WaitGroup
 	switch {
 	default:
 		panic("bug")
 	case d && s:
+		wg.Add(dst.NComp())
 		for c := 0; c < dst.NComp(); c++ {
-			wg_.Add(1)
-			go func(d0, s0 *Slice, comp int, wg_ *sync.WaitGroup) {
-				d0.Lock(comp)
-				s0.RLock(comp)
-				defer d0.Unlock(comp)
-				defer s0.RUnlock(comp)
-				eventsList := memCpy(d0.DevPtr(comp), s0.DevPtr(comp), bytes)
-				wg_.Done()
-				if err := cl.WaitForEvents(eventsList); err != nil {
-					panic(fmt.Sprintf("WaitForEvents in slice copy failed: %+v \n", err))
-				}
-			}(dst, src, c, &wg_)
+			dst.Lock(c)
+			src.RLock(c)
+			if Synchronous {
+				memcpy__(dst, src, bytes, c, &wg)
+			} else {
+				go memcpy__(dst, src, bytes, c, &wg)
+			}
 		}
-		wg_.Wait()
+		wg.Wait()
 	case s && !d:
+		wg.Add(dst.NComp())
 		for c := 0; c < dst.NComp(); c++ {
-			wg_.Add(1)
-			go func(d0, s0 *Slice, comp int, wg_ *sync.WaitGroup) {
-				d0.Lock(comp)
-				s0.RLock(comp)
-				defer d0.Unlock(comp)
-				defer s0.RUnlock(comp)
-				eventsList := memCpyDtoH(d0.ptrs[comp].Ptr, s0.DevPtr(comp), bytes)
-				wg_.Done()
-				if err := cl.WaitForEvents([]*cl.Event{eventsList[0]}); err != nil {
-					panic(fmt.Sprintf("WaitForEvents in slice copy (device to host) failed: %+v \n", err))
-				}
-			}(dst, src, c, &wg_)
+			src.RLock(c)
+			if Synchronous {
+				memcpydtoh__(dst, src, bytes, c, &wg)
+			} else {
+				go memcpydtoh__(dst, src, bytes, c, &wg)
+			}
 		}
-		wg_.Wait()
+		wg.Wait()
 	case !s && d:
+		wg.Add(dst.NComp())
 		for c := 0; c < dst.NComp(); c++ {
-			wg_.Add(1)
-			go func(d0, s0 *Slice, comp int, wg_ *sync.WaitGroup) {
-				d0.Lock(comp)
-				s0.RLock(comp)
-				defer d0.Unlock(comp)
-				defer s0.RUnlock(comp)
-				eventsList := memCpyHtoD(d0.DevPtr(comp), s0.ptrs[comp].Ptr, bytes)
-				wg_.Done()
-				if err := cl.WaitForEvents([]*cl.Event{eventsList[0]}); err != nil {
-					panic(fmt.Sprintf("WaitForEvents in slice copy (host to device) failed: %+v \n", err))
-				}
-			}(dst, src, c, &wg_)
+			dst.Lock(c)
+			if Synchronous {
+				memcpyhtod__(dst, src, bytes, c, &wg)
+			} else {
+				go memcpyhtod__(dst, src, bytes, c, &wg)
+			}
 		}
-		wg_.Wait()
+		wg.Wait()
 	case !d && !s:
 		dst, src := dst.Host(), src.Host()
 		for c := range dst {
 			copy(dst[c], src[c])
 		}
+	}
+}
+
+func memcpy__(d0, s0 *Slice, bytes, comp int, wg_ *sync.WaitGroup) {
+	defer d0.Unlock(comp)
+	defer s0.RUnlock(comp)
+	eventsList := memCpy(d0.DevPtr(comp), s0.DevPtr(comp), bytes)
+	wg_.Done()
+	if err := cl.WaitForEvents(eventsList); err != nil {
+		panic(fmt.Sprintf("WaitForEvents in slice copy failed: %+v \n", err))
+	}
+}
+
+func memcpydtoh__(d0, s0 *Slice, bytes, comp int, wg_ *sync.WaitGroup) {
+	defer s0.RUnlock(comp)
+	eventsList := memCpyDtoH(d0.ptrs[comp].Ptr, s0.DevPtr(comp), bytes)
+	wg_.Done()
+	if err := cl.WaitForEvents(eventsList); err != nil {
+		panic(fmt.Sprintf("WaitForEvents in slice copy (device to host) failed: %+v \n", err))
+	}
+}
+
+func memcpyhtod__(d0, s0 *Slice, bytes, comp int, wg_ *sync.WaitGroup) {
+	defer d0.Unlock(comp)
+	eventsList := memCpyHtoD(d0.DevPtr(comp), s0.ptrs[comp].Ptr, bytes)
+	wg_.Done()
+	if err := cl.WaitForEvents(eventsList); err != nil {
+		panic(fmt.Sprintf("WaitForEvents in slice copy (host to device) failed: %+v \n", err))
 	}
 }
 
