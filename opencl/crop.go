@@ -38,12 +38,14 @@ func crop__(dst, src *data.Slice, offX, offY, offZ, idx int, wg_ *sync.WaitGroup
 	}
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("crop failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("crop failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	D := dst.Size()
 	S := src.Size()
@@ -55,7 +57,7 @@ func crop__(dst, src *data.Slice, offX, offY, offZ, idx int, wg_ *sync.WaitGroup
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([]*cl.Event{ev}); err != nil {
+	if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
 		fmt.Printf("WaitForEvents failed in crop: %+v \n", err)
 	}
 }

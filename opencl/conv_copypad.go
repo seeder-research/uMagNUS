@@ -32,12 +32,14 @@ func copyunpad__(dst, src *data.Slice, dstsize, srcsize [3]int, wg_ *sync.WaitGr
 	defer src.RUnlock(0)
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("copyunpad failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("copyunpad failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	cfg := make3DConf(dstsize)
 
@@ -82,12 +84,14 @@ func copypadmul__(dst, src, vol *data.Slice, dstsize, srcsize [3]int, Msat MSlic
 	}
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("copypadmul failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("copypadmul failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	cfg := make3DConf(srcsize)
 

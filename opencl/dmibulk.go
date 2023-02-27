@@ -50,12 +50,14 @@ func adddmibulk__(Beff *data.Slice, m *data.Slice, Aex_red, D_red SymmLUT, Msat 
 	}
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("adddmibulk failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("adddmibulk failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	cellsize := mesh.CellSize()
 	N := Beff.Size()
@@ -71,7 +73,7 @@ func adddmibulk__(Beff *data.Slice, m *data.Slice, Aex_red, D_red SymmLUT, Msat 
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in adddmibulk: %+v \n", err)
 	}
 }

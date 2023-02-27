@@ -56,12 +56,14 @@ func addzhanglitorque__(torque, m *data.Slice, Msat, J, alpha, xi, pol MSlice, m
 	}
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("addzhanglitorque failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("addzhanglitorque failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	c := mesh.CellSize()
 	N := mesh.Size()
@@ -83,7 +85,7 @@ func addzhanglitorque__(torque, m *data.Slice, Msat, J, alpha, xi, pol MSlice, m
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in addzhanglitorque: %+v \n", err)
 	}
 }

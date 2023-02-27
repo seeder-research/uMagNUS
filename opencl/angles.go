@@ -32,12 +32,14 @@ func setphi__(s *data.Slice, m *data.Slice, wg_ *sync.WaitGroup) {
 	defer m.RUnlock(Y)
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("setphi failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("setphi failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	N := s.Size()
 	cfg := make3DConf(N)
@@ -50,7 +52,7 @@ func setphi__(s *data.Slice, m *data.Slice, wg_ *sync.WaitGroup) {
 	wg_.Done()
 
 	// Force synchronization
-	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
+	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in setphi: %+v \n", err)
 	}
 }
@@ -76,12 +78,14 @@ func settheta__(s *data.Slice, m *data.Slice, wg_ *sync.WaitGroup) {
 	defer m.RUnlock(Z)
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("settheta failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("settheta failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	N := s.Size()
 	cfg := make3DConf(N)
@@ -93,7 +97,7 @@ func settheta__(s *data.Slice, m *data.Slice, wg_ *sync.WaitGroup) {
 	wg_.Done()
 
 	// Force synchronization
-	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
+	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in settheta: %+v \n", err)
 	}
 }

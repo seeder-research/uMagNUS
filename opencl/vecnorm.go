@@ -35,12 +35,14 @@ func vecnorm__(dst *data.Slice, a *data.Slice, wg_ *sync.WaitGroup) {
 	defer a.RUnlock(Z)
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("vecnorm failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("vecnorm failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	N := dst.Len()
 	cfg := make1DConf(N)
@@ -51,7 +53,7 @@ func vecnorm__(dst *data.Slice, a *data.Slice, wg_ *sync.WaitGroup) {
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in vecnorm: %+v \n", err)
 	}
 }

@@ -32,8 +32,8 @@ var (
 	ClDevice     *cl.Device                // device associated with global OpenCL context
 	ClCtx        *cl.Context               // global OpenCL context
 	ClCmdQueue   *cl.CommandQueue          // command queue attached to global OpenCL context
-	ClH2DQueue   *cl.CommandQueue          // command queue attached to global OpenCL context (for H2D transfers)
-	ClD2HQueue   *cl.CommandQueue          // command queue attached to global OpenCL context (for D2H transfers)
+	//ClH2DQueue   *cl.CommandQueue          // command queue attached to global OpenCL context (for H2D transfers)
+	//ClD2HQueue   *cl.CommandQueue          // command queue attached to global OpenCL context (for D2H transfers)
 	ClProgram    *cl.Program               // handle to program in the global OpenCL context
 	KernList     = map[string]*cl.Kernel{} // Store pointers to all compiled kernels
 	initialized  = false                   // Initial state defaults to false
@@ -219,25 +219,24 @@ func Init(gpu int) {
 	ClCmdQueue = queue
 	ClProgram = program
 
-	//err = initCmdQueues(ClCtx, ClDevice)
+	if err = initCmdQueues(ClCtx, ClDevice); err != nil {
+		fmt.Printf("Unable to create list of command queues!: %+v \n", err)
+		return
+	}
+
+	// Create opencl command queue on selected device for H2D transfers
+	//ClH2DQueue, err = ClCtx.CreateCommandQueue(ClDevice, 0)
 	//if err != nil {
-	//	fmt.Printf("Unable to create list of command queues!: %+v \n", err)
+	//	fmt.Printf("CreateCommandQueue (H2D) failed: %+v \n", err)
 	//	return
 	//}
 
-	// Create opencl command queue on selected device for H2D transfers
-	ClH2DQueue, err = ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("CreateCommandQueue (H2D) failed: %+v \n", err)
-		return
-	}
-
 	// Create opencl command queue on selected device for D2H transfers
-	ClD2HQueue, err = ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("CreateCommandQueue (D2H) failed: %+v \n", err)
-		return
-	}
+	//ClD2HQueue, err = ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("CreateCommandQueue (D2H) failed: %+v \n", err)
+	//	return
+	//}
 
 	// Set basic configuration for distributing
 	// work-items across compute units
@@ -322,10 +321,10 @@ func (s *GPU) getGpuPlatform() *cl.Platform {
 }
 
 func ReleaseAndClean() {
-	fmt.Printf("Attempting to Release and Clean... \n")
 	ClCmdQueue.Release()
-	ClD2HQueue.Release()
-	ClH2DQueue.Release()
+	//ClD2HQueue.Release()
+	//ClH2DQueue.Release()
+	freeCmdQueues()
 	ClProgram.Release()
 	ClCtx.Release()
 }

@@ -35,12 +35,14 @@ func maxangle__(dst, m *data.Slice, Aex_red SymmLUT, regions *Bytes, mesh *data.
 	defer regions.RUnlock()
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("setmaxangle failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("setmaxangle failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	N := mesh.Size()
 	pbc := mesh.PBC_code()
@@ -54,7 +56,7 @@ func maxangle__(dst, m *data.Slice, Aex_red SymmLUT, regions *Bytes, mesh *data.
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in setmaxangle: %+v \n", err)
 	}
 }

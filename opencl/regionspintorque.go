@@ -49,12 +49,14 @@ func addregionspintorque__(torque, m *data.Slice, Msat MSlice, regions *Bytes, r
 	}
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("addtworegionoommfslonczewskitorque failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("addtworegionoommfslonczewskitorque failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	c := mesh.CellSize()
 	dX := float64(sX) * c[X]

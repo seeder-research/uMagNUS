@@ -48,12 +48,14 @@ func addexchange__(B, m *data.Slice, Aex_red SymmLUT, Msat MSlice, regions *Byte
 	}
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("adddmi failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("adddmi failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	c := mesh.CellSize()
 	wx := float32(2 / (c[X] * c[X]))
@@ -72,7 +74,7 @@ func addexchange__(B, m *data.Slice, Aex_red SymmLUT, Msat MSlice, regions *Byte
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in addexchange: %+v", err)
 	}
 }
@@ -102,12 +104,14 @@ func exchangedecode__ (dst *data.Slice, Aex_red SymmLUT, regions *Bytes, mesh *d
 	}
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("exchangedecode failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("exchangedecode failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	c := mesh.CellSize()
 	wx := float32(2 / (c[X] * c[X]))
@@ -123,7 +127,7 @@ func exchangedecode__ (dst *data.Slice, Aex_red SymmLUT, regions *Bytes, mesh *d
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in exchangedecode: %+v", err)
 	}
 }

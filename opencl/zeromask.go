@@ -32,12 +32,14 @@ func zeromask__(dst *data.Slice, mask LUTPtr, regions *Bytes, c int, wg_ *sync.W
 	}
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("zeromask failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("zeromask failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	N := dst.Len()
 	cfg := make1DConf(N)
@@ -47,7 +49,7 @@ func zeromask__(dst *data.Slice, mask LUTPtr, regions *Bytes, c int, wg_ *sync.W
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
+	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in zeromask: %+v \n", err)
 	}
 }

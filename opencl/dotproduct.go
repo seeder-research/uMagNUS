@@ -41,12 +41,14 @@ func dotproduct__(dst *data.Slice, prefactor float32, a, b *data.Slice, wg_ *syn
 	defer b.RUnlock(Z)
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("adddotproduct failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("adddotproduct failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	N := dst.Len()
 	cfg := make1DConf(N)
@@ -58,7 +60,7 @@ func dotproduct__(dst *data.Slice, prefactor float32, a, b *data.Slice, wg_ *syn
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in adddotproduct: %+v \n", err)
 	}
 }

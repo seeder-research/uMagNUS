@@ -37,12 +37,14 @@ func regionaddv__(dst *data.Slice, lut LUTPtrs, regions *Bytes, wg_ *sync.WaitGr
 	}
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("regionaddv failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("regionaddv failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	N := dst.Len()
 	cfg := make1DConf(N)
@@ -53,7 +55,7 @@ func regionaddv__(dst *data.Slice, lut LUTPtrs, regions *Bytes, wg_ *sync.WaitGr
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents in regionaddv failed: %+v \n", err)
 	}
 }
@@ -81,12 +83,14 @@ func regionadds__(dst *data.Slice, lut LUTPtr, regions *Bytes, wg_ *sync.WaitGro
 	}
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("regionadds failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("regionadds failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	N := dst.Len()
 	cfg := make1DConf(N)
@@ -96,7 +100,7 @@ func regionadds__(dst *data.Slice, lut LUTPtr, regions *Bytes, wg_ *sync.WaitGro
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents in regionadds failed: %+v \n", err)
 	}
 }
@@ -122,12 +126,14 @@ func regiondecode__(dst *data.Slice, lut LUTPtr, regions *Bytes, wg_ *sync.WaitG
 	}
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("addtworegionoommfslonczewskitorque failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("addtworegionoommfslonczewskitorque failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	N := dst.Len()
 	cfg := make1DConf(N)
@@ -137,7 +143,7 @@ func regiondecode__(dst *data.Slice, lut LUTPtr, regions *Bytes, wg_ *sync.WaitG
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents in regiondecode failed: %+v \n", err)
 	}
 }
@@ -169,12 +175,14 @@ func regionselect__(dst, src *data.Slice, regions *Bytes, region byte, c int, wg
 	}
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("regionselect failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("regionselect failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	N := dst.Len()
 	cfg := make1DConf(N)
@@ -184,7 +192,7 @@ func regionselect__(dst, src *data.Slice, regions *Bytes, region byte, c int, wg
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
+	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in regionselect: %+v \n", err)
 	}
 }

@@ -43,19 +43,21 @@ func mul__(dst, a, b *data.Slice, idx int, wg_ *sync.WaitGroup) {
 	cfg := make1DConf(N)
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	defer cmdqueue.Release()
-	if err != nil {
-		fmt.Printf("mul failed to create command queue: %+v \n", err)
-		return
-	}
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//defer cmdqueue.Release()
+	//if err != nil {
+	//	fmt.Printf("mul failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	event := k_mul_async(dst.DevPtr(idx), a.DevPtr(idx), b.DevPtr(idx), N, cfg,
 		cmdqueue, nil)
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
+	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in mul: %+v \n", err)
 	}
 }
@@ -95,19 +97,21 @@ func div__(dst, a, b *data.Slice, idx int, wg_ *sync.WaitGroup) {
 	cfg := make1DConf(N)
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("div failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("div failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	event := k_pointwise_div_async(dst.DevPtr(idx), a.DevPtr(idx), b.DevPtr(idx), N, cfg,
 		cmdqueue, nil)
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
+	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in div: %+v \n", err)
 	}
 }
@@ -149,12 +153,14 @@ func madd2__(dst, src1, src2 *data.Slice, factor1, factor2 float32, idx int, wg_
 	}
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("madd2 failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("madd2 failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	N := dst.Len()
 	cfg := make1DConf(N)
@@ -166,7 +172,7 @@ func madd2__(dst, src1, src2 *data.Slice, factor1, factor2 float32, idx int, wg_
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
+	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents in madd2 failed: %+v", err)
 	}
 }
@@ -207,12 +213,14 @@ func madd3__(dst, src1, src2, src3 *data.Slice, factor1, factor2, factor3 float3
 	}
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("madd3 failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("madd3 failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	N := dst.Len()
 	cfg := make1DConf(N)
@@ -225,7 +233,7 @@ func madd3__(dst, src1, src2, src3 *data.Slice, factor1, factor2, factor3 float3
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
+	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents in madd3 failed: %+v", err)
 	}
 }
@@ -270,12 +278,14 @@ func madd4__(dst, src1, src2, src3, src4 *data.Slice, factor1, factor2, factor3,
 	}
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("madd4 failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("madd4 failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	N := dst.Len()
 	cfg := make1DConf(N)
@@ -289,7 +299,7 @@ func madd4__(dst, src1, src2, src3, src4 *data.Slice, factor1, factor2, factor3,
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
+	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents in madd4 failed: %+v", err)
 	}
 }
@@ -338,12 +348,14 @@ func madd5__(dst, src1, src2, src3, src4, src5 *data.Slice, factor1, factor2, fa
 	}
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("madd5 failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("madd5 failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	N := dst.Len()
 	cfg := make1DConf(N)
@@ -358,7 +370,7 @@ func madd5__(dst, src1, src2, src3, src4, src5 *data.Slice, factor1, factor2, fa
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
+	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents in madd5 failed: %+v", err)
 	}
 }
@@ -411,12 +423,14 @@ func madd6__(dst, src1, src2, src3, src4, src5, src6 *data.Slice, factor1, facto
 	}
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("madd6 failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("madd6 failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	N := dst.Len()
 	cfg := make1DConf(N)
@@ -432,7 +446,7 @@ func madd6__(dst, src1, src2, src3, src4, src5, src6 *data.Slice, factor1, facto
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
+	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents in madd6 failed: %+v", err)
 	}
 }
@@ -489,12 +503,14 @@ func madd7__(dst, src1, src2, src3, src4, src5, src6, src7 *data.Slice, factor1,
 	}
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("madd7 failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("madd7 failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	N := dst.Len()
 	cfg := make1DConf(N)
@@ -511,7 +527,7 @@ func madd7__(dst, src1, src2, src3, src4, src5, src6, src7 *data.Slice, factor1,
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
+	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents in madd7 failed: %+v", err)
 	}
 }

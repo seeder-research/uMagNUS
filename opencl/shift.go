@@ -32,12 +32,14 @@ func shiftx__(dst, src *data.Slice, shiftX int, clampL, clampR float32, wg_ *syn
 	defer src.RUnlock(0)
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("shiftx failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("shiftx failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	N := dst.Size()
 	cfg := make3DConf(N)
@@ -47,7 +49,7 @@ func shiftx__(dst, src *data.Slice, shiftX int, clampL, clampR float32, wg_ *syn
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents in shiftx failed: %+v \n", err)
 	}
 }
@@ -73,12 +75,14 @@ func shifty__(dst, src *data.Slice, shiftY int, clampL, clampR float32, wg_ *syn
 	defer src.RUnlock(0)
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("shifty failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("shifty failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	N := dst.Size()
 	cfg := make3DConf(N)
@@ -88,7 +92,7 @@ func shifty__(dst, src *data.Slice, shiftY int, clampL, clampR float32, wg_ *syn
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents in shifty failed: %+v \n", err)
 	}
 }
@@ -114,12 +118,14 @@ func shiftz__(dst, src *data.Slice, shiftZ int, clampL, clampR float32, wg_ *syn
 	defer src.RUnlock(0)
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("shiftz failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("shiftz failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	N := dst.Size()
 	cfg := make3DConf(N)
@@ -129,7 +135,7 @@ func shiftz__(dst, src *data.Slice, shiftZ int, clampL, clampR float32, wg_ *syn
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents in shiftz failed: %+v \n", err)
 	}
 }
@@ -153,12 +159,14 @@ func shiftbytes__(dst, src *Bytes, m *data.Mesh, shiftX int, clamp byte, wg_ *sy
 	defer src.RUnlock()
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("shiftbytes failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("shiftbytes failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	N := m.Size()
 	cfg := make3DConf(N)
@@ -168,7 +176,7 @@ func shiftbytes__(dst, src *Bytes, m *data.Mesh, shiftX int, clamp byte, wg_ *sy
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents in shiftbytes failed: %+v \n", err)
 	}
 }
@@ -191,12 +199,14 @@ func shiftbytesy__(dst, src *Bytes, m *data.Mesh, shiftY int, clamp byte, wg_ *s
 	defer src.RUnlock()
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("shiftbytes failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("shiftbytes failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	N := m.Size()
 	cfg := make3DConf(N)
@@ -206,7 +216,7 @@ func shiftbytesy__(dst, src *Bytes, m *data.Mesh, shiftY int, clamp byte, wg_ *s
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents in shiftbytesy failed: %+v \n", err)
 	}
 }

@@ -51,8 +51,13 @@ func (c *DemagConvolution) Exec(B, m, vol *data.Slice, Msat MSlice) {
 
 func (c *DemagConvolution) exec3D(outp, inp, vol *data.Slice, Msat MSlice) {
 	// Synchronize FFT execution queue to main command queue
-	if err := ClCmdQueue.Finish(); err != nil {
-		fmt.Printf("Failed to wait for main command queue to finish in exec3D: %+v \n", err)
+	//if err := ClCmdQueue.Finish(); err != nil {
+	//	fmt.Printf("Failed to wait for main command queue to finish in exec3D: %+v \n", err)
+	//}
+	for k, _ := range cmdQueueMap {
+		if err := k.Finish(); err != nil {
+			fmt.Printf("Failed to wait for main command queue to finish in exec3D: %+v \n", err)
+		}
 	}
 	for i := 0; i < 3; i++ { // FW FFT
 		c.fwFFT(i, inp, vol, Msat)
@@ -63,9 +68,14 @@ func (c *DemagConvolution) exec3D(outp, inp, vol *data.Slice, Msat MSlice) {
 		c.kern[Y][Z], c.kern[X][Z], c.kern[X][Y],
 		c.fftKernLogicSize[X], c.fftKernLogicSize[Y], c.fftKernLogicSize[Z])
 	// Synchronize FFT execution queue to main command queue
-	if err := ClCmdQueue.Finish(); err != nil {
-		fmt.Printf("Failed to wait for main command queue to finish in exec3D before inverse FFT: %+v \n", err)
+	for k, _ := range cmdQueueMap {
+		if err := k.Finish(); err != nil {
+			fmt.Printf("Failed to wait for main command queue to finish in exec3D before inverse FFT: %+v \n", err)
+		}
 	}
+	//if err := ClCmdQueue.Finish(); err != nil {
+	//	fmt.Printf("Failed to wait for main command queue to finish in exec3D before inverse FFT: %+v \n", err)
+	//}
 	for i := 0; i < 3; i++ { // BW FFT
 		c.bwFFT(i, outp)
 	}
@@ -78,17 +88,27 @@ func (c *DemagConvolution) exec2D(outp, inp, vol *data.Slice, Msat MSlice) {
 	Nx, Ny := c.fftKernLogicSize[X], c.fftKernLogicSize[Y]
 
 	// Synchronize FFT execution queue to main command queue
-	if err := ClCmdQueue.Finish(); err != nil {
-		fmt.Printf("Failed to wait for main command queue to finish in entry to exec2D: %+v \n", err)
+	//if err := ClCmdQueue.Finish(); err != nil {
+	//	fmt.Printf("Failed to wait for main command queue to finish in entry to exec2D: %+v \n", err)
+	//}
+	for k, _ := range cmdQueueMap {
+		if err := k.Finish(); err != nil {
+			fmt.Printf("Failed to wait for main command queue to finish in entry to exec2D: %+v \n", err)
+		}
 	}
 
 	// Z
 	c.fwFFT(Z, inp, vol, Msat)
 	kernMulRSymm2Dz_async(c.fftCBuf[Z], c.kern[Z][Z], Nx, Ny)
 	// Synchronize FFT execution queue to main command queue
-	if err := ClCmdQueue.Finish(); err != nil {
-		fmt.Printf("Failed to wait for main command queue to finish in exec2D (Z): %+v \n", err)
+	for k, _ := range cmdQueueMap {
+		if err := k.Finish(); err != nil {
+			fmt.Printf("Failed to wait for main command queue to finish in exec2D (Z): %+v \n", err)
+		}
 	}
+	//if err := ClCmdQueue.Finish(); err != nil {
+	//	fmt.Printf("Failed to wait for main command queue to finish in exec2D (Z): %+v \n", err)
+	//}
 
 	c.bwFFT(Z, outp)
 
@@ -98,9 +118,14 @@ func (c *DemagConvolution) exec2D(outp, inp, vol *data.Slice, Msat MSlice) {
 	kernMulRSymm2Dxy_async(c.fftCBuf[X], c.fftCBuf[Y],
 		c.kern[X][X], c.kern[Y][Y], c.kern[X][Y], Nx, Ny)
 	// Synchronize FFT execution queue to main command queue
-	if err := ClCmdQueue.Finish(); err != nil {
-		fmt.Printf("Failed to wait for main command queue to finish in exec2D (XY): %+v \n", err)
+	for k, _ := range cmdQueueMap {
+		if err := k.Finish(); err != nil {
+			fmt.Printf("Failed to wait for main command queue to finish in exec2D (XY): %+v \n", err)
+		}
 	}
+	//if err := ClCmdQueue.Finish(); err != nil {
+	//	fmt.Printf("Failed to wait for main command queue to finish in exec2D (XY): %+v \n", err)
+	//}
 
 	c.bwFFT(X, outp)
 	c.bwFFT(Y, outp)
@@ -118,7 +143,10 @@ func zero1_async(dst *data.Slice) {
 	}
 	dst.Lock(0)
 	defer dst.Unlock(0)
-	event, err := ClCmdQueue.EnqueueFillBuffer((*cl.MemObject)(dst.DevPtr(0)), unsafe.Pointer(&val), SIZEOF_FLOAT32, 0, dst.Len()*SIZEOF_FLOAT32, nil)
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
+	//event, err := ClCmdQueue.EnqueueFillBuffer((*cl.MemObject)(dst.DevPtr(0)), unsafe.Pointer(&val), SIZEOF_FLOAT32, 0, dst.Len()*SIZEOF_FLOAT32, nil)
+	event, err := cmdqueue.EnqueueFillBuffer((*cl.MemObject)(dst.DevPtr(0)), unsafe.Pointer(&val), SIZEOF_FLOAT32, 0, dst.Len()*SIZEOF_FLOAT32, nil)
 	if err != nil {
 		fmt.Printf("EnqueueFillBuffer failed: %+v \n", err)
 	}
@@ -132,9 +160,14 @@ func (c *DemagConvolution) fwFFT(i int, inp, vol *data.Slice, Msat MSlice) {
 	zero1_async(c.fftRBuf[i])
 	in := inp.Comp(i)
 	copyPadMul(c.fftRBuf[i], in, vol, c.realKernSize, c.inputSize, Msat)
-	if err := ClCmdQueue.Finish(); err != nil {
-		fmt.Printf("Failed to wait for main command queue to finish in fwFFT: %+v \n", err)
+	for k, _ := range cmdQueueMap {
+		if err := k.Finish(); err != nil {
+			fmt.Printf("Failed to wait for main command queue to finish in fwFFT: %+v \n", err)
+		}
 	}
+	//if err := ClCmdQueue.Finish(); err != nil {
+	//	fmt.Printf("Failed to wait for main command queue to finish in fwFFT: %+v \n", err)
+	//}
 	if err := c.fwPlan.ExecAsync(c.fftRBuf[i], c.fftCBuf[i]); err != nil {
 		fmt.Printf("Error enqueuing forward fft: %+v \n", err)
 	}
@@ -153,9 +186,14 @@ func (c *DemagConvolution) bwFFT(i int, outp *data.Slice) {
 	}
 	out := outp.Comp(i)
 	copyUnPad(out, c.fftRBuf[i], c.inputSize, c.realKernSize)
-	if err := ClCmdQueue.Finish(); err != nil {
-		fmt.Printf("Failed to wait for main command queue to finish in bwFFT: %+v \n", err)
+	for k, _ := range cmdQueueMap {
+		if err := k.Finish(); err != nil {
+			fmt.Printf("Failed to wait for main command queue to finish in bwFFT: %+v \n", err)
+		}
 	}
+	//if err := ClCmdQueue.Finish(); err != nil {
+	//	fmt.Printf("Failed to wait for main command queue to finish in bwFFT: %+v \n", err)
+	//}
 }
 
 func (c *DemagConvolution) init(realKern [3][3]*data.Slice) {

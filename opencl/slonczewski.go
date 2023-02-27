@@ -70,12 +70,14 @@ func addslonczewskitorque2__(torque, m *data.Slice, Msat, J, fixedP, alpha, pol,
 	}
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("addslonczewskitorque2 failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("addslonczewskitorque2 failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	N := torque.Len()
 	cfg := make1DConf(N)
@@ -100,7 +102,7 @@ func addslonczewskitorque2__(torque, m *data.Slice, Msat, J, fixedP, alpha, pol,
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
+	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in addslonczewskitorque2: %+v \n", err)
 	}
 }

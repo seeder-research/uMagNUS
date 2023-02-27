@@ -81,12 +81,14 @@ func addmagnetoelasticfield__(Beff, m *data.Slice, exx, eyy, ezz, exy, exz, eyz,
 	}
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("addmagnetoelasticfield failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("addmagnetoelasticfield failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	N := Beff.Len()
 	cfg := make1DConf(N)
@@ -101,7 +103,7 @@ func addmagnetoelasticfield__(Beff, m *data.Slice, exx, eyy, ezz, exy, exz, eyz,
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
+	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in addmagnetoelasticfield: %+v \n", err)
 	}
 }
@@ -144,12 +146,14 @@ func getmagnetoelasticforcedensity__(out, m *data.Slice, B1, B2 MSlice, mesh *da
 	}
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("getmagnetoelasticforcedensity failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("getmagnetoelasticforcedensity failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	cellsize := mesh.CellSize()
 	N := mesh.Size()
@@ -168,7 +172,7 @@ func getmagnetoelasticforcedensity__(out, m *data.Slice, B1, B2 MSlice, mesh *da
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
+	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in getmagnetoelasticforcedensity: %+v \n", err)
 	}
 }

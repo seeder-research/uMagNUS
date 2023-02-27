@@ -38,3 +38,11 @@ func freeCmdQueues() {
 		queue.Release()
 	}
 }
+
+func checkoutQueue() *cl.CommandQueue {
+	return cmdQueueArr[<-cmdQueueIdx]
+}
+
+func checkinQueue(q *cl.CommandQueue) {
+	cmdQueueIdx <-cmdQueueMap[q]
+}

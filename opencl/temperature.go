@@ -58,12 +58,14 @@ func settemperature__(Bth, noise *data.Slice, k2mu0_Mu0VgammaDt float64, Msat, T
 	}
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("settemperature failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("settemperature failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	N := Bth.Len()
 	cfg := make1DConf(N)
@@ -77,7 +79,7 @@ func settemperature__(Bth, noise *data.Slice, k2mu0_Mu0VgammaDt float64, Msat, T
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in settemperature: %+v \n", err)
 	}
 }

@@ -47,12 +47,14 @@ func kernmulrsymm3d_async__(fftM [3]*data.Slice, Kxx, Kyy, Kzz, Kyz, Kxz, Kxy *d
 	defer Kyz.RUnlock(0)
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("kernmulrsymm3d_async failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("kernmulrsymm3d_async failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	cfg := make3DConf([3]int{Nx, Ny, Nz})
 
@@ -94,12 +96,14 @@ func kernmulrsymm2dxy_async__(fftMx, fftMy, Kxx, Kyy, Kxy *data.Slice, Nx, Ny in
 	defer Kxy.RUnlock(0)
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("kernmulrsymm2dxy_async failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("kernmulrsymm2dxy_async failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	cfg := make3DConf([3]int{Nx, Ny, 1})
 
@@ -135,12 +139,14 @@ func kernmulrsymm2dz_async__(fftMz, Kzz *data.Slice, Nx, Ny int, wg_ *sync.WaitG
 	defer Kzz.RUnlock(0)
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("kernmulrsymm2dz_async failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("kernmulrsymm2dz_async failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	cfg := make3DConf([3]int{Nx, Ny, 1})
 
@@ -176,12 +182,14 @@ func kernmulc_async__(fftM, K *data.Slice, Nx, Ny int, wg_ *sync.WaitGroup) {
 	defer K.RUnlock(0)
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("kernmulrsymm2dz_async failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("kernmulrsymm2dz_async failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	cfg := make3DConf([3]int{Nx, Ny, 1})
 

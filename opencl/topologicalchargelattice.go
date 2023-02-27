@@ -35,12 +35,14 @@ func settopologicalcharglattice__(s *data.Slice, m *data.Slice, mesh *data.Mesh,
 	defer m.RUnlock(Z)
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("settopologicalchargelattice failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("settopologicalchargelattice failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	cellsize := mesh.CellSize()
 	N := s.Size()
@@ -55,7 +57,7 @@ func settopologicalcharglattice__(s *data.Slice, m *data.Slice, mesh *data.Mesh,
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in settopologicalchargelattice: %+v \n", err)
 	}
 }

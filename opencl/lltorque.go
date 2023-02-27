@@ -62,12 +62,14 @@ func lltorque__(torque, m, B *data.Slice, alpha MSlice, wg_ *sync.WaitGroup) {
 	}
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("lltorque failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("lltorque failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	N := torque.Len()
 	cfg := make1DConf(N)
@@ -80,7 +82,7 @@ func lltorque__(torque, m, B *data.Slice, alpha MSlice, wg_ *sync.WaitGroup) {
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in lltorque: %+v \n", err)
 	}
 }
@@ -131,12 +133,14 @@ func llnoprocess__(torque, m, B *data.Slice, wg_ *sync.WaitGroup) {
 	}
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("llnoprecess failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("llnoprecess failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	N := torque.Len()
 	cfg := make1DConf(N)
@@ -148,7 +152,7 @@ func llnoprocess__(torque, m, B *data.Slice, wg_ *sync.WaitGroup) {
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in llnoprecess: %+v \n", err)
 	}
 }

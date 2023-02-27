@@ -50,12 +50,14 @@ func addregionexchangefield__(B, m *data.Slice, Msat MSlice, regions *Bytes, reg
 	}
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("addtworegionexchange_field failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("addtworegionexchange_field failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	c := mesh.CellSize()
 	dX := float64(sX) * c[X]
@@ -83,7 +85,7 @@ func addregionexchangefield__(B, m *data.Slice, Msat MSlice, regions *Bytes, reg
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in addtworegionexchange_field: %+v", err)
 	}
 }
@@ -120,12 +122,14 @@ func addregionexchangeedens__(Edens, m *data.Slice, Msat MSlice, regions *Bytes,
 	}
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("addtworegionexchange_edens failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	fmt.Printf("addtworegionexchange_edens failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	c := mesh.CellSize()
 	dX := float64(sX) * c[X]
@@ -153,7 +157,7 @@ func addregionexchangeedens__(Edens, m *data.Slice, Msat MSlice, regions *Bytes,
 
 	wg_.Done()
 
-	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in addtworegionexchange_edens: %+v", err)
 	}
 }

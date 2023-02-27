@@ -52,15 +52,17 @@ func (dst *Bytes) Zero(wg_ *sync.WaitGroup) {
 	zeroPattern := uint8(0)
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		log.Printf("bytes.zero failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	log.Printf("bytes.zero failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
-	var event *cl.Event
-	event, err = cmdqueue.EnqueueFillBuffer((*cl.MemObject)(dst.Ptr), unsafe.Pointer(&zeroPattern), 1, 0, dst.Len, nil)
+	//var event *cl.Event
+	event, err := cmdqueue.EnqueueFillBuffer((*cl.MemObject)(dst.Ptr), unsafe.Pointer(&zeroPattern), 1, 0, dst.Len, nil)
 	wg_.Done()
 	if err != nil {
 		panic(err)
@@ -149,15 +151,17 @@ func bytes_set__(dst *Bytes, index int, value byte, wg_ *sync.WaitGroup) {
 	src := value
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		log.Panicf("MemCpyDoH failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	log.Panicf("MemCpyDoH failed to create command queue: %+v \n", err)
+	//	return
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
-	var event *cl.Event
-	event, err = cmdqueue.EnqueueWriteBuffer((*cl.MemObject)(dst.Ptr), false, index, 1, unsafe.Pointer(&src), nil)
+	//var event *cl.Event
+	event, err := cmdqueue.EnqueueWriteBuffer((*cl.MemObject)(dst.Ptr), false, index, 1, unsafe.Pointer(&src), nil)
 	wg_.Done()
 	if err != nil {
 		panic(err)
@@ -178,12 +182,14 @@ func (src *Bytes) Get(index int) byte {
 	defer src.RUnlock()
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		log.Panicf("MemCpyDoH failed to create command queue: %+v \n", err)
-		return byte(0)
-	}
-	defer cmdqueue.Release()
+	//cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	//if err != nil {
+	//	log.Panicf("MemCpyDoH failed to create command queue: %+v \n", err)
+	//	return byte(0)
+	//}
+	//defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	event, err := cmdqueue.EnqueueReadBufferByte((*cl.MemObject)(src.Ptr), false, index, dst, nil)
 	if err != nil {
