@@ -5,6 +5,7 @@ package engine
 
 import (
 	"math"
+	"sync"
 	"unsafe"
 
 	data "github.com/seeder-research/uMagNUS/data"
@@ -172,7 +173,10 @@ func (p *exchParam) upload() {
 		p.gpu = opencl.SymmLUT(opencl.MemAlloc(len(p.lut) * opencl.SIZEOF_FLOAT32))
 	}
 	lut := p.lut // Copy, to work around Go 1.6 cgo pointer limitations.
-	opencl.MemCpyHtoD(unsafe.Pointer(p.gpu), unsafe.Pointer(&lut[0]), opencl.SIZEOF_FLOAT32*len(p.lut))
+	var wg sync.WaitGroup
+	wg.Add(1)
+	opencl.MemCpyHtoD(unsafe.Pointer(p.gpu), unsafe.Pointer(&lut[0]), opencl.SIZEOF_FLOAT32*len(p.lut), &wg)
+	wg.Wait()
 	p.gpu_ok = true
 }
 

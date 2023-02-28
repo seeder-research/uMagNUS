@@ -87,4 +87,8 @@ func EvalTo(q interface {
 		defer opencl.Recycle(v)
 	}
 	data.Copy(dst, v)
+	for c := 0; c < dst.NComp(); c++ {
+		dst.Lock(c)
+		dst.Unlock(c)
+	}
 }

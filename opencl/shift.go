@@ -20,7 +20,9 @@ func ShiftX(dst, src *data.Slice, shiftX int, clampL, clampR float32) {
 	if Synchronous {
 		shiftx__(dst, src, shiftX, clampL, clampR, &wg)
 	} else {
-		go shiftx__(dst, src, shiftX, clampL, clampR, &wg)
+		go func() {
+			shiftx__(dst, src, shiftX, clampL, clampR, &wg)
+		}()
 	}
 	wg.Wait()
 }
@@ -63,7 +65,9 @@ func ShiftY(dst, src *data.Slice, shiftY int, clampL, clampR float32) {
 	if Synchronous {
 		shifty__(dst, src, shiftY, clampL, clampR, &wg)
 	} else {
-		go shifty__(dst, src, shiftY, clampL, clampR, &wg)
+		go func() {
+			shifty__(dst, src, shiftY, clampL, clampR, &wg)
+		}()
 	}
 	wg.Wait()
 }
@@ -106,7 +110,9 @@ func ShiftZ(dst, src *data.Slice, shiftZ int, clampL, clampR float32) {
 	if Synchronous {
 		shiftz__(dst, src, shiftZ, clampL, clampR, &wg)
 	} else {
-		go shiftz__(dst, src, shiftZ, clampL, clampR, &wg)
+		go func() {
+			shiftz__(dst, src, shiftZ, clampL, clampR, &wg)
+		}()
 	}
 	wg.Wait()
 }
@@ -147,7 +153,9 @@ func ShiftBytes(dst, src *Bytes, m *data.Mesh, shiftX int, clamp byte) {
 	if Synchronous {
 		shiftbytes__(dst, src, m, shiftX, clamp, &wg)
 	} else {
-		go shiftbytes__(dst, src, m, shiftX, clamp, &wg)
+		go func() {
+			shiftbytes__(dst, src, m, shiftX, clamp, &wg)
+		}()
 	}
 	wg.Wait()
 }
@@ -187,7 +195,9 @@ func ShiftBytesY(dst, src *Bytes, m *data.Mesh, shiftY int, clamp byte) {
 	if Synchronous {
 		shiftbytesy__(dst, src, m, shiftY, clamp, &wg)
 	} else {
-		go shiftbytesy__(dst, src, m, shiftY, clamp, &wg)
+		go func() {
+			shiftbytesy__(dst, src, m, shiftY, clamp, &wg)
+		}()
 	}
 	wg.Wait()
 }

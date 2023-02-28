@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"sync"
 
 	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
@@ -43,6 +44,7 @@ var (
 	ClMaxWGSize  int                       // Get maximum number of concurrent work-items that can execute simultaneously
 	ClMaxWGNum   int                       // Get maximum number of max-sized work groups that can execute simultaneously
 	ClTotalPE    int                       // Get total number of processing elements available
+	QueueCount   int                       // Total number of parallel opencl queues for command execution
 	GPUVend      int                       // 1: nvidia, 2: intel, 3: amd, 4: unknown
 )
 
@@ -219,7 +221,7 @@ func Init(gpu int) {
 	ClCmdQueue = queue
 	ClProgram = program
 
-	if err = initCmdQueues(ClCtx, ClDevice); err != nil {
+	if err = initCmdQueues(ClCtx, ClDevice, QueueCount); err != nil {
 		fmt.Printf("Unable to create list of command queues!: %+v \n", err)
 		return
 	}
@@ -310,6 +312,7 @@ func Init(gpu int) {
 
 	data.EnableGPU(memFree, memFree, MemCpy, MemCpyDtoH, MemCpyHtoD)
 
+	kmWG = new(sync.WaitGroup)
 }
 
 func (s *GPU) getGpuDevice() *cl.Device {

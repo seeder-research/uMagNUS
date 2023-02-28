@@ -20,7 +20,9 @@ func SetTopologicalCharge(s, m *data.Slice, mesh *data.Mesh) {
 	if Synchronous {
 		settopologicalcharge__(s, m, mesh, &wg)
 	} else {
-		go settopologicalcharge__(s, m, mesh, &wg)
+		go func() {
+			settopologicalcharge__(s, m, mesh, &wg)
+		}()
 	}
 	wg.Wait()
 }

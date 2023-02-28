@@ -20,7 +20,9 @@ func LLTorque(torque, m, B *data.Slice, alpha MSlice) {
 	if Synchronous {
 		lltorque__(torque, m, B, alpha, &wg)
 	} else {
-		go lltorque__(torque, m, B, alpha, &wg)
+		go func() {
+			lltorque__(torque, m, B, alpha, &wg)
+		}()
 	}
 	wg.Wait()
 }
@@ -95,7 +97,9 @@ func LLNoPrecess(torque, m, B *data.Slice) {
 	if Synchronous {
 		llnoprocess__(torque, m, B, &wg)
 	} else {
-		go llnoprocess__(torque, m, B, &wg)
+		go func() {
+			llnoprocess__(torque, m, B, &wg)
+		}()
 	}
 	wg.Wait()
 }

@@ -18,12 +18,16 @@ func Crop(dst, src *data.Slice, offX, offY, offZ int) {
 	util.Argument(D[X]+offX <= S[X] && D[Y]+offY <= S[Y] && D[Z]+offZ <= S[Z])
 
 	var wg sync.WaitGroup
-	for c := 0; c < dst.NComp(); c++ {
-		wg.Add(1)
+	numComp := dst.NComp()
+	wg.Add(numComp)
+	for c := 0; c < numComp; c++ {
 		if Synchronous {
 			crop__(dst, src, offX, offY, offZ, c, &wg)
 		} else {
-			go crop__(dst, src, offX, offY, offZ, c, &wg)
+			idx := c
+			go func() {
+				crop__(dst, src, offX, offY, offZ, idx, &wg)
+			}()
 		}
 	}
 	wg.Wait()

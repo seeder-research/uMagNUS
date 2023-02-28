@@ -20,7 +20,9 @@ func AddExchange(B, m *data.Slice, Aex_red SymmLUT, Msat MSlice, regions *Bytes,
 	if Synchronous {
 		addexchange__(B, m, Aex_red, Msat, regions, mesh, &wg)
 	} else {
-		go addexchange__(B, m, Aex_red, Msat, regions, mesh, &wg)
+		go func() {
+			addexchange__(B, m, Aex_red, Msat, regions, mesh, &wg)
+		}()
 	}
 	wg.Wait()
 }
@@ -86,7 +88,9 @@ func ExchangeDecode(dst *data.Slice, Aex_red SymmLUT, regions *Bytes, mesh *data
 	if Synchronous {
 		exchangedecode__(dst, Aex_red, regions, mesh, &wg)
 	} else {
-		go exchangedecode__(dst, Aex_red, regions, mesh, &wg)
+		go func() {
+			exchangedecode__(dst, Aex_red, regions, mesh, &wg)
+		}()
 	}
 	wg.Wait()
 }

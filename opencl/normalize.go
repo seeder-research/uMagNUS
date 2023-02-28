@@ -19,7 +19,9 @@ func Normalize(vec, vol *data.Slice) {
 	if Synchronous {
 		normalize__(vec, vol, &wg)
 	} else {
-		go normalize__(vec, vol, &wg)
+		go func() {
+			normalize__(vec, vol, &wg)
+		}()
 	}
 	wg.Wait()
 }

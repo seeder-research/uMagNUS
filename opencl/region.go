@@ -19,7 +19,9 @@ func RegionAddV(dst *data.Slice, lut LUTPtrs, regions *Bytes) {
 	if Synchronous {
 		regionaddv__(dst, lut, regions, &wg)
 	} else {
-		go regionaddv__(dst, lut, regions, &wg)
+		go func() {
+			regionaddv__(dst, lut, regions, &wg)
+		}()
 	}
 	wg.Wait()
 }
@@ -69,7 +71,9 @@ func RegionAddS(dst *data.Slice, lut LUTPtr, regions *Bytes) {
 	if Synchronous {
 		regionadds__(dst, lut, regions, &wg)
 	} else {
-		go regionadds__(dst, lut, regions, &wg)
+		go func() {
+			regionadds__(dst, lut, regions, &wg)
+		}()
 	}
 	wg.Wait()
 }
@@ -112,7 +116,9 @@ func RegionDecode(dst *data.Slice, lut LUTPtr, regions *Bytes) {
 	if Synchronous {
 		regiondecode__(dst, lut, regions, &wg)
 	} else {
-		go regiondecode__(dst, lut, regions, &wg)
+		go func() {
+			regiondecode__(dst, lut, regions, &wg)
+		}()
 	}
 	wg.Wait()
 }
@@ -153,12 +159,17 @@ func RegionSelect(dst, src *data.Slice, regions *Bytes, region byte) {
 	util.Argument(dst.NComp() == src.NComp())
 
 	var wg sync.WaitGroup
-	for c := 0; c < dst.NComp(); c++ {
+	numComp := dst.NComp()
+	wg.Add(numComp)
+	for c := 0; c < numComp; c++ {
 		wg.Add(1)
 		if Synchronous {
 			regionselect__(dst, src, regions, region, c, &wg)
 		} else {
-			go regionselect__(dst, src, regions, region, c, &wg)
+			idx := c
+			go func() {
+				regionselect__(dst, src, regions, region, idx, &wg)
+			}()
 		}
 	}
 	wg.Wait()

@@ -41,7 +41,7 @@ func memFree(ptr unsafe.Pointer) {
 	}
 }
 
-func MemCpyDtoH(dst, src unsafe.Pointer, bytes int) []*cl.Event {
+func MemCpyDtoH(dst, src unsafe.Pointer, bytes int, wg *sync.WaitGroup) {
 	// execute
 	cmdqueue := checkoutQueue()
 	defer checkinQueue(cmdqueue)
@@ -49,13 +49,15 @@ func MemCpyDtoH(dst, src unsafe.Pointer, bytes int) []*cl.Event {
 	event, err := cmdqueue.EnqueueReadBuffer((*cl.MemObject)(src), false, 0, bytes, dst, nil)
 	if err != nil {
 		fmt.Printf("EnqueueReadBuffer in MemCpyDtoH failed: %+v \n", err)
-		return nil
 	}
+	wg.Done()
 
-	return []*cl.Event{event}
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+		fmt.Printf("WaitForEvents failed in MemCpyDtoH: %+v \n", err)
+	}
 }
 
-func MemCpyHtoD(dst, src unsafe.Pointer, bytes int) []*cl.Event {
+func MemCpyHtoD(dst, src unsafe.Pointer, bytes int, wg *sync.WaitGroup) {
 	// execute
 	cmdqueue := checkoutQueue()
 	defer checkinQueue(cmdqueue)
@@ -63,13 +65,15 @@ func MemCpyHtoD(dst, src unsafe.Pointer, bytes int) []*cl.Event {
 	event, err := cmdqueue.EnqueueWriteBuffer((*cl.MemObject)(dst), false, 0, bytes, src, nil)
 	if err != nil {
 		fmt.Printf("EnqueueWriteBuffer in MemCpyHtoD failed: %+v \n", err)
-		return nil
 	}
+	wg.Done()
 
-	return []*cl.Event{event}
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+		fmt.Printf("WaitForEvents failed in MemCpyHtoD: %+v \n", err)
+	}
 }
 
-func MemCpy(dst, src unsafe.Pointer, bytes int) []*cl.Event {
+func MemCpy(dst, src unsafe.Pointer, bytes int, wg *sync.WaitGroup) {
 	// execute
 	cmdqueue := checkoutQueue()
 	defer checkinQueue(cmdqueue)
@@ -77,10 +81,12 @@ func MemCpy(dst, src unsafe.Pointer, bytes int) []*cl.Event {
 	event, err := cmdqueue.EnqueueCopyBuffer((*cl.MemObject)(src), (*cl.MemObject)(dst), 0, 0, bytes, nil)
 	if err != nil {
 		fmt.Printf("EnqueueCopyBuffer failed: %+v \n", err)
-		return nil
 	}
+	wg.Done()
 
-	return []*cl.Event{event}
+	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
+		fmt.Printf("WaitForEvents failed in MemCpy: %+v \n", err)
+	}
 }
 
 // Memset sets the Slice's components to the specified values.
@@ -89,15 +95,19 @@ func Memset(s *data.Slice, val ...float32) {
 	timer.Start("memset")
 
 	util.Argument(len(val) == s.NComp())
-	eventListFill := make([](*cl.Event), len(val))
+	//eventListFill := make([](*cl.Event), len(val))
 
 	var wg_ sync.WaitGroup
 	for c, v := range val {
 		wg_.Add(1)
 		if Synchronous {
-			memset_func(s, c, &v, &eventListFill, &wg_)
+			memset_func(s, c, &v, &wg_)
 		} else {
-			go memset_func(s, c, &v, &eventListFill, &wg_)
+			idx := c
+			v0 := v
+			go func() {
+				memset_func(s, idx, &v0, &wg_)
+			}()
 		}
 	}
 	wg_.Wait()
@@ -105,7 +115,7 @@ func Memset(s *data.Slice, val ...float32) {
 	timer.Stop("memset")
 }
 
-func memset_func(s *data.Slice, comp int, v *float32, ev *[]*cl.Event, wg__ *sync.WaitGroup) {
+func memset_func(s *data.Slice, comp int, v *float32, wg__ *sync.WaitGroup) {
 	s.Lock(comp)
 	defer s.Unlock(comp)
 
@@ -153,7 +163,9 @@ func SetElem(s *data.Slice, comp int, index int, value float32) {
 	if Synchronous {
 		setelem__(s, comp, index, value, &wg)
 	} else {
-		go setelem__(s, comp, index, value, &wg)
+		go func() {
+			setelem__(s, comp, index, value, &wg)
+		}()
 	}
 	wg.Wait()
 }

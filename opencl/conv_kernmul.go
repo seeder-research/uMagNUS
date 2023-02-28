@@ -12,21 +12,27 @@ import (
 	util "github.com/seeder-research/uMagNUS/util"
 )
 
+var kmWG *sync.WaitGroup
+
 // kernel multiplication for 3D demag convolution, exploiting full kernel symmetry.
 func kernMulRSymm3D_async(fftM [3]*data.Slice, Kxx, Kyy, Kzz, Kyz, Kxz, Kxy *data.Slice, Nx, Ny, Nz int) {
 	util.Argument(fftM[X].NComp() == 1 && Kxx.NComp() == 1)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
+	kmWG.Add(1)
 	if Synchronous {
 		kernmulrsymm3d_async__(fftM, Kxx, Kyy, Kzz, Kyz, Kxz, Kxy, Nx, Ny, Nz, &wg)
 	} else {
-		go kernmulrsymm3d_async__(fftM, Kxx, Kyy, Kzz, Kyz, Kxz, Kxy, Nx, Ny, Nz, &wg)
+		go func() {
+			kernmulrsymm3d_async__(fftM, Kxx, Kyy, Kzz, Kyz, Kxz, Kxy, Nx, Ny, Nz, &wg)
+		}()
 	}
 	wg.Wait()
 }
 
 func kernmulrsymm3d_async__(fftM [3]*data.Slice, Kxx, Kyy, Kzz, Kyz, Kxz, Kxy *data.Slice, Nx, Ny, Nz int, wg_ *sync.WaitGroup) {
+	defer kmWG.Done()
 	fftM[X].Lock(0)
 	fftM[Y].Lock(0)
 	fftM[Z].Lock(0)
@@ -75,15 +81,19 @@ func kernMulRSymm2Dxy_async(fftMx, fftMy, Kxx, Kyy, Kxy *data.Slice, Nx, Ny int)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
+	kmWG.Add(1)
 	if Synchronous {
 		kernmulrsymm2dxy_async__(fftMx, fftMy, Kxx, Kyy, Kxy, Nx, Ny, &wg)
 	} else {
-		go kernmulrsymm2dxy_async__(fftMx, fftMy, Kxx, Kyy, Kxy, Nx, Ny, &wg)
+		go func() {
+			kernmulrsymm2dxy_async__(fftMx, fftMy, Kxx, Kyy, Kxy, Nx, Ny, &wg)
+		}()
 	}
 	wg.Wait()
 }
 
 func kernmulrsymm2dxy_async__(fftMx, fftMy, Kxx, Kyy, Kxy *data.Slice, Nx, Ny int, wg_ *sync.WaitGroup) {
+	defer kmWG.Done()
 	fftMx.Lock(0)
 	fftMy.Lock(0)
 	defer fftMx.Unlock(0)
@@ -124,15 +134,19 @@ func kernMulRSymm2Dz_async(fftMz, Kzz *data.Slice, Nx, Ny int) {
 
 	var wg sync.WaitGroup
 	wg.Add(1)
+	kmWG.Add(1)
 	if Synchronous {
 		kernmulrsymm2dz_async__(fftMz, Kzz, Nx, Ny, &wg)
 	} else {
-		go kernmulrsymm2dz_async__(fftMz, Kzz, Nx, Ny, &wg)
+		go func() {
+			kernmulrsymm2dz_async__(fftMz, Kzz, Nx, Ny, &wg)
+		}()
 	}
 	wg.Wait()
 }
 
 func kernmulrsymm2dz_async__(fftMz, Kzz *data.Slice, Nx, Ny int, wg_ *sync.WaitGroup) {
+	defer kmWG.Done()
 	fftMz.Lock(0)
 	defer fftMz.Unlock(0)
 	Kzz.RLock(0)
@@ -167,15 +181,19 @@ func kernMulC_async(fftM, K *data.Slice, Nx, Ny int) {
 
 	var wg sync.WaitGroup
 	wg.Add(1)
+	kmWG.Add(1)
 	if Synchronous {
 		kernmulc_async__(fftM, K, Nx, Ny, &wg)
 	} else {
-		go kernmulc_async__(fftM, K, Nx, Ny, &wg)
+		go func() {
+			kernmulc_async__(fftM, K, Nx, Ny, &wg)
+		}()
 	}
 	wg.Wait()
 }
 
 func kernmulc_async__(fftM, K *data.Slice, Nx, Ny int, wg_ *sync.WaitGroup) {
+	defer kmWG.Done()
 	fftM.Lock(0)
 	defer fftM.Unlock(0)
 	K.RLock(0)

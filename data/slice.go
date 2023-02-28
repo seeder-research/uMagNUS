@@ -10,7 +10,7 @@ import (
 	"sync"
 	"unsafe"
 
-	cl "github.com/seeder-research/uMagNUS/cl"
+	//cl "github.com/seeder-research/uMagNUS/cl"
 	util "github.com/seeder-research/uMagNUS/util"
 )
 
@@ -29,13 +29,13 @@ type Slice struct {
 // otherwise, it could be removed in favor of memCpy only.
 var (
 	memFree, memFreeHost           func(unsafe.Pointer)
-	memCpy, memCpyDtoH, memCpyHtoD func(dst, src unsafe.Pointer, bytes int) []*cl.Event
+	memCpy, memCpyDtoH, memCpyHtoD func(dst, src unsafe.Pointer, bytes int, wg *sync.WaitGroup)
 	Synchronous = false
 )
 
 // Internal: enables slices on GPU. Called upon opencl init.
 func EnableGPU(free, freeHost func(unsafe.Pointer),
-	cpy, cpyDtoH, cpyHtoD func(dst, src unsafe.Pointer, bytes int) []*cl.Event) {
+	cpy, cpyDtoH, cpyHtoD func(dst, src unsafe.Pointer, bytes int, wg *sync.WaitGroup)) {
 	memFree = free
 	memFreeHost = freeHost
 	memCpy = cpy
@@ -287,6 +287,13 @@ func (s *Slice) Wait(component int) {
 func (s *Slice) HostCopy() *Slice {
 	cpy := NewSlice(s.NComp(), s.Size())
 	Copy(cpy, s)
+	// Synchronization
+	if s.GPUAccess() {
+		for c := 0; c < s.NComp(); c++ {
+			s.Lock(c)
+			s.Unlock(c)
+		}
+	}
 	return cpy
 }
 
@@ -298,39 +305,53 @@ func Copy(dst, src *Slice) {
 	bytes := SIZEOF_FLOAT32 * dst.Len()
 
 	var wg sync.WaitGroup
+	numComp := dst.NComp()
 	switch {
 	default:
 		panic("bug")
 	case d && s:
-		wg.Add(dst.NComp())
-		for c := 0; c < dst.NComp(); c++ {
+		for c := 0; c < numComp; c++ {
+			wg.Add(1)
+			dst.Lock(c)
+			src.RLock(c)
 			if Synchronous {
 				memcpy__(dst, src, bytes, c, &wg)
 			} else {
-				go memcpy__(dst, src, bytes, c, &wg)
+				idx := c
+				go func() {
+					memcpy__(dst, src, bytes, idx, &wg)
+				}()
 			}
+			wg.Wait()
 		}
-		wg.Wait()
 	case s && !d:
-		wg.Add(dst.NComp())
-		for c := 0; c < dst.NComp(); c++ {
+		for c := 0; c < numComp; c++ {
+			wg.Add(1)
+			src.RLock(c)
 			if Synchronous {
 				memcpydtoh__(dst, src, bytes, c, &wg)
 			} else {
-				go memcpydtoh__(dst, src, bytes, c, &wg)
+				idx := c
+				go func() {
+					memcpydtoh__(dst, src, bytes, idx, &wg)
+				}()
 			}
+			wg.Wait()
 		}
-		wg.Wait()
 	case !s && d:
-		wg.Add(dst.NComp())
-		for c := 0; c < dst.NComp(); c++ {
+		for c := 0; c < numComp; c++ {
+			wg.Add(1)
+			dst.Lock(c)
 			if Synchronous {
 				memcpyhtod__(dst, src, bytes, c, &wg)
 			} else {
-				go memcpyhtod__(dst, src, bytes, c, &wg)
+				idx := c
+				go func() {
+					memcpyhtod__(dst, src, bytes, idx, &wg)
+				}()
 			}
+			wg.Wait()
 		}
-		wg.Wait()
 	case !d && !s:
 		dst, src := dst.Host(), src.Host()
 		for c := range dst {
@@ -340,35 +361,19 @@ func Copy(dst, src *Slice) {
 }
 
 func memcpy__(d0, s0 *Slice, bytes, comp int, wg_ *sync.WaitGroup) {
-	d0.Lock(comp)
-	s0.RLock(comp)
 	defer d0.Unlock(comp)
 	defer s0.RUnlock(comp)
-	eventsList := memCpy(d0.DevPtr(comp), s0.DevPtr(comp), bytes)
-	wg_.Done()
-	if err := cl.WaitForEvents(eventsList); err != nil {
-		panic(fmt.Sprintf("WaitForEvents in slice copy failed: %+v \n", err))
-	}
+	memCpy(d0.DevPtr(comp), s0.DevPtr(comp), bytes, wg_)
 }
 
 func memcpydtoh__(d0, s0 *Slice, bytes, comp int, wg_ *sync.WaitGroup) {
-	s0.RLock(comp)
 	defer s0.RUnlock(comp)
-	eventsList := memCpyDtoH(d0.ptrs[comp].Ptr, s0.DevPtr(comp), bytes)
-	wg_.Done()
-	if err := cl.WaitForEvents(eventsList); err != nil {
-		panic(fmt.Sprintf("WaitForEvents in slice copy (device to host) failed: %+v \n", err))
-	}
+	memCpyDtoH(d0.ptrs[comp].Ptr, s0.DevPtr(comp), bytes, wg_)
 }
 
 func memcpyhtod__(d0, s0 *Slice, bytes, comp int, wg_ *sync.WaitGroup) {
-	d0.Lock(comp)
 	defer d0.Unlock(comp)
-	eventsList := memCpyHtoD(d0.DevPtr(comp), s0.ptrs[comp].Ptr, bytes)
-	wg_.Done()
-	if err := cl.WaitForEvents(eventsList); err != nil {
-		panic(fmt.Sprintf("WaitForEvents in slice copy (host to device) failed: %+v \n", err))
-	}
+	memCpyHtoD(d0.DevPtr(comp), s0.ptrs[comp].Ptr, bytes, wg_)
 }
 
 // Floats returns the data as 3D array,

@@ -21,7 +21,9 @@ func AddDMIBulk(Beff *data.Slice, m *data.Slice, Aex_red, D_red SymmLUT, Msat MS
 	if Synchronous {
 		adddmibulk__(Beff, m, Aex_red, D_red, Msat, regions, mesh, OpenBC, &wg)
 	} else {
-		go adddmibulk__(Beff, m, Aex_red, D_red, Msat, regions, mesh, OpenBC, &wg)
+		go func() {
+			adddmibulk__(Beff, m, Aex_red, D_red, Msat, regions, mesh, OpenBC, &wg)
+		}()
 	}
 	wg.Done()
 }

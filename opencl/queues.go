@@ -10,8 +10,7 @@ var cmdQueueIdx chan (int)               // token indices for grabbing OpenCL co
 var cmdQueueArr []*cl.CommandQueue       // Array of OpenCL command queues
 var cmdQueueMap map[*cl.CommandQueue]int // Map of index associated with each command queue
 
-func initCmdQueues(context *cl.Context, device *cl.Device) error {
-	const cmdQueueCnt = 32 // number of concurrently executing OpenCL command queues available
+func initCmdQueues(context *cl.Context, device *cl.Device, cmdQueueCnt int) error {
 	var err error
 
 	cmdQueueIdx = make(chan int, cmdQueueCnt)

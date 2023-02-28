@@ -24,7 +24,9 @@ func Resize(dst, src *data.Slice, layer int) {
 	if Synchronous {
 		resize__(dst, src, layer, &wg)
 	} else {
-		go resize__(dst, src, layer, &wg)
+		go func() {
+			resize__(dst, src, layer, &wg)
+		}()
 	}
 	wg.Wait()
 }

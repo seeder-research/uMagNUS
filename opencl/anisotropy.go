@@ -18,7 +18,9 @@ func AddCubicAnisotropy2(Beff, m *data.Slice, Msat, k1, k2, k3, c1, c2 MSlice) {
 	if Synchronous {
 		addcubicanisotropy__(Beff, m, Msat, k1, k2, k3, c1, c2, &wg)
 	} else {
-		go addcubicanisotropy__(Beff, m, Msat, k1, k2, k3, c1, c2, &wg)
+		go func() {
+			addcubicanisotropy__(Beff, m, Msat, k1, k2, k3, c1, c2, &wg)
+		}()
 	}
 	wg.Wait()
 }
@@ -106,7 +108,9 @@ func AddUniaxialAnisotropy2(Beff, m *data.Slice, Msat, k1, k2, u MSlice) {
 	if Synchronous {
 		adduniaxialanisotropy2__(Beff, m, Msat, k1, k2, u, &wg)
 	} else {
-		go adduniaxialanisotropy2__(Beff, m, Msat, k1, k2, u, &wg)
+		go func() {
+			adduniaxialanisotropy2__(Beff, m, Msat, k1, k2, u, &wg)
+		}()
 	}
 	wg.Wait()
 }
@@ -182,7 +186,9 @@ func AddUniaxialAnisotropy(Beff, m *data.Slice, Msat, k1, u MSlice) {
 	if Synchronous {
 		adduniaxialanisotropy__(Beff, m, Msat, k1, u, &wg)
 	} else {
-		go adduniaxialanisotropy__(Beff, m, Msat, k1, u, &wg)
+		go func() {
+			adduniaxialanisotropy__(Beff, m, Msat, k1, u, &wg)
+		}()
 	}
 	wg.Wait()
 }
@@ -255,7 +261,9 @@ func AddVoltageControlledAnisotropy(Beff, m *data.Slice, Msat, vcmaCoeff, voltag
 	if Synchronous {
 		addvoltagecontrolledanisotropy__(Beff, m, Msat, vcmaCoeff, voltage, u, &wg)
 	} else {
-		go addvoltagecontrolledanisotropy__(Beff, m, Msat, vcmaCoeff, voltage, u, &wg)
+		go func() {
+			addvoltagecontrolledanisotropy__(Beff, m, Msat, vcmaCoeff, voltage, u, &wg)
+		}()
 	}
 	wg.Wait()
 }

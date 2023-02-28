@@ -18,7 +18,9 @@ func SetPhi(s *data.Slice, m *data.Slice) {
 	if Synchronous {
 		setphi__(s, m, &wg)
 	} else {
-		go setphi__(s, m, &wg)
+		go func() {
+			setphi__(s, m, &wg)
+		}()
 	}
 	wg.Wait()
 }
@@ -66,7 +68,9 @@ func SetTheta(s *data.Slice, m *data.Slice) {
 	if Synchronous {
 		settheta__(s, m, &wg)
 	} else {
-		go settheta__(s, m, &wg)
+		go func() {
+			settheta__(s, m, &wg)
+		}()
 	}
 	wg.Wait()
 }

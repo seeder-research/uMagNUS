@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"fmt"
 	"reflect"
 
 	data "github.com/seeder-research/uMagNUS/data"
@@ -40,11 +41,21 @@ func (m *magnetization) alloc() {
 }
 
 func (b *magnetization) SetArray(src *data.Slice) {
+	fmt.Printf("  in setarray (magnetization) \n")
 	if src.Size() != b.Mesh().Size() {
 		src = data.Resample(src, b.Mesh().Size())
 	}
+	fmt.Printf("  copying to b.Buffer() (magnetization) \n")
 	data.Copy(b.Buffer(), src)
+	fmt.Printf("  normalizing b.Buffer() \n")
 	b.normalize()
+	// Synchronization
+	b.buffer_.Lock(X)
+	b.buffer_.Lock(Y)
+	b.buffer_.Lock(Z)
+	b.buffer_.Unlock(X)
+	b.buffer_.Unlock(Y)
+	b.buffer_.Unlock(Z)
 }
 
 func (m *magnetization) Set(c Config) {
@@ -110,6 +121,7 @@ func (m *magnetization) SetInShape(region Shape, conf Config) {
 			}
 		}
 	}
+	fmt.Printf("  done setting on host... \n")
 	m.SetArray(host)
 }
 
@@ -146,4 +158,9 @@ func (m *magnetization) resize() {
 	m.buffer_.Free()
 	m.buffer_ = opencl.NewSlice(VECTOR, s2)
 	data.Copy(m.buffer_, resized)
+	// Synchronization
+	for c := 0; c < VECTOR; c++ {
+		m.buffer_.Lock(c)
+		m.buffer_.Unlock(c)
+	}
 }

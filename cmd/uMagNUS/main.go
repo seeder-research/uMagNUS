@@ -30,6 +30,7 @@ func main() {
 	opencl.Debug = *engine.Flag_debug
 	opencl.ReduceWorkitems = *engine.Flag_wi
 	opencl.ReduceWorkgroups = *engine.Flag_wg
+	opencl.QueueCount = *engine.Flag_queues
 
 	// Check flag and initialize engine
 	if len(*engine.Flag_gpulist) > 0 {

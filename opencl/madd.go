@@ -21,7 +21,10 @@ func Mul(dst, a, b *data.Slice) {
 		if Synchronous {
 			mul__(dst, a, b, c, &wg)
 		} else {
-			go mul__(dst, a, b, c, &wg)
+			idx := c
+			go func() {
+				mul__(dst, a, b, idx, &wg)
+			}()
 		}
 	}
 	wg.Wait()
@@ -75,7 +78,10 @@ func Div(dst, a, b *data.Slice) {
 		if Synchronous {
 			div__(dst, a, b, c, &wg)
 		} else {
-			go div__(dst, a, b, c, &wg)
+			idx := c
+			go func() {
+				div__(dst, a, b, idx, &wg)
+			}()
 		}
 	}
 	wg.Wait()
@@ -129,12 +135,15 @@ func Madd2(dst, src1, src2 *data.Slice, factor1, factor2 float32) {
 	util.Assert(src1.NComp() == nComp && src2.NComp() == nComp)
 
 	var wg sync.WaitGroup
+	wg.Add(nComp)
 	for c := 0; c < nComp; c++ {
-		wg.Add(1)
 		if Synchronous {
 			madd2__(dst, src1, src2, factor1, factor2, c, &wg)
 		} else {
-			go madd2__(dst, src1, src2, factor1, factor2, c, &wg)
+			idx := c
+			go func() {
+				madd2__(dst, src1, src2, factor1, factor2, idx, &wg)
+			}()
 		}
 	}
 	wg.Wait()
@@ -190,7 +199,10 @@ func Madd3(dst, src1, src2, src3 *data.Slice, factor1, factor2, factor3 float32)
 		if Synchronous {
 			madd3__(dst, src1, src2, src3, factor1, factor2, factor3, c, &wg)
 		} else {
-			go madd3__(dst, src1, src2, src3, factor1, factor2, factor3, c, &wg)
+			idx := c
+			go func() {
+				madd3__(dst, src1, src2, src3, factor1, factor2, factor3, idx, &wg)
+			}()
 		}
 	}
 	wg.Wait()
@@ -251,7 +263,10 @@ func Madd4(dst, src1, src2, src3, src4 *data.Slice, factor1, factor2, factor3, f
 		if Synchronous {
 			madd4__(dst, src1, src2, src3, src4, factor1, factor2, factor3, factor4, c, &wg)
 		} else {
-			go madd4__(dst, src1, src2, src3, src4, factor1, factor2, factor3, factor4, c, &wg)
+			idx := c
+			go func() {
+				madd4__(dst, src1, src2, src3, src4, factor1, factor2, factor3, factor4, idx, &wg)
+			}()
 		}
 	}
 	wg.Wait()
@@ -317,7 +332,10 @@ func Madd5(dst, src1, src2, src3, src4, src5 *data.Slice, factor1, factor2, fact
 		if Synchronous {
 			madd5__(dst, src1, src2, src3, src4, src5, factor1, factor2, factor3, factor4, factor5, c, &wg)
 		} else {
-			go madd5__(dst, src1, src2, src3, src4, src5, factor1, factor2, factor3, factor4, factor5, c, &wg)
+			idx := c
+			go func() {
+				madd5__(dst, src1, src2, src3, src4, src5, factor1, factor2, factor3, factor4, factor5, idx, &wg)
+			}()
 		}
 	}
 	wg.Wait()
@@ -388,7 +406,10 @@ func Madd6(dst, src1, src2, src3, src4, src5, src6 *data.Slice, factor1, factor2
 		if Synchronous {
 			madd6__(dst, src1, src2, src3, src4, src5, src6, factor1, factor2, factor3, factor4, factor5, factor6, c, &wg)
 		} else {
-			go madd6__(dst, src1, src2, src3, src4, src5, src6, factor1, factor2, factor3, factor4, factor5, factor6, c, &wg)
+			idx := c
+			go func() {
+				madd6__(dst, src1, src2, src3, src4, src5, src6, factor1, factor2, factor3, factor4, factor5, factor6, idx, &wg)
+			}()
 		}
 	}
 	wg.Wait()
@@ -464,7 +485,10 @@ func Madd7(dst, src1, src2, src3, src4, src5, src6, src7 *data.Slice, factor1, f
 		if Synchronous {
 			madd7__(dst, src1, src2, src3, src4, src5, src6, src7, factor1, factor2, factor3, factor4, factor5, factor6, factor7, c, &wg)
 		} else {
-			go madd7__(dst, src1, src2, src3, src4, src5, src6, src7, factor1, factor2, factor3, factor4, factor5, factor6, factor7, c, &wg)
+			idx := c
+			go func() {
+				madd7__(dst, src1, src2, src3, src4, src5, src6, src7, factor1, factor2, factor3, factor4, factor5, factor6, factor7, idx, &wg)
+			}()
 		}
 	}
 	wg.Wait()

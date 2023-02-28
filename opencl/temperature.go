@@ -20,7 +20,9 @@ func SetTemperature(Bth, noise *data.Slice, k2mu0_Mu0VgammaDt float64, Msat, Tem
 	if Synchronous {
 		settemperature__(Bth, noise, k2mu0_Mu0VgammaDt, Msat, Temp, Alpha, &wg)
 	} else {
-		go settemperature__(Bth, noise, k2mu0_Mu0VgammaDt, Msat, Temp, Alpha, &wg)
+		go func() {
+			settemperature__(Bth, noise, k2mu0_Mu0VgammaDt, Msat, Temp, Alpha, &wg)
+		}()
 	}
 	wg.Done()
 }

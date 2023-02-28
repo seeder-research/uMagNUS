@@ -19,9 +19,11 @@ func AddRegionSpinTorque(torque, m *data.Slice, Msat MSlice, regions *Bytes, reg
 			sX, sY, sZ, J, alpha, pfix, pfree, λfix, λfree, ε_prime,
 			mesh, &wg)
 	} else {
-		go addregionspintorque__(torque, m, Msat, regions, regionA, regionB,
-			sX, sY, sZ, J, alpha, pfix, pfree, λfix, λfree, ε_prime,
-			mesh, &wg)
+		go func() {
+			addregionspintorque__(torque, m, Msat, regions, regionA, regionB,
+				sX, sY, sZ, J, alpha, pfix, pfree, λfix, λfree, ε_prime,
+				mesh, &wg)
+		}()
 	}
 	wg.Wait()
 }

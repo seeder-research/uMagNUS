@@ -166,17 +166,23 @@ func (q *mulmv) EvalTo(dst *data.Slice) {
 	{
 		Ax := ValueOf(q.ax)
 		opencl.AddDotProduct(dst.Comp(X), 1, Ax, b)
+		dst.Lock(X)
+		dst.Unlock(X)
 		opencl.Recycle(Ax)
 	}
 	{
 
 		Ay := ValueOf(q.ay)
 		opencl.AddDotProduct(dst.Comp(Y), 1, Ay, b)
+		dst.Lock(Y)
+		dst.Unlock(Y)
 		opencl.Recycle(Ay)
 	}
 	{
 		Az := ValueOf(q.az)
 		opencl.AddDotProduct(dst.Comp(Z), 1, Az, b)
+		dst.Lock(Z)
+		dst.Unlock(Z)
 		opencl.Recycle(Az)
 	}
 }

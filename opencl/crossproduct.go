@@ -18,7 +18,9 @@ func CrossProduct(dst, a, b *data.Slice) {
 	if Synchronous {
 		crossproduct__(dst, a, b, &wg)
 	} else {
-		go crossproduct__(dst, a, b, &wg)
+		go func() {
+			crossproduct__(dst, a, b, &wg)
+		}()
 	}
 	wg.Wait()
 }

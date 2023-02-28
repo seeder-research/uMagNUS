@@ -22,7 +22,9 @@ func AddDMI(Beff *data.Slice, m *data.Slice, Aex_red, Dex_red SymmLUT, Msat MSli
 	if Synchronous {
 		adddmi__(Beff, m, Aex_red, Dex_red, Msat, regions, mesh, OpenBC, &wg)
 	} else {
-		go adddmi__(Beff, m, Aex_red, Dex_red, Msat, regions, mesh, OpenBC, &wg)
+		go func() {
+			adddmi__(Beff, m, Aex_red, Dex_red, Msat, regions, mesh, OpenBC, &wg)
+		}()
 	}
 	wg.Wait()
 }

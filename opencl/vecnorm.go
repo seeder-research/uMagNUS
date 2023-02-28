@@ -19,7 +19,9 @@ func VecNorm(dst *data.Slice, a *data.Slice) {
 	if Synchronous {
 		vecnorm__(dst, a, &wg)
 	} else {
-		go vecnorm__(dst, a, &wg)
+		go func() {
+			vecnorm__(dst, a, &wg)
+		}()
 	}
 	wg.Wait()
 }

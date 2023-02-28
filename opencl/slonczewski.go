@@ -17,8 +17,10 @@ func AddSlonczewskiTorque2(torque, m *data.Slice, Msat, J, fixedP, alpha, pol, �
 		addslonczewskitorque2__(torque, m, Msat, J,
 			fixedP, alpha, pol, λ, ε_prime, thickness, flp, mesh, &wg)
 	} else {
-		go addslonczewskitorque2__(torque, m, Msat, J,
-			fixedP, alpha, pol, λ, ε_prime, thickness, flp, mesh, &wg)
+		go func() {
+			addslonczewskitorque2__(torque, m, Msat, J,
+				fixedP, alpha, pol, λ, ε_prime, thickness, flp, mesh, &wg)
+		}()
 	}
 	wg.Wait()
 }

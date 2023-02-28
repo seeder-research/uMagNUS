@@ -25,7 +25,9 @@ func AddMagnetoelasticField(Beff, m *data.Slice, exx, eyy, ezz, exy, exz, eyz, B
 	if Synchronous {
 		addmagnetoelasticfield__(Beff, m, exx, eyy, ezz, exy, exz, eyz, B1, B2, Msat, &wg)
 	} else {
-		go addmagnetoelasticfield__(Beff, m, exx, eyy, ezz, exy, exz, eyz, B1, B2, Msat, &wg)
+		go func() {
+			addmagnetoelasticfield__(Beff, m, exx, eyy, ezz, exy, exz, eyz, B1, B2, Msat, &wg)
+		}()
 	}
 	wg.Wait()
 }
@@ -118,7 +120,9 @@ func GetMagnetoelasticForceDensity(out, m *data.Slice, B1, B2 MSlice, mesh *data
 	if Synchronous {
 		getmagnetoelasticforcedensity__(out, m, B1, B2, mesh, &wg)
 	} else {
-		go getmagnetoelasticforcedensity__(out, m, B1, B2, mesh, &wg)
+		go func() {
+			getmagnetoelasticforcedensity__(out, m, B1, B2, mesh, &wg)
+		}()
 	}
 	wg.Wait()
 }

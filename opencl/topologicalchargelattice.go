@@ -19,7 +19,9 @@ func SetTopologicalChargeLattice(s *data.Slice, m *data.Slice, mesh *data.Mesh) 
 	if Synchronous {
 		settopologicalcharglattice__(s, m, mesh, &wg)
 	} else {
-		go settopologicalcharglattice__(s, m, mesh, &wg)
+		go func() {
+			settopologicalcharglattice__(s, m, mesh, &wg)
+		}()
 	}
 	wg.Wait()
 }

@@ -31,6 +31,7 @@ var (
 	Flag_vet         = flag.Bool("vet", false, "Check input files for errors, but don't run them")
 	Flag_wi          = flag.Int("wi", 128, "Number of workitems per workgroup to launch for reduction kernels")
 	Flag_wg          = flag.Int("wg", 1, "Number of workgroups to launch for reduction kernels")
+	Flag_queues      = flag.Int("queues", 8, "Number of parallel opencl queues for command execution")
 	Flag_gpu         = int(-5) // To be set externally
 )
 
@@ -48,6 +49,7 @@ func InitAndClose() func() {
 
 	opencl.ReduceWorkitems = *Flag_wi
 	opencl.ReduceWorkgroups = *Flag_wg
+	opencl.QueueCount = *Flag_queues
 
 	if *Flag_host {
 		if Flag_gpu < 0 {

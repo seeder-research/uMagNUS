@@ -30,12 +30,8 @@ func Sum(in *data.Slice) float32 {
 	in.RLock(0)
 	defer in.RUnlock(0)
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("sum failed to create command queue: %+v \n", err)
-		return -1.0
-	}
-	defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	event := k_reducesum_async(in.DevPtr(0), out, 0,
 		in.Len(), reducecfg, cmdqueue, nil)
@@ -71,7 +67,10 @@ func Dot(a, b *data.Slice) float32 {
 		if Synchronous {
 			dot__(a, b, out[c], &hostResult[c], c, &wg)
 		} else {
-			go dot__(a, b, out[c], &hostResult[c], c, &wg)
+			idx := c
+			go func() {
+				dot__(a, b, out[idx], &hostResult[idx], idx, &wg)
+			}()
 		}
 	}
 	// Must synchronize since result is copied from device back to host
@@ -91,12 +90,8 @@ func dot__(a, b *data.Slice, outBufferPtr unsafe.Pointer, res *float32, idx int,
 	defer b.RUnlock(idx)
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("adddotproduct failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	event := k_reducedot_async(a.DevPtr(idx), b.DevPtr(idx), outBufferPtr, 0,
 		a.Len(), reducecfg, cmdqueue, nil) // all components add to out
@@ -123,12 +118,8 @@ func MaxAbs(in *data.Slice) float32 {
 	defer in.RUnlock(0)
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("adddotproduct failed to create command queue: %+v \n", err)
-		return -1.0
-	}
-	defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	event := k_reducemaxabs_async(in.DevPtr(0), out, 0,
 		in.Len(), reducecfg, cmdqueue, nil)
@@ -158,12 +149,15 @@ func MaxDiff(a, b *data.Slice) []float32 {
 		out[c] = reduceBuf(0)
 	}
 	var wg sync.WaitGroup
+	wg.Add(numComp)
 	for c := 0; c < numComp; c++ {
-		wg.Add(1)
 		if Synchronous {
 			maxdiff__(a, b, out[c], &returnVal[c], c, &wg)
 		} else {
-			go maxdiff__(a, b, out[c], &returnVal[c], c, &wg)
+			idx := c
+			go func() {
+				maxdiff__(a, b, out[idx], &returnVal[idx], idx, &wg)
+			}()
 		}
 	}
 	// Must synchronize since returnVal is copied from device back to host
@@ -180,12 +174,8 @@ func maxdiff__(a, b *data.Slice, outBufferPtr unsafe.Pointer, res *float32, idx 
 	defer b.RUnlock(idx)
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("maxabs failed to create command queue: %+v \n", err)
-		return
-	}
-	defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	event := k_reducemaxdiff_async(a.DevPtr(idx), b.DevPtr(idx), outBufferPtr, 0,
 		a.Len(), reducecfg, cmdqueue, nil)
@@ -219,12 +209,8 @@ func MaxVecNorm(v *data.Slice) float64 {
 	defer v.RUnlock(Z)
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("maxvecnorm failed to create command queue: %+v \n", err)
-		return -1.0
-	}
-	defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	event := k_reducemaxvecnorm2_async(v.DevPtr(0), v.DevPtr(1), v.DevPtr(2),
 		out, 0, v.Len(), reducecfg, cmdqueue, nil)
@@ -267,12 +253,8 @@ func MaxVecDiff(x, y *data.Slice) float64 {
 	defer y.RUnlock(Z)
 
 	// Create the command queue to execute the command
-	cmdqueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
-	if err != nil {
-		fmt.Printf("maxvecdiff failed to create command queue: %+v \n", err)
-		return -1.0
-	}
-	defer cmdqueue.Release()
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
 
 	event := k_reducemaxvecdiff2_async(x.DevPtr(0), x.DevPtr(1), x.DevPtr(2),
 		y.DevPtr(0), y.DevPtr(1), y.DevPtr(2),
@@ -301,8 +283,13 @@ func reduceBuf(initVal float32) unsafe.Pointer {
 		initReduceBuf()
 	}
 	buf := <-reduceBuffers
+
+	// Create the command queue to execute the command
+	cmdqueue := checkoutQueue()
+	defer checkinQueue(cmdqueue)
+
 	//	waitEvent, err := ClCmdQueue.EnqueueFillBuffer(buf, unsafe.Pointer(&initVal), SIZEOF_FLOAT32, 0, ReduceWorkgroups*SIZEOF_FLOAT32, nil)
-	waitEvent, err := ClCmdQueue.EnqueueFillBuffer(buf, unsafe.Pointer(&initVal), SIZEOF_FLOAT32, 0, SIZEOF_FLOAT32, nil)
+	waitEvent, err := cmdqueue.EnqueueFillBuffer(buf, unsafe.Pointer(&initVal), SIZEOF_FLOAT32, 0, SIZEOF_FLOAT32, nil)
 	if err != nil {
 		fmt.Printf("reduceBuf failed: %+v \n", err)
 		return nil
@@ -318,10 +305,10 @@ func reduceBuf(initVal float32) unsafe.Pointer {
 // copy back single float result from GPU and recycle buffer
 func copyback(buf unsafe.Pointer) float32 {
 	var result float32
-	ev := MemCpyDtoH(unsafe.Pointer(&result), buf, SIZEOF_FLOAT32)
-	if err := cl.WaitForEvents(ev); err != nil {
-		fmt.Printf("WaitForEvents failed in copyback: %+v \n", err)
-	}
+	var wg sync.WaitGroup
+	wg.Add(1)
+	MemCpyDtoH(unsafe.Pointer(&result), buf, SIZEOF_FLOAT32, &wg)
+	wg.Wait()
 	reduceBuffers <- (*cl.MemObject)(buf)
 	return result
 }
@@ -329,10 +316,10 @@ func copyback(buf unsafe.Pointer) float32 {
 // copy back float slice result from GPU and recycle buffer
 func copybackSlice(buf unsafe.Pointer) []float32 {
 	result := make([]float32, ReduceWorkgroups)
-	ev := MemCpyDtoH(unsafe.Pointer(&result[0]), buf, ReduceWorkgroups*SIZEOF_FLOAT32)
-	if err := cl.WaitForEvents(ev); err != nil {
-		fmt.Printf("WaitForEvents failed in copyback: %+v \n", err)
-	}
+	var wg sync.WaitGroup
+	wg.Add(1)
+	MemCpyDtoH(unsafe.Pointer(&result[0]), buf, ReduceWorkgroups*SIZEOF_FLOAT32, &wg)
+	wg.Wait()
 	reduceBuffers <- (*cl.MemObject)(buf)
 	return result
 }
@@ -342,9 +329,19 @@ func initReduceBuf() {
 	const N = 128
 	reduceBuffers = make(chan *cl.MemObject, N)
 	for i := 0; i < N; i++ {
-		//		reduceBuffers <- MemAlloc(ReduceWorkgroups * SIZEOF_FLOAT32)
-		reduceBuffers <- MemAlloc(SIZEOF_FLOAT32)
+		if Synchronous {
+			allocMemBuf__(reduceBuffers)
+		} else {
+			go func() {
+				allocMemBuf__(reduceBuffers)
+			}()
+		}
 	}
+}
+
+func allocMemBuf__(redBuf chan<- *cl.MemObject) {
+	// reduceBuffers <- MemAlloc(ReduceWorkgroups * SIZEOF_FLOAT32)
+	redBuf <- MemAlloc(SIZEOF_FLOAT32)
 }
 
 // launch configuration for reduce kernels

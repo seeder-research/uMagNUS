@@ -21,8 +21,10 @@ func AddRegionExchangeField(B, m *data.Slice, Msat MSlice, regions *Bytes, regio
 		addregionexchangefield__(B, m, Msat, regions, regionA, regionB,
 			sX, sY, sZ, sig, sig2, mesh, &wg)
 	} else {
-		go addregionexchangefield__(B, m, Msat, regions, regionA, regionB,
-			sX, sY, sZ, sig, sig2, mesh, &wg)
+		go func() {
+			addregionexchangefield__(B, m, Msat, regions, regionA, regionB,
+				sX, sY, sZ, sig, sig2, mesh, &wg)
+		}()
 	}
 	wg.Wait()
 }
@@ -97,8 +99,10 @@ func AddRegionExchangeEdens(Edens, m *data.Slice, Msat MSlice, regions *Bytes, r
 		addregionexchangeedens__(Edens, m, Msat, regions, regionA, regionB,
 			sX, sY, sZ, sig, sig2, mesh, &wg)
 	} else {
-		go addregionexchangeedens__(Edens, m, Msat, regions, regionA, regionB,
-			sX, sY, sZ, sig, sig2, mesh, &wg)
+		go func() {
+			addregionexchangeedens__(Edens, m, Msat, regions, regionA, regionB,
+				sX, sY, sZ, sig, sig2, mesh, &wg)
+		}()
 	}
 	wg.Wait()
 }

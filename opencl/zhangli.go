@@ -16,7 +16,9 @@ func AddZhangLiTorque(torque, m *data.Slice, Msat, J, alpha, xi, pol MSlice, mes
 	if Synchronous {
 		addzhanglitorque__(torque, m, Msat, J, alpha, xi, pol, mesh, &wg)
 	} else {
-		go addzhanglitorque__(torque, m, Msat, J, alpha, xi, pol, mesh, &wg)
+		go func() {
+			addzhanglitorque__(torque, m, Msat, J, alpha, xi, pol, mesh, &wg)
+		}()
 	}
 	wg.Wait()
 }

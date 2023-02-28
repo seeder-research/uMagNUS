@@ -51,6 +51,11 @@ func (g *geom) Slice() (*data.Slice, bool) {
 	if s.IsNil() {
 		s := opencl.Buffer(g.NComp(), g.Mesh().Size())
 		opencl.Memset(s, 1)
+		// Synchronization
+		for c := 0; c < s.NComp(); c++ {
+			s.Lock(c)
+			s.Unlock(c)
+		}
 		return s, true
 	} else {
 		return s, false
@@ -152,11 +157,22 @@ func (geometry *geom) setGeom(s Shape) {
 	}
 
 	data.Copy(geometry.buffer, V)
+	// Synchronization
+	geometry.buffer.Lock(0)
+	geometry.buffer.Unlock(0)
 
 	// M inside geom but previously outside needs to be re-inited
 	needupload := false
 	geomlist := host.Host()[0]
-	mhost := M.Buffer().HostCopy()
+	mbuf := M.Buffer()
+	mhost := mbuf.HostCopy()
+	// Synchronization
+	mbuf.Lock(X)
+	mbuf.Lock(Y)
+	mbuf.Lock(Z)
+	mbuf.Unlock(X)
+	mbuf.Unlock(Y)
+	mbuf.Unlock(Z)
 	m := mhost.Host()
 	rng := rand.New(rand.NewSource(0))
 	for i := range m[0] {
@@ -170,10 +186,23 @@ func (geometry *geom) setGeom(s Shape) {
 		}
 	}
 	if needupload {
-		data.Copy(M.Buffer(), mhost)
+		data.Copy(mbuf, mhost)
+		// Synchronization
+		mbuf.Lock(X)
+		mbuf.Lock(Y)
+		mbuf.Lock(Z)
+		mbuf.Unlock(X)
+		mbuf.Unlock(Y)
+		mbuf.Unlock(Z)
 	}
-
 	M.normalize() // removes m outside vol
+	// Synchronization
+	mbuf.Lock(X)
+	mbuf.Lock(Y)
+	mbuf.Lock(Z)
+	mbuf.Unlock(X)
+	mbuf.Unlock(Y)
+	mbuf.Unlock(Z)
 }
 
 // Sample edgeSmooth^3 points inside the cell to estimate its volume.

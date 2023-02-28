@@ -35,7 +35,9 @@ func NewBytes(Len int) *Bytes {
 	if Synchronous {
 		byte_zero__(outByte, &wg)
 	} else {
-		go byte_zero__(outByte, &wg)
+		go func() {
+			byte_zero__(outByte, &wg)
+		}()
 	}
 	wg.Wait()
 	return outByte
@@ -77,20 +79,18 @@ func (dst *Bytes) Zero(wg_ *sync.WaitGroup) {
 func (dst *Bytes) Upload(src []byte) {
 	util.Argument(dst.Len == len(src))
 	dst.Lock()
-	ev := MemCpyHtoD(dst.Ptr, unsafe.Pointer(&src[0]), dst.Len)
+	var wg sync.WaitGroup
+	wg.Add(1)
 	if Synchronous {
-		if err := cl.WaitForEvents(ev); err != nil {
-			panic(err)
-		}
+		MemCpyHtoD(dst.Ptr, unsafe.Pointer(&src[0]), dst.Len, &wg)
 		dst.Unlock()
 	} else {
-		go func(event []*cl.Event, d *Bytes) {
-			if err := cl.WaitForEvents(event); err != nil {
-				panic(err)
-			}
-			d.Unlock()
-		}(ev, dst)
+		go func() {
+			MemCpyHtoD(dst.Ptr, unsafe.Pointer(&src[0]), dst.Len, &wg)
+			dst.Unlock()
+		}()
 	}
+	wg.Wait()
 }
 
 // Copy on device: dst = src.
@@ -98,32 +98,29 @@ func (dst *Bytes) Copy(src *Bytes) {
 	util.Argument(dst.Len == src.Len)
 	dst.Lock()
 	src.RLock()
-	ev := MemCpy(dst.Ptr, src.Ptr, dst.Len)
+	var wg sync.WaitGroup
+	wg.Add(1)
 	if Synchronous {
-		if err := cl.WaitForEvents(ev); err != nil {
-			panic(err)
-		}
+		MemCpy(dst.Ptr, src.Ptr, dst.Len, &wg)
 		dst.Unlock()
 		src.RUnlock()
 	} else {
-		go func(event []*cl.Event, d, s *Bytes) {
-			if err := cl.WaitForEvents(event); err != nil {
-				panic(err)
-			}
-			d.Unlock()
-			s.RUnlock()
-		}(ev, dst, src)
+		go func() {
+			MemCpy(dst.Ptr, src.Ptr, dst.Len, &wg)
+			dst.Unlock()
+			src.RUnlock()
+		}()
 	}
+	wg.Wait()
 }
 
 // Copy to host: dst = src.
 func (src *Bytes) Download(dst []byte) {
 	util.Argument(src.Len == len(dst))
 	src.RLock()
-	ev := MemCpyDtoH(unsafe.Pointer(&dst[0]), src.Ptr, src.Len)
-	if err := cl.WaitForEvents(ev); err != nil {
-		panic(err)
-	}
+	var wg sync.WaitGroup
+	wg.Add(1)
+	MemCpyDtoH(unsafe.Pointer(&dst[0]), src.Ptr, src.Len, &wg)
 	src.RUnlock()
 }
 
@@ -139,7 +136,9 @@ func (dst *Bytes) Set(index int, value byte) {
 	if Synchronous {
 		bytes_set__(dst, index, value, &wg)
 	} else {
-		go bytes_set__(dst, index, value, &wg)
+		go func() {
+			bytes_set__(dst, index, value, &wg)
+		}()
 	}
 	wg.Wait()
 }

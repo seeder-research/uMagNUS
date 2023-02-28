@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"sync"
 	"unsafe"
 
 	data "github.com/seeder-research/uMagNUS/data"
@@ -39,11 +40,13 @@ func (p *lut) gpuLUT() opencl.LUTPtrs {
 		// upload to GPU
 		p.assureAlloc()
 		opencl.ClCmdQueue.Finish() // sync previous kernels, may still be using gpu lut
+		var wg sync.WaitGroup
 		for c := range p.gpu_buf {
-			opencl.MemCpyHtoD(p.gpu_buf[c], unsafe.Pointer(&p.cpu_buf[c][0]), opencl.SIZEOF_FLOAT32*NREGION)
+			wg.Add(1)
+			opencl.MemCpyHtoD(p.gpu_buf[c], unsafe.Pointer(&p.cpu_buf[c][0]), opencl.SIZEOF_FLOAT32*NREGION, &wg)
 		}
 		p.gpu_ok = true
-		opencl.ClCmdQueue.Finish() //sync upload
+		wg.Wait()
 	}
 	return p.gpu_buf
 }

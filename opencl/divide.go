@@ -17,12 +17,15 @@ func Divide(dst, a, b *data.Slice) {
 	util.Assert(a.Len() == N && a.NComp() == nComp && b.Len() == N && b.NComp() == nComp)
 
 	var wg sync.WaitGroup
+	wg.Add(nComp)
 	for c := 0; c < nComp; c++ {
-		wg.Add(1)
 		if Synchronous {
 			divide__(dst, a, b, c, &wg)
 		} else {
-			go divide__(dst, a, b, c, &wg)
+			idx := c
+			go func() {
+				divide__(dst, a, b, idx, &wg)
+			}()
 		}
 	}
 	wg.Wait()

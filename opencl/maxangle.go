@@ -17,7 +17,9 @@ func SetMaxAngle(dst, m *data.Slice, Aex_red SymmLUT, regions *Bytes, mesh *data
 	if Synchronous {
 		maxangle__(dst, m, Aex_red, regions, mesh, &wg)
 	} else {
-		go maxangle__(dst, m, Aex_red, regions, mesh, &wg)
+		go func() {
+			maxangle__(dst, m, Aex_red, regions, mesh, &wg)
+		}()
 	}
 	wg.Wait()
 }

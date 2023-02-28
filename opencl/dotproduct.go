@@ -19,7 +19,9 @@ func AddDotProduct(dst *data.Slice, prefactor float32, a, b *data.Slice) {
 	if Synchronous {
 		dotproduct__(dst, prefactor, a, b, &wg)
 	} else {
-		go dotproduct__(dst, prefactor, a, b, &wg)
+		go func() {
+			dotproduct__(dst, prefactor, a, b, &wg)
+		}()
 	}
 	wg.Wait()
 }

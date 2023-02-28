@@ -16,7 +16,9 @@ func Minimize(m, m0, torque *data.Slice, dt float32) {
 	if Synchronous {
 		minimize__(m, m0, torque, dt, &wg)
 	} else {
-		go minimize__(m, m0, torque, dt, &wg)
+		go func() {
+			minimize__(m, m0, torque, dt, &wg)
+		}()
 	}
 	wg.Wait()
 }

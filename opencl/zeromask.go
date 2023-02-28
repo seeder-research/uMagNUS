@@ -12,12 +12,16 @@ import (
 // Sets vector dst to zero where mask != 0.
 func ZeroMask(dst *data.Slice, mask LUTPtr, regions *Bytes) {
 	var wg sync.WaitGroup
-	for c := 0; c < dst.NComp(); c++ {
-		wg.Add(1)
+	numComp := dst.NComp()
+	wg.Add(numComp)
+	for c := 0; c < numComp; c++ {
 		if Synchronous {
 			zeromask__(dst, mask, regions, c, &wg)
 		} else {
-			go zeromask__(dst, mask, regions, c, &wg)
+			idx := c
+			go func() {
+				zeromask__(dst, mask, regions, idx, &wg)
+			}()
 		}
 	}
 	wg.Wait()
