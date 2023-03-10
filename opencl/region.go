@@ -162,7 +162,6 @@ func RegionSelect(dst, src *data.Slice, regions *Bytes, region byte) {
 	numComp := dst.NComp()
 	wg.Add(numComp)
 	for c := 0; c < numComp; c++ {
-		wg.Add(1)
 		if Synchronous {
 			regionselect__(dst, src, regions, region, c, &wg)
 		} else {
