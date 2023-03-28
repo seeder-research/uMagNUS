@@ -75,6 +75,13 @@ func integralController(Err, delM, k1, m0 *data.Slice, t0, h float64, accOrder, 
 			}
 			if FSAL && (k1 != nil) && (delM != nil) {
 				data.Copy(k1, delM) // FSAL
+				// Synchronize to copy
+				k1.Lock(X)
+				k1.Lock(Y)
+				k1.Lock(X)
+				k1.Unlock(X)
+				k1.Unlock(Y)
+				k1.Unlock(Z)
 			}
 		} else {
 			// undo bad step
@@ -84,6 +91,13 @@ func integralController(Err, delM, k1, m0 *data.Slice, t0, h float64, accOrder, 
 			data.Copy(m, m0)
 			NUndone++
 			adaptDt(math.Pow(RelErr/rlerr, 1./float64(rejOrder)))
+			// Synchronize to copy
+			m.Lock(X)
+			m.Lock(Y)
+			m.Lock(Z)
+			m.Unlock(X)
+			m.Unlock(Y)
+			m.Unlock(Z)
 		}
 	} else {
 		// undo bad step
@@ -93,6 +107,13 @@ func integralController(Err, delM, k1, m0 *data.Slice, t0, h float64, accOrder, 
 		data.Copy(m, m0)
 		NUndone++
 		adaptDt(math.Pow(MaxErr/err, 1./float64(rejOrder)))
+		// Synchronize to copy
+		m.Lock(X)
+		m.Lock(Y)
+		m.Lock(Z)
+		m.Unlock(X)
+		m.Unlock(Y)
+		m.Unlock(Z)
 	}
 }
 
@@ -186,6 +207,13 @@ func gustafssonController(Err, delM, k1, m0 *data.Slice, t0, h float64, kOrder i
 			}
 			if FSAL && (k1 != nil) && (delM != nil) {
 				data.Copy(k1, delM) // FSAL
+				// Synchronize to copy
+				k1.Lock(X)
+				k1.Lock(Y)
+				k1.Lock(Z)
+				k1.Unlock(X)
+				k1.Unlock(Y)
+				k1.Unlock(Z)
 			}
 		} else {
 			// undo bad step
@@ -215,6 +243,13 @@ func gustafssonController(Err, delM, k1, m0 *data.Slice, t0, h float64, kOrder i
 			accErr = -1.0
 			accRelErr = -1.0
 			rejErr = -1.0
+			// Synchronize to copy
+			m.Lock(X)
+			m.Lock(Y)
+			m.Lock(Z)
+			m.Unlock(X)
+			m.Unlock(Y)
+			m.Unlock(Z)
 		}
 	} else {
 		// undo bad step
@@ -244,5 +279,12 @@ func gustafssonController(Err, delM, k1, m0 *data.Slice, t0, h float64, kOrder i
 		accErr = -1.0
 		accRelErr = -1.0
 		rejRelErr = -1.0
+		// Synchronize to copy
+		m.Lock(X)
+		m.Lock(Y)
+		m.Lock(Z)
+		m.Unlock(X)
+		m.Unlock(Y)
+		m.Unlock(Z)
 	}
 }
