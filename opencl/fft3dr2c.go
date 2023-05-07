@@ -43,6 +43,10 @@ func (p *fft3DR2CPlan) ExecAsync(src, dst *data.Slice) error {
 	if dst.Len() != okdstlen {
 		log.Panicf("fft size mismatch: expecting dst len %v, got %v", okdstlen, dst.Len())
 	}
+	dst.Lock(0)
+	src.RLock(0)
+	defer dst.Unlock(0)
+	defer src.RUnlock(0)
 	tmpPtr := src.DevPtr(0)
 	srcMemObj := *(*cl.MemObject)(tmpPtr)
 	tmpPtr = dst.DevPtr(0)
