@@ -10,6 +10,7 @@ import (
 	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
 	ld "github.com/seeder-research/uMagNUS/loader"
+	qm "github.com/seeder-research/uMagNUS/queuemanager"
 )
 
 type GPU struct {
@@ -42,6 +43,9 @@ var (
 	ClMaxWGNum   int                       // Get maximum number of max-sized work groups that can execute simultaneously
 	ClTotalPE    int                       // Get total number of processing elements available
 	GPUVend      int                       // 1: nvidia, 2: intel, 3: amd, 4: unknown
+	CmdQueuePool chan *cl.CommandQueue     // pool of command queues available for launching kernels
+	QManagerPool chan *cl.CommandQueue     // for queuemanager to process the command queues
+	QueuePoolSz  = 8                       // number of command queues in pool (default to 8)
 )
 
 // Locks to an OS thread and initializes CUDA for that thread.
@@ -147,6 +151,21 @@ func Init(gpu int) {
 		fmt.Printf("CreateCommandQueue failed: %+v \n", err)
 		return
 	}
+
+	// Create pool of command queues
+	CmdQueuePool = make(chan *cl.CommandQueue, QueuePoolSz)
+	QManagerPool = make(chan *cl.CommandQueue, QueuePoolSz)
+	var tmpQueue *cl.CommandQueue
+	for i := 0; i < QueuePoolSz; i++ {
+		tmpQueue, err = context.CreateCommandQueue(ClDevice, 0)
+		if err == nil {
+			CmdQueuePool <- tmpQueue
+		} else {
+			fmt.Printf("CreateCommandQueue failed during pool creation: %+v \n", err)
+			return
+		}
+	}
+	qm.Init(QueuePoolSz, QManagerPool, CmdQueuePool)
 
 	// Create opencl program on selected opencl device
 	var program *cl.Program
@@ -302,4 +321,5 @@ func ReleaseAndClean() {
 	ClCmdQueue.Release()
 	ClProgram.Release()
 	ClCtx.Release()
+	qm.Teardown()
 }

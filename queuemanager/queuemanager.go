@@ -8,9 +8,9 @@ import (
 )
 
 var (
-	queueManagerContext	context.Context
-	queueManagerKillFunc	context.CancelFunc
-	routineCount		= int(-1)
+	queueManagerContext  context.Context
+	queueManagerKillFunc context.CancelFunc
+	routineCount         = int(-1)
 )
 
 func Init(numRoutines int, queueInput, queuePool chan *cl.CommandQueue) {
@@ -42,12 +42,12 @@ func Teardown() {
 func threadFunction(queueIn <-chan *cl.CommandQueue, queuePool chan<- *cl.CommandQueue) {
 	for {
 		select {
-		case cmdQueue := <- queueIn:
+		case cmdQueue := <-queueIn:
 			err := cmdQueue.Finish()
 			if err != nil {
 				log.Printf("ERROR: unable to wait for command queue to finish...")
 			}
-			queuePool <-cmdQueue
+			queuePool <- cmdQueue
 		case <-queueManagerContext.Done():
 			return
 		}

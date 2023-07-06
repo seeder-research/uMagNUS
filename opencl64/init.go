@@ -10,6 +10,7 @@ import (
 	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data64"
 	ld "github.com/seeder-research/uMagNUS/loader64"
+	qm "github.com/seeder-research/uMagNUS/queuemanager"
 )
 
 type GPU struct {
@@ -42,6 +43,9 @@ var (
 	ClMaxWGNum   int                       // Get maximum number of max-sized work groups that can execute simultaneously
 	ClTotalPE    int                       // Get total number of processing elements available
 	GPUVend      int                       // 1: nvidia, 2: intel, 3: amd, 4: unknown
+	CmdQueuePool chan *cl.CommandQueue     // pool of command queues available for launching kernels
+	QManagerPool chan *cl.CommandQueue     // for queuemanager to process the command queues
+	QueuePoolSz  = 8                       // number of command queues in pool (default to 8)
 )
 
 // Locks to an OS thread and initializes CUDA for that thread.
@@ -148,6 +152,21 @@ func Init(gpu int) {
 		return
 	}
 
+	// Create pool of command queues
+	CmdQueuePool = make(chan *cl.CommandQueue, QueuePoolSz)
+	QManagerPool = make(chan *cl.CommandQueue, QueuePoolSz)
+	var tmpQueue *cl.CommandQueue
+	for i := 0; i < QueuePoolSz; i++ {
+		tmpQueue, err = context.CreateCommandQueue(ClDevice, 0)
+		if err == nil {
+			CmdQueuePool <- tmpQueue
+		} else {
+			fmt.Printf("CreateCommandQueue failed during pool creation: %+v \n", err)
+			return
+		}
+	}
+	qm.Init(QueuePoolSz, QManagerPool, CmdQueuePool)
+
 	// Create opencl program on selected opencl device
 	var program *cl.Program
 	nobinary := bool(false)
@@ -173,19 +192,19 @@ func Init(gpu int) {
 
 		// Attempt to build binary from opencl program
 		argString := "-cl-std=CL1.2 -cl-finite-math-only -cl-no-signed-zeros -cl-fp32-correctly-rounded-divide-sqrt -cl-kernel-arg-info -D__REAL_IS_DOUBLE__"
-                if strings.Contains(strings.ToUpper(PlatformInfo), "NVIDIA") {
-                        argString += fmt.Sprint(argString, " -D__NVCODE__ ")
-                } else {
-                        if strings.EqualFold(DevName, "gfx908") {
-                                argString += fmt.Sprint(argString, " -D__AMDGPU_FP32ATOMICS_1__ ")
-                        }
-                        if strings.EqualFold(DevName, "gfx90a") {
-                                argString += fmt.Sprint(argString, " -D__AMDGPU_FP32ATOMICS_1__ -D__AMDGPU_FP64ATOMICS_0__ ")
-                        }
-                        if strings.EqualFold(DevName, "gfx940") {
-                                argString += fmt.Sprint(argString, " -D__AMDGPU_FP32ATOMICS_0__ -D__AMDGPU_FP64ATOMICS_0__ ")
-                        }
-                }
+		if strings.Contains(strings.ToUpper(PlatformInfo), "NVIDIA") {
+			argString += fmt.Sprint(argString, " -D__NVCODE__ ")
+		} else {
+			if strings.EqualFold(DevName, "gfx908") {
+				argString += fmt.Sprint(argString, " -D__AMDGPU_FP32ATOMICS_1__ ")
+			}
+			if strings.EqualFold(DevName, "gfx90a") {
+				argString += fmt.Sprint(argString, " -D__AMDGPU_FP32ATOMICS_1__ -D__AMDGPU_FP64ATOMICS_0__ ")
+			}
+			if strings.EqualFold(DevName, "gfx940") {
+				argString += fmt.Sprint(argString, " -D__AMDGPU_FP32ATOMICS_0__ -D__AMDGPU_FP64ATOMICS_0__ ")
+			}
+		}
 		if err = program.BuildProgram([]*cl.Device{ClDevice}, argString); err != nil {
 			fmt.Printf("BuildProgram failed: %+v \n", err)
 			return
@@ -302,4 +321,5 @@ func ReleaseAndClean() {
 	ClCmdQueue.Release()
 	ClProgram.Release()
 	ClCtx.Release()
+	qm.Teardown()
 }
