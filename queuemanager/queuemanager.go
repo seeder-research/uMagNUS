@@ -14,8 +14,11 @@ var (
 )
 
 func Init(numRoutines int, queueInput, queuePool chan *cl.CommandQueue) {
+	// Initialize globals
 	queueManagerContext, queueManagerKillFunc = context.WithCancel(context.Background())
 	routineCount = numRoutines
+
+	// Start goroutines
 	for i := 0; i < numRoutines; i++ {
 		go threadFunction(queueInput, queuePool)
 	}
@@ -33,6 +36,9 @@ func Teardown() {
 	queueManagerKillFunc()
 }
 
+// Function that the goroutines will be running indefinitely unless the context is cancelled...
+// The command queue is given to the goroutine, which waits for the queue to finish before
+// returning it back to a pool of command queues
 func threadFunction(queueIn <-chan *cl.CommandQueue, queuePool chan<- *cl.CommandQueue) {
 	for {
 		select {
