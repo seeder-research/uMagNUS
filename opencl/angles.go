@@ -27,7 +27,7 @@ func SetPhi(s *data.Slice, m *data.Slice) {
 	m.InsertReadEvent(X, event)
 	m.InsertReadEvent(Y, event)
 
-	// Force synchronization
+	// Force synchronization TODO: needed??
 	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in phi: %+v \n", err)
 	}
@@ -53,7 +53,7 @@ func SetTheta(s *data.Slice, m *data.Slice) {
 	s.SetEvent(0, event)
 	m.InsertReadEvent(Z, event)
 
-	// Force synchronization
+	// Force synchronization TODO: needed??
 	if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents failed in theta: %+v \n", err)
 	}

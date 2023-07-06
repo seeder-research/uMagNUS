@@ -144,6 +144,7 @@ func AddCubicAnisotropy2(Beff, m *data.Slice, Msat, k1, k2, k3, c1, c2 MSlice) {
 		return
 	}
 
+	// TODO: needed?
 	go WaitAndUpdateDataSliceEvents(event, glist, true)
 
 }
@@ -255,6 +256,7 @@ func AddUniaxialAnisotropy2(Beff, m *data.Slice, Msat, k1, k2, u MSlice) {
 		return
 	}
 
+	// TODO: needed?
 	go WaitAndUpdateDataSliceEvents(event, glist, true)
 
 }
@@ -356,6 +358,7 @@ func AddUniaxialAnisotropy(Beff, m *data.Slice, Msat, k1, u MSlice) {
 		return
 	}
 
+	// TODO: needed?
 	go WaitAndUpdateDataSliceEvents(event, glist, true)
 
 }
@@ -469,6 +472,7 @@ func AddVoltageControlledAnisotropy(Beff, m *data.Slice, Msat, vcmaCoeff, voltag
 		return
 	}
 
+	// TODO: needed?
 	go WaitAndUpdateDataSliceEvents(event, glist, true)
 
 }

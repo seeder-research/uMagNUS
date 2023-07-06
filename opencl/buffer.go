@@ -24,7 +24,11 @@ const buf_max = 100 // maximum number of buffers to allocate (detect memory leak
 // Returns a GPU slice for temporary use. To be returned to the pool with Recycle
 func Buffer(nComp int, size [3]int) *data.Slice {
 	if Synchronous {
+		// Wait for main queue to finish
 		ClCmdQueue.Finish()
+		// Wait for queuemanager routines to finish
+		for len(CmdQueuePool) < QueuePoolSz {
+		}
 	}
 
 	ptrs := make([]unsafe.Pointer, nComp)
@@ -74,7 +78,11 @@ func Buffer(nComp int, size [3]int) *data.Slice {
 // Returns a buffer obtained from GetBuffer to the pool.
 func Recycle(s *data.Slice) {
 	if Synchronous {
+		// Wait for main queue to finish
 		ClCmdQueue.Finish()
+		// Wait for queuemanager routines to finish
+		for len(CmdQueuePool) < QueuePoolSz {
+		}
 	}
 
 	N := s.Len()
@@ -96,7 +104,11 @@ func Recycle(s *data.Slice) {
 
 // Frees all buffers. Called after mesh resize.
 func FreeBuffers() {
+	// Wait for main queue to finish
 	ClCmdQueue.Finish()
+	// Wait for queuemanager routines to finish
+	for len(CmdQueuePool) < QueuePoolSz {
+	}
 	for _, size := range buf_pool {
 		for i := range size {
 			tmpObj := (*cl.MemObject)(size[i])
@@ -104,7 +116,11 @@ func FreeBuffers() {
 			size[i] = nil
 		}
 	}
+	// Wait for main queue to finish
 	ClCmdQueue.Finish()
+	// Wait for queuemanager routines to finish
+	for len(CmdQueuePool) < QueuePoolSz {
+	}
 	buf_pool = make(map[int][]unsafe.Pointer)
 	buf_check = make(map[unsafe.Pointer]struct{})
 }
