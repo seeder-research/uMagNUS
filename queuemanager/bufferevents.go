@@ -1,6 +1,7 @@
 package queuemanager
 
 import (
+	"context"
 	"log"
 
 	cl "github.com/seeder-research/uMagNUS/cl"
@@ -103,15 +104,70 @@ func AddReadEventsToBuffers(list []BufferType, ev *cl.Event) {
 	}
 }
 
+// /////////////////////////////////////////////////////////////////////////////////////
+//
+//	Single goroutine to support updates o events tracked in buffers
+//
+// /////////////////////////////////////////////////////////////////////////////////////
+type EventAndBuffers struct {
+	ev    *cl.Event
+	cList []BufferType
+	pList []BufferType
+}
+
 // Wait for list of events to complete and update
 // the events in the buffer lists
 func WaitAndUpdateEventsInBuffers(cList, pList []BufferType, ev *cl.Event) {
-	err := cl.WaitForEvents([]*cl.Event{ev});
+	// Wait for event to complete
+	err := cl.WaitForEvents([]*cl.Event{ev})
 	if err != nil {
 		log.Println("ERROR: WaitAndUpdateEventsInBuffers failed to wait for event!")
 	}
-	// Event has successfully completed...
-	// Purge event from buffers consumed...
-	RemoveReadEventFromBuffers(cList, ev)
-	RemoveEventFromBuffers(pList, ev)
+	// Regardless of whether there was error, remove the event from the buffers by
+	// signaling goroutine
+	EventInChan <- EventAndBuffers{ev: ev, cList: cList, pList: pList}
+}
+
+var (
+	EventOutChan  chan []*cl.Event
+	EventInChan   chan EventAndBuffers
+	bufUpdaterCtx context.Context
+	bufCtxCancFcn context.CancelFunc
+)
+
+func initEventRoutine() {
+	EventOutChan = make(chan []*cl.Event)
+	EventInChan = make(chan EventAndBuffers)
+
+	bufUpdaterCtx, bufCtxCancFcn = context.WithCancel(context.Background())
+
+	go EventUpdateRoutine(EventInChan, EventOutChan)
+}
+
+func killEventRoutine() {
+	bufCtxCancFcn()
+}
+
+func EventUpdateRoutine(in <-chan EventAndBuffers, out chan<- []*cl.Event) {
+	for {
+		select {
+		case data := <-in:
+			if data.ev == nil {
+				// This signals that routine should return list of all events
+				// for buffers in cList and pList
+				outEventList := GetAllEventsOfBuffers(data.cList)
+				outEventList = append(outEventList, GetAllEventsOfBuffers(data.pList)...)
+				out <- outEventList
+			} else {
+				// This signals that routine should remove event
+				// from buffers in cList and pList
+				// Event has successfully completed...
+				// Purge event from buffers consumed...
+				RemoveReadEventFromBuffers(data.cList, data.ev)
+				RemoveEventFromBuffers(data.pList, data.ev)
+			}
+		case <-bufUpdaterCtx.Done():
+			return
+		}
+	}
 }

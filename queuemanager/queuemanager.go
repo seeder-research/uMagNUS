@@ -22,6 +22,9 @@ func Init(numRoutines int, queueInput, queuePool chan *cl.CommandQueue) {
 	for i := 0; i < numRoutines; i++ {
 		go threadFunction(queueInput, queuePool)
 	}
+
+	// Start goroutine for updating events tracked in buffers
+	initEventRoutine()
 }
 
 func GetContext() context.Context {
@@ -34,6 +37,7 @@ func GetKillFunction() context.CancelFunc {
 
 func Teardown() {
 	queueManagerKillFunc()
+	killEventRoutine()
 }
 
 // Function that the goroutines will be running indefinitely unless the context is cancelled...
