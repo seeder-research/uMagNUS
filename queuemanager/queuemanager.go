@@ -13,14 +13,35 @@ var (
 	routineCount         = int(-1)
 )
 
-func Init(numRoutines int, queueInput, queuePool chan *cl.CommandQueue) {
+type QueueEvent struct {
+	q *cl.CommandQueue
+	e *cl.Event
+}
+
+func (qe *QueueEvent) GetQueue() *cl.CommandQueue {
+	return qe.q
+}
+
+func (qe *QueueEvent) GetEvent() []*cl.Event {
+	return []*cl.Event{qe.e}
+}
+
+func (qe *QueueEvent) SetQueue(queue *cl.CommandQueue) {
+	qe.q = queue
+}
+
+func (qe *QueueEvent) SetEvent(event *cl.Event) {
+	qe.e = event
+}
+
+func Init(numRoutines int, in chan *QueueEvent, queuePool chan *cl.CommandQueue) {
 	// Initialize globals
 	queueManagerContext, queueManagerKillFunc = context.WithCancel(context.Background())
 	routineCount = numRoutines
 
 	// Start goroutines
 	for i := 0; i < numRoutines; i++ {
-		go threadFunction(queueInput, queuePool)
+		go threadFunction(in, queuePool)
 	}
 
 	// Start goroutine for updating events tracked in buffers
@@ -43,15 +64,15 @@ func Teardown() {
 // Function that the goroutines will be running indefinitely unless the context is cancelled...
 // The command queue is given to the goroutine, which waits for the queue to finish before
 // returning it back to a pool of command queues
-func threadFunction(queueIn <-chan *cl.CommandQueue, queuePool chan<- *cl.CommandQueue) {
+func threadFunction(in <-chan *QueueEvent, queuePool chan<- *cl.CommandQueue) {
 	for {
 		select {
-		case cmdQueue := <-queueIn:
-			err := cmdQueue.Finish()
+		case item := <-in:
+			err := cl.WaitForEvents(item.GetEvent())
 			if err != nil {
-				log.Printf("ERROR: unable to wait for command queue to finish...")
+				log.Printf("ERROR: unable to wait for event to finish...")
 			}
-			queuePool <- cmdQueue
+			queuePool <- item.GetQueue()
 		case <-queueManagerContext.Done():
 			return
 		}

@@ -44,7 +44,7 @@ var (
 	ClTotalPE    int                       // Get total number of processing elements available
 	GPUVend      int                       // 1: nvidia, 2: intel, 3: amd, 4: unknown
 	CmdQueuePool chan *cl.CommandQueue     // pool of command queues available for launching kernels
-	QManagerPool chan *cl.CommandQueue     // for queuemanager to process the command queues
+	QEventPool   chan *qm.QueueEvent       // for queuemanager to process the command queues
 	QueuePoolSz  = 8                       // number of command queues in pool (default to 8)
 )
 
@@ -154,7 +154,7 @@ func Init(gpu int) {
 
 	// Create pool of command queues
 	CmdQueuePool = make(chan *cl.CommandQueue, QueuePoolSz)
-	QManagerPool = make(chan *cl.CommandQueue, QueuePoolSz)
+	QEventPool = make(chan *qm.QueueEvent, QueuePoolSz)
 	var tmpQueue *cl.CommandQueue
 	for i := 0; i < QueuePoolSz; i++ {
 		tmpQueue, err = context.CreateCommandQueue(ClDevice, 0)
@@ -165,7 +165,7 @@ func Init(gpu int) {
 			return
 		}
 	}
-	qm.Init(QueuePoolSz, QManagerPool, CmdQueuePool)
+	qm.Init(QueuePoolSz, QEventPool, CmdQueuePool)
 
 	// Create opencl program on selected opencl device
 	var program *cl.Program
