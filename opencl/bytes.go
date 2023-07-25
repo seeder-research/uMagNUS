@@ -4,10 +4,12 @@ package opencl
 
 import (
 	"log"
+	"sync"
 	"unsafe"
 
 	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
+	qm "github.com/seeder-research/uMagNUS/queuemanager"
 	util "github.com/seeder-research/uMagNUS/util"
 )
 
@@ -22,17 +24,31 @@ type Bytes struct {
 // Construct new byte slice with given length,
 // initialised to zeros.
 func NewBytes(Len int) *Bytes {
+	if Synchronous { // debug
+		for len(CmdQueuePool) < QueuePoolSz {
+		}
+	}
+
 	ptr, err := ClCtx.CreateEmptyBuffer(cl.MemReadWrite, Len)
 	if err != nil {
 		panic(err)
 	}
 	zeroPattern := uint8(0)
+
+	// Checkout command queue from pool and launch kernel
+	var newBytesSyncWaitGroup sync.WaitGroup
 	var event *cl.Event
-	event, err = ClCmdQueue.EnqueueFillBuffer(ptr, unsafe.Pointer(&zeroPattern), 1, 0, Len, nil)
+	tmpQueue := qm.CheckoutQueue(CmdQueuePool, &newBytesSyncWaitGroup)
+	event, err = tmpQueue.EnqueueFillBuffer(ptr, unsafe.Pointer(&zeroPattern), 1, 0, Len, nil)
 	if err != nil {
 		panic(err)
 	}
-	if Debug {
+
+	// Check in queue post execution
+	qwg := qm.NewQueueWaitGroup(tmpQueue, &newBytesSyncWaitGroup)
+	ReturnQueuePool <- qwg
+
+	if Synchronous || Debug {
 		if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			log.Panic("WaitForEvents failed in NewBytes:", err)
 		}
@@ -56,54 +72,45 @@ func (dst *Bytes) Upload(src []byte) {
 
 // Copy on device: dst = src.
 func (dst *Bytes) Copy(src *Bytes) {
+	// synchronization should be done by code calling
+	// this function
+
 	util.Argument(dst.Len == src.Len)
-	eventWaitList := []*cl.Event{}
-	tmpEvtL := dst.GetAllEvents()
-	if len(tmpEvtL) > 0 {
-		eventWaitList = append(eventWaitList, tmpEvtL...)
-	}
-	tmpEvt := src.GetEvent()
-	if tmpEvt != nil {
-		eventWaitList = append(eventWaitList, tmpEvt)
-	}
-	if len(eventWaitList) > 0 {
-		if err := cl.WaitForEvents(eventWaitList); err != nil {
-			log.Panic("WaitForEvents failed in Copy:", err)
-		}
-	}
 	MemCpy(dst.Ptr, src.Ptr, dst.Len)
 }
 
 // Copy to host: dst = src.
 func (src *Bytes) Download(dst []byte) {
+	// synchronization should be done by code calling
+	// this function
+
 	util.Argument(src.Len == len(dst))
-	srcEvt := src.GetEvent()
-	if srcEvt != nil {
-		if err := cl.WaitForEvents([](*cl.Event){srcEvt}); err != nil {
-			log.Panic("WaitForEvents failed in Download:", err)
-		}
-	}
 	MemCpyDtoH(unsafe.Pointer(&dst[0]), src.Ptr, src.Len)
 }
 
 // Set one element to value.
 // data.Index can be used to find the index for x,y,z.
 func (dst *Bytes) Set(index int, value byte) {
+	// synchronization should be done by code calling
+	// this function
+
 	if index < 0 || index >= dst.Len {
 		log.Panic("Bytes.Set: index out of range:", index)
 	}
 	src := value
-	dstEvt := dst.GetEvent()
-	var event *cl.Event
-	var err error
-	if dstEvt != nil {
-		event, err = ClCmdQueue.EnqueueWriteBuffer((*cl.MemObject)(dst.Ptr), false, index, 1, unsafe.Pointer(&src), []*cl.Event{dstEvt})
-	} else {
-		event, err = ClCmdQueue.EnqueueWriteBuffer((*cl.MemObject)(dst.Ptr), false, index, 1, unsafe.Pointer(&src), nil)
-	}
+
+	// Checkout command queue from pool and launch kernel
+	var setByteSyncWaitGroup sync.WaitGroup
+	tmpQueue := qm.CheckoutQueue(CmdQueuePool, &setByteSyncWaitGroup)
+	event, err := tmpQueue.EnqueueWriteBuffer((*cl.MemObject)(dst.Ptr), false, index, 1, unsafe.Pointer(&src), nil)
 	if err != nil {
 		panic(err)
 	}
+
+	// Check in queue post execution
+	qwg := qm.NewQueueWaitGroup(tmpQueue, &setByteSyncWaitGroup)
+	ReturnQueuePool <- qwg
+
 	dst.SetEvent(event)
 	if Debug {
 		if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
@@ -115,21 +122,26 @@ func (dst *Bytes) Set(index int, value byte) {
 // Get one element.
 // data.Index can be used to find the index for x,y,z.
 func (src *Bytes) Get(index int) byte {
+	// synchronization should be done by code calling
+	// this function
+
 	if index < 0 || index >= src.Len {
 		log.Panic("Bytes.Set: index out of range:", index)
 	}
 	dst := make([]byte, 1)
-	srcEvent := src.GetEvent()
-	var event *cl.Event
-	var err error
-	if srcEvent != nil {
-		event, err = ClCmdQueue.EnqueueReadBufferByte((*cl.MemObject)(src.Ptr), false, index, dst, []*cl.Event{srcEvent})
-	} else {
-		event, err = ClCmdQueue.EnqueueReadBufferByte((*cl.MemObject)(src.Ptr), false, index, dst, nil)
-	}
+
+	// Checkout command queue from pool and launch kernel
+	var getByteSyncWaitGroup sync.WaitGroup
+	tmpQueue := qm.CheckoutQueue(CmdQueuePool, &getByteSyncWaitGroup)
+	event, err := tmpQueue.EnqueueReadBufferByte((*cl.MemObject)(src.Ptr), false, index, dst, nil)
 	if err != nil {
 		panic(err)
 	}
+
+	// Check in queue post execution
+	qwg := qm.NewQueueWaitGroup(tmpQueue, &getByteSyncWaitGroup)
+	ReturnQueuePool <- qwg
+
 	// Must synchronize
 	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		log.Panic("WaitForEvents failed in Bytes.Set():", err)
