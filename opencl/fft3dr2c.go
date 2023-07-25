@@ -63,9 +63,10 @@ func (p *fft3DR2CPlan) ExecAsync(src, dst *data.Slice) error {
 
 	err = p.handle.EnqueueForwardTransform([]*cl.MemObject{&srcMemObj}, []*cl.MemObject{&dstMemObj})
 	if Synchronous {
-		ClCmdQueue.Finish()
+		p.handle.Finish()
 		timer.Stop("fft")
 	}
+	// WaitForEvents in ClCmdQueue is useless since FFT plans run in their own queues
 	tmpEvt, err = ClCmdQueue.EnqueueMarkerWithWaitList(nil)
 	if err != nil {
 		log.Printf("Failed to enqueue marker in fwPlan.ExecAsync: %+v \n", err)
