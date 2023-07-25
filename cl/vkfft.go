@@ -275,3 +275,17 @@ func (p *VkfftPlan) EnqueueBackwardTransform(input []*MemObject, output []*MemOb
 func (plan *VkfftPlan) Destroy() {
 	C.vkfftDestroyFFTPlan(plan.GetPlanPointer())
 }
+
+func (plan *VkfftPlan) GetQueueEvent() *Event {
+	ev := new(Event)
+	ev.clEvent = C.vkfftGetPlanEvent(plan.GetPlanPointer())
+	return ev
+}
+
+func (plan *VkfftPlan) QueueFinish() error {
+	return toError(C.vkfftPlanQueueFinish(plan.GetPlanPointer()))
+}
+
+func (plan *VkfftPlan) QueueFlush() error {
+	return toError(C.vkfftPlanQueueFlush(plan.GetPlanPointer()))
+}
