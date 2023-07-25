@@ -1,28 +1,3 @@
-// This file is part of VkFFT, a Vulkan Fast Fourier Transform library
-//
-// Copyright (C) 2020 - present Dmitrii Tolmachev <dtolm96@gmail.com>
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-
-#ifndef __VKFFT_ENUM_H
-#define __VKFFT_ENUM_H
-
 typedef enum VkFFTResult {
 	VKFFT_SUCCESS = 0,
 	VKFFT_ERROR_MALLOC_FAILED = 1,
@@ -40,6 +15,7 @@ typedef enum VkFFTResult {
 	VKFFT_ERROR_INVALID_CONTEXT = 1008,
 	VKFFT_ERROR_INVALID_PLATFORM = 1009,
 	VKFFT_ERROR_ENABLED_saveApplicationToString = 1010,
+	VKFFT_ERROR_EMPTY_FILE = 1011,
 	VKFFT_ERROR_EMPTY_FFTdim = 2001,
 	VKFFT_ERROR_EMPTY_size = 2002,
 	VKFFT_ERROR_EMPTY_bufferSize = 2003,
@@ -53,6 +29,7 @@ typedef enum VkFFTResult {
 	VKFFT_ERROR_EMPTY_kernelSize = 2011,
 	VKFFT_ERROR_EMPTY_kernel = 2012,
 	VKFFT_ERROR_EMPTY_applicationString = 2013,
+	VKFFT_ERROR_EMPTY_useCustomBluesteinPaddingPattern_arrays = 2014,
 	VKFFT_ERROR_UNSUPPORTED_RADIX = 3001,
 	VKFFT_ERROR_UNSUPPORTED_FFT_LENGTH = 3002,
 	VKFFT_ERROR_UNSUPPORTED_FFT_LENGTH_R2C = 3003,
@@ -109,6 +86,8 @@ typedef enum VkFFTResult {
 	VKFFT_ERROR_FAILED_TO_RELEASE_COMMAND_QUEUE = 4049,
 	VKFFT_ERROR_FAILED_TO_ENUMERATE_DEVICES = 4050,
 	VKFFT_ERROR_FAILED_TO_GET_ATTRIBUTE = 4051,
-	VKFFT_ERROR_FAILED_TO_CREATE_EVENT = 4052
+	VKFFT_ERROR_FAILED_TO_CREATE_EVENT = 4052,
+	VKFFT_ERROR_FAILED_TO_CREATE_COMMAND_LIST = 4053,
+	VKFFT_ERROR_FAILED_TO_DESTROY_COMMAND_LIST = 4054,
+	VKFFT_ERROR_FAILED_TO_SUBMIT_BARRIER = 4055
 } VkFFTResult;
-#endif // __VKFFT_ENUM_H
