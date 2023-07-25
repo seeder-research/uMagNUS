@@ -2,10 +2,12 @@ package opencl
 
 import (
 	"fmt"
+	"sync"
 	"unsafe"
 
 	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
+	qm "github.com/seeder-research/uMagNUS/queuemanager"
 	timer "github.com/seeder-research/uMagNUS/timer"
 	util "github.com/seeder-research/uMagNUS/util"
 )
@@ -21,22 +23,43 @@ func newSlice(nComp int, size [3]int, memType int8) *data.Slice {
 	ptrs := make([]unsafe.Pointer, nComp)
 	initVal := float32(0.0)
 	fillWait := make([]*cl.Event, nComp)
+	var newSliceSyncWaitGroup sync.WaitGroup
+
+	// Synchronize command queues so that all kernel launches occur in-sequence
+	if Synchronous {
+		for len(CmdQueuePool) < QueuePoolSz {
+		}
+	}
+
+	// Zero buffers in slice
 	for c := range ptrs {
 		tmp_buf, err := ClCtx.CreateEmptyBuffer(cl.MemReadWrite, bytes)
 		if err != nil {
 			fmt.Printf("CreateEmptyBuffer failed: %+v \n", err)
 		}
 		ptrs[c] = unsafe.Pointer(tmp_buf)
-		fillWait[c], err = ClCmdQueue.EnqueueFillBuffer(tmp_buf, unsafe.Pointer(&initVal), SIZEOF_FLOAT32, 0, bytes, nil)
+
+		// Checkout command queue from pool and launch kernel
+		tmpQueue := qm.CheckoutQueue(CmdQueuePool, &newSliceSyncWaitGroup)
+		fillWait[c], err = tmpQueue.EnqueueFillBuffer(tmp_buf, unsafe.Pointer(&initVal), SIZEOF_FLOAT32, 0, bytes, nil)
 		if err != nil {
 			fmt.Printf("CreateEmptyBuffer failed: %+v \n", err)
 		}
-		if err = cl.WaitForEvents([]*cl.Event{fillWait[c]}); err != nil {
-			fmt.Printf("Wait for EnqueueFillBuffer failed: %+v \n", err)
+
+		// Check command queue back into main pool
+		qwg := qm.NewQueueWaitGroup(tmpQueue, &newSliceSyncWaitGroup)
+		ReturnQueuePool <- qwg
+
+		// Synchronize command queues so that all kernel launches occur in-sequence
+		if Synchronous {
+			newSliceSyncWaitGroup.Done()
 		}
 	}
 
 	dataPtr := data.SliceFromPtrs(size, memType, ptrs)
+	if Synchronous == false {
+		newSliceSyncWaitGroup.Done()
+	}
 	dataPtr.SetEvents(fillWait)
 	return dataPtr
 }
@@ -51,28 +74,25 @@ func memFree(ptr unsafe.Pointer) {
 }
 
 func MemCpyDtoH(dst, src unsafe.Pointer, bytes int) []*cl.Event {
-	// sync previous kernels
-	eventList := make([](*cl.Event), 1)
-	waitList, err := ClCmdQueue.EnqueueBarrierWithWaitList(nil)
-	if err != nil {
-		fmt.Printf("EnqueueBarrierWithWaitList failed: %+v \n", err)
-		return nil
+	// Synchronize command queues so that all kernel launches occur in-sequence
+	if Synchronous {
+		for len(CmdQueuePool) < QueuePoolSz {
+		}
 	}
-	eventList[0] = waitList
-	if err = cl.WaitForEvents(eventList); err != nil {
-		fmt.Printf("First WaitForEvents in MemCpyDtoH failed: %+v \n", err)
-		return nil
-	}
+	var memCpyDtoHSyncWaitGroup sync.WaitGroup
 	timer.Start("memcpyDtoH")
 
-	// execute
-	eventList[0], err = ClCmdQueue.EnqueueReadBuffer((*cl.MemObject)(src), false, 0, bytes, dst, nil)
+	// Checkout command queue from pool and execute
+	tmpQueue := qm.CheckoutQueue(CmdQueuePool, &memCpyDtoHSyncWaitGroup)
+	eventList[0], err = tmpQueue.EnqueueReadBuffer((*cl.MemObject)(src), false, 0, bytes, dst, nil)
 	if err != nil {
 		fmt.Printf("EnqueueReadBuffer failed: %+v \n", err)
 		return nil
 	}
 
 	// sync copy
+	qwg := qm.NewQueueWaitGroup(tmpQueue, &memCpyDtoHSyncWaitGroup)
+	ReturnQueuePool <- qwg
 	err = cl.WaitForEvents(eventList)
 	timer.Stop("memcpyDtoH")
 	if err != nil {
@@ -84,28 +104,25 @@ func MemCpyDtoH(dst, src unsafe.Pointer, bytes int) []*cl.Event {
 }
 
 func MemCpyHtoD(dst, src unsafe.Pointer, bytes int) []*cl.Event {
-	// sync previous kernels
-	eventList := make([](*cl.Event), 1)
-	waitList, err := ClCmdQueue.EnqueueBarrierWithWaitList(nil)
-	if err != nil {
-		fmt.Printf("EnqueueBarrierWithWaitList failed: %+v \n", err)
-		return nil
+	// Synchronize command queues so that all kernel launches occur in-sequence
+	if Synchronous {
+		for len(CmdQueuePool) < QueuePoolSz {
+		}
 	}
-	eventList[0] = waitList
-	if err = cl.WaitForEvents(eventList); err != nil {
-		fmt.Printf("First WaitForEvents in MemCpyHtoD failed: %+v \n", err)
-		return nil
-	}
+	var memCpyHtoDSyncWaitGroup sync.WaitGroup
 	timer.Start("memcpyHtoD")
 
-	// execute
-	eventList[0], err = ClCmdQueue.EnqueueWriteBuffer((*cl.MemObject)(dst), false, 0, bytes, src, nil)
+	// Checkout command queue from pool and execute
+	tmpQueue := qm.CheckoutQueue(CmdQueuePool, &memCpyHtoDSyncWaitGroup)
+	eventList[0], err = tmpQueue.EnqueueWriteBuffer((*cl.MemObject)(dst), false, 0, bytes, src, nil)
 	if err != nil {
 		fmt.Printf("EnqueueWriteBuffer failed: %+v \n", err)
 		return nil
 	}
 
 	// sync copy
+	qwg := qm.NewQueueWaitGroup(tmpQueue, &memCpyHtoDSyncWaitGroup)
+	ReturnQueuePool <- qwg
 	err = cl.WaitForEvents(eventList)
 	timer.Stop("memcpyHtoD")
 	if err != nil {
@@ -117,28 +134,25 @@ func MemCpyHtoD(dst, src unsafe.Pointer, bytes int) []*cl.Event {
 }
 
 func MemCpy(dst, src unsafe.Pointer, bytes int) []*cl.Event {
-	// sync kernels
-	eventList := make([](*cl.Event), 1)
-	waitList, err := ClCmdQueue.EnqueueBarrierWithWaitList(nil)
-	if err != nil {
-		fmt.Printf("EnqueueBarrierWithWaitList failed: %+v \n", err)
-		return nil
+	// Synchronize command queues so that all kernel launches occur in-sequence
+	if Synchronous {
+		for len(CmdQueuePool) < QueuePoolSz {
+		}
 	}
-	eventList[0] = waitList
-	if err = cl.WaitForEvents(eventList); err != nil {
-		fmt.Printf("First WaitForEvents in MemCpy failed: %+v \n", err)
-		return nil
-	}
+	var memCpySyncWaitGroup sync.WaitGroup
 	timer.Start("memcpy")
 
-	// execute
-	eventList[0], err = ClCmdQueue.EnqueueCopyBuffer((*cl.MemObject)(src), (*cl.MemObject)(dst), 0, 0, bytes, nil)
+	// Checkout command queue from pool and execute
+	tmpQueue := qm.CheckoutQueue(CmdQueuePool, &memCpySyncWaitGroup)
+	eventList[0], err = tmpQueue.EnqueueCopyBuffer((*cl.MemObject)(src), (*cl.MemObject)(dst), 0, 0, bytes, nil)
 	if err != nil {
 		fmt.Printf("EnqueueCopyBuffer failed: %+v \n", err)
 		return nil
 	}
 
 	// sync copy
+	qwg := qm.NewQueueWaitGroup(tmpQueue, &memCpyHtoDSyncWaitGroup)
+	ReturnQueuePool <- qwg
 	err = cl.WaitForEvents(eventList)
 	timer.Stop("memcpy")
 	if err != nil {
@@ -154,37 +168,35 @@ func MemCpy(dst, src unsafe.Pointer, bytes int) []*cl.Event {
 // Memset sets the Slice's components to the specified values.
 // To be carefully used on unified slice (need sync)
 func Memset(s *data.Slice, val ...float32) {
-	eventList := make([](*cl.Event), s.NComp())
-	err := cl.WaitForEvents(nil)
-
-	if Synchronous { // debug
-		for c := range eventList {
-			eventList[c] = s.GetEvent(c)
+	if Synchronous {
+		for len(CmdQueuePool) < QueuePoolSz {
 		}
-		eventBar, errBar := ClCmdQueue.EnqueueBarrierWithWaitList(eventList)
-		errBar = cl.WaitForEvents([](*cl.Event){eventBar})
-		if errBar != nil {
-			fmt.Printf("First WaitForEvents in MemSet failed: %+v \n", err)
-		}
-		timer.Start("memset")
 	}
+	var memSetSyncWaitGroup sync.WaitGroup
+
+	timer.Start("memset")
 	util.Argument(len(val) == s.NComp())
 	eventListFill := make([](*cl.Event), len(val))
 	for c, v := range val {
-		eventListFill[c], err = ClCmdQueue.EnqueueFillBuffer((*cl.MemObject)(s.DevPtr(c)), unsafe.Pointer(&v), SIZEOF_FLOAT32, 0, s.Len()*SIZEOF_FLOAT32, [](*cl.Event){s.GetEvent(c)})
+		// Checkout command queue from pool and execute
+		tmpQueue := qm.CheckoutQueue(CmdQueuePool, &memSetSyncWaitGroup)
+		eventListFill[c], err = tmpQueue.EnqueueFillBuffer((*cl.MemObject)(s.DevPtr(c)), unsafe.Pointer(&v), SIZEOF_FLOAT32, 0, s.Len()*SIZEOF_FLOAT32, [](*cl.Event){s.GetEvent(c)})
 		s.SetEvent(c, eventListFill[c])
 		if err != nil {
 			fmt.Printf("EnqueueFillBuffer failed: %+v \n", err)
 		}
-	}
-	if Synchronous { //debug
-		eventBar, errBar := ClCmdQueue.EnqueueBarrierWithWaitList(eventListFill)
-		errBar = cl.WaitForEvents([](*cl.Event){eventBar})
-		if errBar != nil {
-			fmt.Printf("Second WaitForEvents in MemSet failed: %+v \n", err)
+		qwg := qm.NewQueueWaitGroup(tmpQueue, &memCpyHtoDSyncWaitGroup)
+		ReturnQueuePool <- qwg
+
+		// Synchronize command queues so that all kernel launches occur in-sequence
+		if Synchronous { //debug
+			memSetSyncWaitGroup.Wait()
 		}
-		timer.Stop("memset")
 	}
+
+	// Synchronize command queues
+	memSetSyncWaitGroup.Wait()
+	timer.Stop("memset")
 }
 
 // Set all elements of all components to zero.
@@ -197,25 +209,48 @@ func SetCell(s *data.Slice, comp int, ix, iy, iz int, value float32) {
 }
 
 func SetElem(s *data.Slice, comp int, index int, value float32) {
+	if Synchronous { // debug
+		for len(CmdQueuePool) < QueuePoolSz {
+		}
+	}
+	var setElemSyncWaitGroup sync.WaitGroup
 	f := value
-	event, err := ClCmdQueue.EnqueueWriteBuffer((*cl.MemObject)(s.DevPtr(comp)), false, index*SIZEOF_FLOAT32, SIZEOF_FLOAT32, unsafe.Pointer(&f), [](*cl.Event){s.GetEvent(comp)})
+
+	// Checkout command queue from pool and execute
+	tmpQueue := qm.CheckoutQueue(CmdQueuePool, &setElemSyncWaitGroup)
+	event, err := tmpQueue.EnqueueWriteBuffer((*cl.MemObject)(s.DevPtr(comp)), false, index*SIZEOF_FLOAT32, SIZEOF_FLOAT32, unsafe.Pointer(&f), [](*cl.Event){s.GetEvent(comp)})
 	if err != nil {
 		fmt.Printf("EnqueueWriteBuffer failed: %+v \n", err)
 		return
 	}
 	s.SetEvent(comp, event)
-	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
-		fmt.Printf("WaitForEvents in SetElem failed: %+v \n", err)
-	}
+
+	// Checkin command queue post execution
+	qwg := qm.NewQueueWaitGroup(tmpQueue, &memSetSyncWaitGroup)
+	ReturnQueuePool <- qwg
+	setElemSyncWaitGroup.Wait()
 }
 
 func GetElem(s *data.Slice, comp int, index int) float32 {
+	if Synchronous { // debug
+		for len(CmdQueuePool) < QueuePoolSz {
+		}
+	}
+	var getElemSyncWaitGroup sync.WaitGroup
 	var f float32
-	event, err := ClCmdQueue.EnqueueReadBuffer((*cl.MemObject)(s.DevPtr(comp)), false, index*SIZEOF_FLOAT32, SIZEOF_FLOAT32, unsafe.Pointer(&f), [](*cl.Event){s.GetEvent(comp)})
+
+	// Checkout command queue from pool and execute
+	tmpQueue := qm.CheckoutQueue(CmdQueuePool, &getElemSyncWaitGroup)
+	event, err := tmpQueue.EnqueueReadBuffer((*cl.MemObject)(s.DevPtr(comp)), false, index*SIZEOF_FLOAT32, SIZEOF_FLOAT32, unsafe.Pointer(&f), [](*cl.Event){s.GetEvent(comp)})
 	if err != nil {
 		fmt.Printf("EnqueueReadBuffer failed: %+v \n", err)
 	}
 	s.SetEvent(comp, event)
+
+	// Checkin command queue post execution
+	qwg := qm.NewQueueWaitGroup(tmpQueue, &getElemSyncWaitGroup)
+	ReturnQueuePool <- qwg
+
 	err = cl.WaitForEvents([](*cl.Event){event})
 	if err != nil {
 		fmt.Printf("WaitForEvents in GetElem failed: %+v \n", err)
