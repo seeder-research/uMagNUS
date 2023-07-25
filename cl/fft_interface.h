@@ -302,4 +302,16 @@ void vkfftDestroyFFTPlan(interfaceFFTPlan* plan) {
     free(plan->lParams);
 }
 
+cl_event vkfftGetPlanEvent(interfaceFFTPlan* plan) {
+    return plan->app->configuration.queueEvent;
+}
+
+cl_int vkfftPlanQueueFinish(interfaceFFTPlan* plan) {
+    return clFinish(*(plan->app->configuration.commandQueue[0]));
+}
+
+cl_int vkfftPlanQueueFlush(interfaceFFTPlan* plan) {
+    return clFlush(*(plan->app->configuration.commandQueue[0]));
+}
+
 #endif // __FFT_INTERFACE__
