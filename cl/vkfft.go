@@ -282,6 +282,15 @@ func (plan *VkfftPlan) GetQueueEvent() *Event {
 	return ev
 }
 
+func (plan *VkfftPlan) GetCommandQueue() *CommandQueue {
+	queue := new(CommandQueue)
+	dev := new(Device)
+	queue.clQueue = C.vkfftPlanGetCommandQueue(plan.GetPlanPointer())
+	device.id = C.vkfftPlanGetDevice(plan.GetPlanPointer())
+	queue.device = dev
+	return queue
+}
+
 func (plan *VkfftPlan) QueueFinish() error {
 	return toError(C.vkfftPlanQueueFinish(plan.GetPlanPointer()))
 }

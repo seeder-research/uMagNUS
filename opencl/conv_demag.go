@@ -6,6 +6,7 @@ import (
 
 	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
+	qm "github.com/seeder-research/uMagNUS/queuemanager"
 	util "github.com/seeder-research/uMagNUS/util"
 )
 
@@ -55,14 +56,57 @@ func (c *DemagConvolution) exec3D(outp, inp, vol *data.Slice, Msat MSlice) {
 		c.fwFFT(i, inp, vol, Msat)
 	}
 
-	// to sync to fwFFT queues before launching kern mul kern
-	// kern mul
+	// Create event marker in fwFFT queues for synchronization
+	q1, q2, q3 := c.fwPlan[0].GetCommandQueue(), c.fwPlan[1].GetCommandQueue(), c.fwPlan[2].GetCommandQueue()
+	var ev1, ev2, ev3 *cl.Event
+	var err error
+	ev1, err = q1.EnqueueMarkerWithWaitList([]*cl.Event{})
+	if err != nil {
+		fmt.Printf("EnqueueMarkerWithWaitList failed on q1 in exec3D: %+v \n", err)
+	}
+	ev2, err = q2.EnqueueMarkerWithWaitList([]*cl.Event{})
+	if err != nil {
+		fmt.Printf("EnqueueMarkerWithWaitList failed on q2 in exec3D: %+v \n", err)
+	}
+	ev3, err = q3.EnqueueMarkerWithWaitList([]*cl.Event{})
+	if err != nil {
+		fmt.Printf("EnqueueMarkerWithWaitList failed on q3 in exec3D: %+v \n", err)
+	}
+
+	// Checkout new queue to launch kernMulRSymm3D_async kernel
+	tmpQueue := qm.CheckoutQueue(CmdQueuePool, nil)
+
+	// Launch kernMulRSymm3D_async kernel with wait list on
+	// the synchronization events in all fwPlan queues
 	kernMulRSymm3D_async(c.fftCBuf,
 		c.kern[X][X], c.kern[Y][Y], c.kern[Z][Z],
 		c.kern[Y][Z], c.kern[X][Z], c.kern[X][Y],
-		c.fftKernLogicSize[X], c.fftKernLogicSize[Y], c.fftKernLogicSize[Z])
+		c.fftKernLogicSize[X], c.fftKernLogicSize[Y], c.fftKernLogicSize[Z],
+		[]*cl.Event{ev1, ev2, ev3},
+		tmpQueue)
 
-	// to sync to kern mul before launching bwFFT
+	// Get event marker for synchronizing bwPlan queues
+	event := []*cl.Event{tmpQueue.EnqueueMarkerWithWaitList([]*cl.Event{})}
+
+	// Check in queue after kernel launch
+	qwg := qm.NewQueueWaitGroup(tmpQueue, nil)
+	ReturnQueuePool <- qwg
+
+	// Insert synchronization event into all bwPlan queues
+	q1, q2, q3 = c.bwPlan[0].GetCommandQueue(), c.bwPlan[1].GetCommandQueue(), c.bwPlan[2].GetCommandQueue()
+	_, err = q1.EnqueueMarkerWithWaitList(event)
+	if err != nil {
+		fmt.Printf("EnqueueMarkerWithWaitList failed on q1 in exec3D: %+v \n", err)
+	}
+	_, err = q2.EnqueueMarkerWithWaitList(event)
+	if err != nil {
+		fmt.Printf("EnqueueMarkerWithWaitList failed on q2 in exec3D: %+v \n", err)
+	}
+	_, err = q3.EnqueueMarkerWithWaitList(event)
+	if err != nil {
+		fmt.Printf("EnqueueMarkerWithWaitList failed on q3 in exec3D: %+v \n", err)
+	}
+
 	for i := 0; i < 3; i++ { // BW FFT
 		c.bwFFT(i, outp)
 	}
@@ -74,20 +118,88 @@ func (c *DemagConvolution) exec2D(outp, inp, vol *data.Slice, Msat MSlice) {
 	// So only 2 FFT buffers are needed at the same time.
 	Nx, Ny := c.fftKernLogicSize[X], c.fftKernLogicSize[Y]
 
+	q1, q2, q3 := c.fwPlan[X].GetCommandQueue(), c.fwPlan[Y].GetCommandQueue(), c.fwPlan[Z].GetCommandQueue()
+	var ev1, ev2 *cl.Event
+	var err error
+
 	// Z
 	c.fwFFT(Z, inp, vol, Msat)
-	// to sync to fwFFT queues before launching kern mul kern
-	kernMulRSymm2Dz_async(c.fftCBuf[Z], c.kern[Z][Z], Nx, Ny)
-	// to sync to kern mul before launching bwFFT
+
+	// Create event in fwFFT (Z) queue for synchronization
+	ev1, err = q3.EnqueueMarkerWithWaitList([]*cl.Event{})
+	if err != nil {
+		fmt.Printf("EnqueueMarkerWithWaitList failed on q3 in exec2D (fwFFT, Z): %+v \n", err)
+	}
+
+	// Checkout new queue to launch kernMulRSymm2Dz_async kernel
+	tmpQueue := qm.CheckoutQueue(CmdQueuePool, nil)
+
+	// Launch kernel with wait list to sync with fwFFT (Z)
+	kernMulRSymm2Dz_async(c.fftCBuf[Z], c.kern[Z][Z], Nx, Ny, []*cl.Event{ev1}, tmpQueue)
+
+	// Get event to synchronize bwFFT (Z) queue
+	ev1, err = tmpQueue.EnqueueMarkerWithWaitList([]*cl.Event{})
+	if err != nil {
+		fmt.Printf("EnqueueMarkerWithWaitList failed on q3 in exec2D (MulRSymm2Dz): %+v \n", err)
+	}
+
+	// Check in queue post kernel execution
+	qwg1 := qm.NewQueueWaitGroup(tmpQueue1, nil)
+	ReturnQueuePool <- qwg1
+
+	// Insert synchronization event into bwPlan (Z) queue
+	q3 = c.bwPlan[Z].GetCommandQueue()
+	_, err = tmpQueue.EnqueueMarkerWithWaitList([]*cl.Event{})
+	if err != nil {
+		fmt.Printf("EnqueueMarkerWithWaitList failed on q3 in exec2D (bwFFT, Z): %+v \n", err)
+	}
+
 	c.bwFFT(Z, outp)
 
 	// XY
 	c.fwFFT(X, inp, vol, Msat)
 	c.fwFFT(Y, inp, vol, Msat)
-	// to sync to fwFFT queues before launching kern mul kern
+
+	// Create event in fwFFT queues for synchronization
+	ev1, err = q1.EnqueueMarkerWithWaitList([]*cl.Event{})
+	if err != nil {
+		fmt.Printf("EnqueueMarkerWithWaitList failed on q1 in exec2D (fwFFT, X): %+v \n", err)
+	}
+	ev2, err = q2.EnqueueMarkerWithWaitList([]*cl.Event{})
+	if err != nil {
+		fmt.Printf("EnqueueMarkerWithWaitList failed on q2 in exec2D (fwFFTm Y): %+v \n", err)
+	}
+
+	// Checkout new queue to launch kernMulRSymm2Dz_async kernel
+	tmpQueue = qm.CheckoutQueue(CmdQueuePool, nil)
+
+	// Launch kernel with wait list to sync with fwFFT (Z)
 	kernMulRSymm2Dxy_async(c.fftCBuf[X], c.fftCBuf[Y],
-		c.kern[X][X], c.kern[Y][Y], c.kern[X][Y], Nx, Ny)
-	// to sync to kern mul before launching bwFFT
+		c.kern[X][X], c.kern[Y][Y], c.kern[X][Y], Nx, Ny, []*cl.Event{ev1, ev2}, tmpQueue)
+
+	// Get event to synchronize bwFFT (Z) queue
+	ev1, err = tmpQueue.EnqueueMarkerWithWaitList([]*cl.Event{})
+	if err != nil {
+		fmt.Printf("EnqueueMarkerWithWaitList failed on q3 in exec2D (MulRSymm2Dxy): %+v \n", err)
+	}
+
+	// Check in queue post kernel execution
+	qwg2 := qm.NewQueueWaitGroup(tmpQueue, nil)
+	ReturnQueuePool <- qwg2
+
+	// Insert synchronization event into bwPlan (Z) queue
+	q1, q2 = c.bwPlan[X].GetCommandQueue(), c.bwPlan[Y].GetCommandQueue()
+
+	// Create event in fwFFT queues for synchronization
+	ev1, err = q1.EnqueueMarkerWithWaitList([]*cl.Event{})
+	if err != nil {
+		fmt.Printf("EnqueueMarkerWithWaitList failed on q1 in exec2D (bwFFT, X): %+v \n", err)
+	}
+	ev2, err = q2.EnqueueMarkerWithWaitList([]*cl.Event{})
+	if err != nil {
+		fmt.Printf("EnqueueMarkerWithWaitList failed on q2 in exec2D (bwFFT, Y): %+v \n", err)
+	}
+
 	c.bwFFT(X, outp)
 	c.bwFFT(Y, outp)
 }
@@ -97,7 +209,7 @@ func (c *DemagConvolution) is2D() bool {
 }
 
 // zero 1-component slice
-func zero1_async(dst *data.Slice) {
+func zero1_async(dst *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) {
 	// synchronization should be done by code using
 	// opencl library
 
@@ -111,14 +223,8 @@ func zero1_async(dst *data.Slice) {
 		panic("ERROR (zero1_async): dst pointer cannot be nil")
 	}
 
-        // Checkout command queue from pool and launch kernel
-        var zero1SyncWaitGroup sync.WaitGroup
-        tmpQueue := qm.CheckoutQueue(CmdQueuePool, &zero1SyncWaitGroup)
-	event, err := tmpQueue.EnqueueFillBuffer((*cl.MemObject)(dst.DevPtr(0)), unsafe.Pointer(&val), SIZEOF_FLOAT32, 0, dst.Len()*SIZEOF_FLOAT32, waitList)
-
-	// Check in command queue post execution
-	qwg := qm.NewQueueWaitGroup(tmpQueue, &addCubicAnisotropy2SyncWaitGroup)
-	ReturnQueuePool <- qwg
+	// Launch kernel
+	event, err := q.EnqueueFillBuffer((*cl.MemObject)(dst.DevPtr(0)), unsafe.Pointer(&val), SIZEOF_FLOAT32, 0, dst.Len()*SIZEOF_FLOAT32, ewl)
 
 	dst.SetEvent(0, event)
 	if err != nil {
@@ -134,9 +240,11 @@ func zero1_async(dst *data.Slice) {
 
 // forward FFT component i
 func (c *DemagConvolution) fwFFT(i int, inp, vol *data.Slice, Msat MSlice) {
-	zero1_async(c.fftRBuf[i])
+	// Get queue from fwPlan
+	tmpQueue := c.fwPlan[i].GetCommandQueue()
+	zero1_async(c.fftRBuf[i], tmpQueue, []*cl.Event{})
 	in := inp.Comp(i)
-	copyPadMul(c.fftRBuf[i], in, vol, c.realKernSize, c.inputSize, Msat)
+	copyPadMul(c.fftRBuf[i], in, vol, c.realKernSize, c.inputSize, Msat, tmpQueue, []*cl.Event{})
 	if err := c.fwPlan[i].ExecAsync(c.fftRBuf[i], c.fftCBuf[i]); err != nil {
 		fmt.Printf("Error enqueuing forward fft: %+v \n", err)
 	}
@@ -144,11 +252,13 @@ func (c *DemagConvolution) fwFFT(i int, inp, vol *data.Slice, Msat MSlice) {
 
 // backward FFT component i
 func (c *DemagConvolution) bwFFT(i int, outp *data.Slice) {
+	// Get queue from bwPlan
+	tmpQueue := c.bwPlan[i].GetCommandQueue()
 	if err := c.bwPlan[i].ExecAsync(c.fftCBuf[i], c.fftRBuf[i]); err != nil {
 		fmt.Printf("Error enqueuing backward fft: %+v", err)
 	}
 	out := outp.Comp(i)
-	copyUnPad(out, c.fftRBuf[i], c.inputSize, c.realKernSize)
+	copyUnPad(out, c.fftRBuf[i], c.inputSize, c.realKernSize, tmpQueue, []*cl.Event{})
 }
 
 func (c *DemagConvolution) init(realKern [3][3]*data.Slice) {
@@ -173,10 +283,10 @@ func (c *DemagConvolution) init(realKern [3][3]*data.Slice) {
 
 	// init FFT plans
 	c.fwPlan[0] = newFFT3DR2C(c.realKernSize[X], c.realKernSize[Y], c.realKernSize[Z])
-	c.bwPlan[0] = newFFT3DC2R(c.realKernSize[X], c.realKernSize[Y], c.realKernSize[Z])
 	c.fwPlan[1] = newFFT3DR2C(c.realKernSize[X], c.realKernSize[Y], c.realKernSize[Z])
-	c.bwPlan[1] = newFFT3DC2R(c.realKernSize[X], c.realKernSize[Y], c.realKernSize[Z])
 	c.fwPlan[2] = newFFT3DR2C(c.realKernSize[X], c.realKernSize[Y], c.realKernSize[Z])
+	c.bwPlan[0] = newFFT3DC2R(c.realKernSize[X], c.realKernSize[Y], c.realKernSize[Z])
+	c.bwPlan[1] = newFFT3DC2R(c.realKernSize[X], c.realKernSize[Y], c.realKernSize[Z])
 	c.bwPlan[2] = newFFT3DC2R(c.realKernSize[X], c.realKernSize[Y], c.realKernSize[Z])
 
 	// init FFT kernel
@@ -244,11 +354,7 @@ func (c *DemagConvolution) Free() {
 			c.kern[i][j].Free()
 			c.kern[i][j] = nil
 		}
-		c.fwPlan[0].Free()
-		c.bwPlan[0].Free()
-		c.fwPlan[1].Free()
-		c.bwPlan[1].Free()
-		c.fwPlan[2].Free()
-		c.bwPlan[2].Free()
+		c.fwPlan[i].Free()
+		c.bwPlan[i].Free()
 	}
 }

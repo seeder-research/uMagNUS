@@ -8,7 +8,7 @@ import (
 	util "github.com/seeder-research/uMagNUS/util"
 )
 
-func SetPhi(s *data.Slice, m *data.Slice) {
+func SetPhi(s *data.Slice, m *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) {
 	// need to synchronize on previous accesses to s and m
 	// which can be seen from code using opencl library
 
@@ -20,27 +20,27 @@ func SetPhi(s *data.Slice, m *data.Slice) {
 	util.Argument(m.Size() == N)
 	cfg := make3DConf(N)
 
-	// Checkout command queue from pool and launch kernel
-	var setPhiSyncWaitGroup sync.WaitGroup
-	tmpQueue := qm.CheckoutQueue(CmdQueuePool, &setPhiSyncWaitGroup)
+	// Launch kernel
 	event := k_setPhi_async(s.DevPtr(0),
 		m.DevPtr(X), m.DevPtr(Y),
 		N[X], N[Y], N[Z],
-		cfg, nil,
-		tmpQueue)
-
-	// Check in command queue post execution
-	qwg := qm.NewQueueWaitGroup(tmpQueue, &setPhiSyncWaitGroup)
-	ReturnQueuePool <- qwg
+		cfg, ewl,
+		q)
 
 	s.SetEvent(0, event)
 	m.InsertReadEvent(X, event)
 	m.InsertReadEvent(Y, event)
 
+	if Synchronous || Debug {
+		if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
+			fmt.Printf("WaitForEvents failed in setphi: %+v \n", err)
+		}
+	}
+
 	return
 }
 
-func SetTheta(s *data.Slice, m *data.Slice) {
+func SetTheta(s *data.Slice, m *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) {
 	// need to synchronize on previous accesses to s and m
 	// which can be seen from code using opencl library
 
@@ -52,20 +52,20 @@ func SetTheta(s *data.Slice, m *data.Slice) {
 	util.Argument(m.Size() == N)
 	cfg := make3DConf(N)
 
-	// Checkout command queue from pool and launch kernel
-	var setThetaSyncWaitGroup sync.WaitGroup
-	tmpQueue := qm.CheckoutQueue(CmdQueuePool, &setThetaSyncWaitGroup)
+	// Launch kernel
 	event := k_setTheta_async(s.DevPtr(0), m.DevPtr(Z),
 		N[X], N[Y], N[Z],
-		cfg, nil,
-		tmpQueue)
-
-	// Check in command queue post execution
-	qwg := qm.NewQueueWaitGroup(tmpQueue, &setPhiSyncWaitGroup)
-	ReturnQueuePool <- qwg
+		cfg, ewl,
+		q)
 
 	s.SetEvent(0, event)
 	m.InsertReadEvent(Z, event)
+
+	if Synchronous || Debug {
+		if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
+			fmt.Printf("WaitForEvents failed in settheta: %+v \n", err)
+		}
+	}
 
 	return
 }

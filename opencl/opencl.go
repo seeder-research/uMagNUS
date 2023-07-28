@@ -17,7 +17,7 @@ const (
 )
 
 // Assumes kernel arguments set prior to launch
-func LaunchKernel(kernname string, gridDim, workDim []int, events []*cl.Event) *cl.Event {
+func LaunchKernel(kernname string, gridDim, workDim []int, queue *cl.CommandQueue, events []*cl.Event) *cl.Event {
 	if KernList[kernname] == nil {
 		util.Fatal("Kernel " + kernname + " does not exist!")
 		return nil
@@ -25,7 +25,7 @@ func LaunchKernel(kernname string, gridDim, workDim []int, events []*cl.Event) *
 	if Debug {
 		fmt.Printf("Launching kernel: %+v with Grid = %+v and Block = %+v \n", kernname, gridDim, workDim)
 	}
-	KernEvent, err := ClCmdQueue.EnqueueNDRangeKernel(KernList[kernname], nil, gridDim, workDim, events)
+	KernEvent, err := queue.EnqueueNDRangeKernel(KernList[kernname], nil, gridDim, workDim, events)
 	if err != nil {
 		util.Fatal(err)
 		return nil

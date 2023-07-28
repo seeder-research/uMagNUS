@@ -306,6 +306,14 @@ cl_event vkfftGetPlanEvent(interfaceFFTPlan* plan) {
     return plan->app->configuration.queueEvent;
 }
 
+cl_command_queue vkfftPlanGetCommandQueue(interfaceFFTPlan* plan) {
+    return *(plan->app->configuration.commandQueue[0]);
+}
+
+cl_device_id vkfftPlanGetDevice(interfaceFFTPlan* plan) {
+    return *(plan->app->configuration.device);
+}
+
 cl_int vkfftPlanQueueFinish(interfaceFFTPlan* plan) {
     return clFinish(*(plan->app->configuration.commandQueue[0]));
 }

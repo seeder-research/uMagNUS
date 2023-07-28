@@ -110,9 +110,6 @@ func FreeBuffers() {
 			size[i] = nil
 		}
 	}
-	// Wait for queuemanager routines to finish
-	for len(CmdQueuePool) < QueuePoolSz {
-	}
 	buf_pool = make(map[int][]unsafe.Pointer)
 	buf_check = make(map[unsafe.Pointer]struct{})
 }

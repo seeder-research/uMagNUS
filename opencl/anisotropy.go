@@ -9,7 +9,7 @@ import (
 )
 
 // Adds cubic anisotropy field to Beff.
-func AddCubicAnisotropy2(Beff, m *data.Slice, Msat, k1, k2, k3, c1, c2 MSlice) {
+func AddCubicAnisotropy2(Beff, m *data.Slice, Msat, k1, k2, k3, c1, c2 MSlice, q *cl.CommandQueue, ewl []*cl.Event) {
 	// synchronization should be done by code using
 	// opencl library
 
@@ -19,12 +19,9 @@ func AddCubicAnisotropy2(Beff, m *data.Slice, Msat, k1, k2, k3, c1, c2 MSlice) {
 	}
 	util.Argument(Beff.Size() == m.Size())
 
+	// Launch kernel
 	N := Beff.Len()
 	cfg := make1DConf(N)
-
-	// Checkout command queue from pool and launch kernel
-	var addCubicAnisotropy2SyncWaitGroup sync.WaitGroup
-	tmpQueue := qm.CheckoutQueue(CmdQueuePool, &addCubicAnisotropy2SyncWaitGroup)
 	event := k_addcubicanisotropy2_async(
 		Beff.DevPtr(X), Beff.DevPtr(Y), Beff.DevPtr(Z),
 		m.DevPtr(X), m.DevPtr(Y), m.DevPtr(Z),
@@ -38,12 +35,8 @@ func AddCubicAnisotropy2(Beff, m *data.Slice, Msat, k1, k2, k3, c1, c2 MSlice) {
 		c2.DevPtr(X), c2.Mul(X),
 		c2.DevPtr(Y), c2.Mul(Y),
 		c2.DevPtr(Z), c2.Mul(Z),
-		N, cfg, nil,
-		tmpQueue)
-
-	// Check in command queue post execution
-	qwg := qm.NewQueueWaitGroup(tmpQueue, &addCubicAnisotropy2SyncWaitGroup)
-	ReturnQueuePool <- qwg
+		N, cfg, ewl,
+		q)
 
 	Beff.SetEvent(X, event)
 	Beff.SetEvent(Y, event)
@@ -71,7 +64,9 @@ func AddCubicAnisotropy2(Beff, m *data.Slice, Msat, k1, k2, k3, c1, c2 MSlice) {
 	InsertEventIntoGSlices(event, glist)
 
 	if Synchronous || Debug { // debug
-		addCubicAnisotropy2SyncWaitGroup.Wait()
+		if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
+			fmt.Printf("WaitForEvents failed in addcubicanisotropy2: %+v \n", err)
+		}
 	}
 
 	return
@@ -79,7 +74,7 @@ func AddCubicAnisotropy2(Beff, m *data.Slice, Msat, k1, k2, k3, c1, c2 MSlice) {
 
 // Add uniaxial magnetocrystalline anisotropy field to Beff.
 // see uniaxialanisotropy2.cl
-func AddUniaxialAnisotropy2(Beff, m *data.Slice, Msat, k1, k2, u MSlice) {
+func AddUniaxialAnisotropy2(Beff, m *data.Slice, Msat, k1, k2, u MSlice, q *cl.CommandQueue, ewl []*cl.Event) {
 	// synchronization should be done by code using
 	// opencl library
 
@@ -89,12 +84,9 @@ func AddUniaxialAnisotropy2(Beff, m *data.Slice, Msat, k1, k2, u MSlice) {
 	}
 	util.Argument(Beff.Size() == m.Size())
 
+	// Launch kernel
 	N := Beff.Len()
 	cfg := make1DConf(N)
-
-	// Checkout command queue from pool and launch kernel
-	var addUniaxialAnisotropy2SyncWaitGroup sync.WaitGroup
-	tmpQueue := qm.CheckoutQueue(CmdQueuePool, &addUniaxialAnisotropy2SyncWaitGroup)
 	event := k_adduniaxialanisotropy2_async(
 		Beff.DevPtr(X), Beff.DevPtr(Y), Beff.DevPtr(Z),
 		m.DevPtr(X), m.DevPtr(Y), m.DevPtr(Z),
@@ -104,12 +96,8 @@ func AddUniaxialAnisotropy2(Beff, m *data.Slice, Msat, k1, k2, u MSlice) {
 		u.DevPtr(X), u.Mul(X),
 		u.DevPtr(Y), u.Mul(Y),
 		u.DevPtr(Z), u.Mul(Z),
-		N, cfg, nil,
-		tmpQueue)
-
-	// Check in command queue post execution
-	qwg := qm.NewQueueWaitGroup(tmpQueue, &addUniaxialAnisotropy2SyncWaitGroup)
-	ReturnQueuePool <- qwg
+		N, cfg, ewl,
+		q)
 
 	Beff.SetEvent(X, event)
 	Beff.SetEvent(Y, event)
@@ -131,7 +119,9 @@ func AddUniaxialAnisotropy2(Beff, m *data.Slice, Msat, k1, k2, u MSlice) {
 	InsertEventIntoGSlices(event, glist)
 
 	if Synchronous || Debug { // debug
-		addUniaxialAnisotropy2SyncWaitGroup.Wait()
+		if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
+			fmt.Printf("WaitForEvents failed in adduniaxialanisotropy2: %+v \n", err)
+		}
 	}
 
 	return
@@ -139,7 +129,7 @@ func AddUniaxialAnisotropy2(Beff, m *data.Slice, Msat, k1, k2, u MSlice) {
 
 // Add uniaxial magnetocrystalline anisotropy field to Beff.
 // see uniaxialanisotropy.cl
-func AddUniaxialAnisotropy(Beff, m *data.Slice, Msat, k1, u MSlice) {
+func AddUniaxialAnisotropy(Beff, m *data.Slice, Msat, k1, u MSlice, q *cl.CommandQueue, ewl []*cl.Event) {
 	// synchronization should be done by code using
 	// opencl library
 
@@ -149,12 +139,9 @@ func AddUniaxialAnisotropy(Beff, m *data.Slice, Msat, k1, u MSlice) {
 	}
 	util.Argument(Beff.Size() == m.Size())
 
+	// Launch kernel
 	N := Beff.Len()
 	cfg := make1DConf(N)
-
-	// Checkout command queue from pool and launch kernel
-	var addUniaxialAnisotropySyncWaitGroup sync.WaitGroup
-	tmpQueue := qm.CheckoutQueue(CmdQueuePool, &addUniaxialAnisotropySyncWaitGroup)
 	event := k_adduniaxialanisotropy_async(
 		Beff.DevPtr(X), Beff.DevPtr(Y), Beff.DevPtr(Z),
 		m.DevPtr(X), m.DevPtr(Y), m.DevPtr(Z),
@@ -163,12 +150,8 @@ func AddUniaxialAnisotropy(Beff, m *data.Slice, Msat, k1, u MSlice) {
 		u.DevPtr(X), u.Mul(X),
 		u.DevPtr(Y), u.Mul(Y),
 		u.DevPtr(Z), u.Mul(Z),
-		N, cfg, nil,
-		tmpQueue)
-
-	// Check in command queue post execution
-	qwg := qm.NewQueueWaitGroup(tmpQueue, &addUniaxialAnisotropySyncWaitGroup)
-	ReturnQueuePool <- qwg
+		N, cfg, ewl,
+		q)
 
 	Beff.SetEvent(X, event)
 	Beff.SetEvent(Y, event)
@@ -187,7 +170,9 @@ func AddUniaxialAnisotropy(Beff, m *data.Slice, Msat, k1, u MSlice) {
 	InsertEventIntoGSlices(event, glist)
 
 	if Synchronous || Debug { // debug
-		addUniaxialAnisotropySyncWaitGroup.Wait()
+		if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
+			fmt.Printf("WaitForEvents failed in adduniaxialanisotropy: %+v \n", err)
+		}
 	}
 
 	return
@@ -195,7 +180,7 @@ func AddUniaxialAnisotropy(Beff, m *data.Slice, Msat, k1, u MSlice) {
 
 // Add voltage-conrtolled magnetic anisotropy field to Beff.
 // see voltagecontrolledanisotropy2.cu
-func AddVoltageControlledAnisotropy(Beff, m *data.Slice, Msat, vcmaCoeff, voltage, u MSlice) {
+func AddVoltageControlledAnisotropy(Beff, m *data.Slice, Msat, vcmaCoeff, voltage, u MSlice, q *cl.CommandQueue, ewl []*cl.Event) {
 	// synchronization should be done by code using
 	// opencl library
 
@@ -207,12 +192,9 @@ func AddVoltageControlledAnisotropy(Beff, m *data.Slice, Msat, vcmaCoeff, voltag
 
 	checkSize(Beff, m, vcmaCoeff, voltage, u, Msat)
 
+	// Launch kernel
 	N := Beff.Len()
 	cfg := make1DConf(N)
-
-	// Checkout command queue from pool and launch kernel
-	var addVoltageControlledAnisotropySyncWaitGroup sync.WaitGroup
-	tmpQueue := qm.CheckoutQueue(CmdQueuePool, &addVoltageControlledAnisotropySyncWaitGroup)
 	event := k_addvoltagecontrolledanisotropy2_async(
 		Beff.DevPtr(X), Beff.DevPtr(Y), Beff.DevPtr(Z),
 		m.DevPtr(X), m.DevPtr(Y), m.DevPtr(Z),
@@ -222,12 +204,8 @@ func AddVoltageControlledAnisotropy(Beff, m *data.Slice, Msat, vcmaCoeff, voltag
 		u.DevPtr(X), u.Mul(X),
 		u.DevPtr(Y), u.Mul(Y),
 		u.DevPtr(Z), u.Mul(Z),
-		N, cfg, nil,
-		tmpQueue)
-
-	// Check in command queue post execution
-	qwg := qm.NewQueueWaitGroup(tmpQueue, &addVoltageControlledAnisotropy2SyncWaitGroup)
-	ReturnQueuePool <- qwg
+		N, cfg, ewl,
+		q)
 
 	Beff.SetEvent(X, event)
 	Beff.SetEvent(Y, event)
@@ -249,7 +227,9 @@ func AddVoltageControlledAnisotropy(Beff, m *data.Slice, Msat, vcmaCoeff, voltag
 	InsertEventIntoGSlices(event, glist)
 
 	if Synchronous || Debug { // debug
-		addCubicAnisotropy2SyncWaitGroup.Wait()
+		if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
+			fmt.Printf("WaitForEvents failed in addvoltagecontrolledanisotropy2: %+v \n", err)
+		}
 	}
 
 	return
