@@ -11,15 +11,15 @@ import (
 
 // Stores the necessary state to perform FFT-accelerated convolution
 type MFMConvolution struct {
-	size        [3]int         // 3D size of the input/output data
-	kernSize    [3]int         // Size of kernel and logical FFT size.
-	fftKernSize [3]int         //
-	fftRBuf     [3]*data.Slice    // FFT input buf for FFT, shares storage with fftCBuf.
-	fftCBuf     [3]*data.Slice    // FFT output buf, shares storage with fftRBuf
-	gpuFFTKern  [3]*data.Slice // FFT kernel on device
-	fwPlan      [3]fft3DR2CPlan   // Forward FFT (1 component)
-	bwPlan      [3]fft3DC2RPlan   // Backward FFT (1 component)
-	kern        [3]*data.Slice // Real-space kernel (host)
+	size        [3]int          // 3D size of the input/output data
+	kernSize    [3]int          // Size of kernel and logical FFT size.
+	fftKernSize [3]int          //
+	fftRBuf     [3]*data.Slice  // FFT input buf for FFT, shares storage with fftCBuf.
+	fftCBuf     [3]*data.Slice  // FFT output buf, shares storage with fftRBuf
+	gpuFFTKern  [3]*data.Slice  // FFT kernel on device
+	fwPlan      [3]fft3DR2CPlan // Forward FFT (1 component)
+	bwPlan      [3]fft3DC2RPlan // Backward FFT (1 component)
+	kern        [3]*data.Slice  // Real-space kernel (host)
 	mesh        *data.Mesh
 }
 
@@ -72,22 +72,40 @@ func (c *MFMConvolution) initFFTKern3D() {
 	c.fftKernSize = fftR2COutputSizeFloats(c.kernSize)
 
 	for i := 0; i < 3; i++ {
+		// Attempt to use a single command queue for each loop
+		// since the commands are sequential
+
+		// Use queue for the fwFFT
 		tmpQueue := c.fwPlan[i].GetCommandQueue()
+
+		// Launch the zero1 kernel
 		zero1_async(c.fftRBuf[i], tmpQueue, []*cl.Event{})
+		// Launch the copy kernel, which runs in a separate queue
 		data.Copy(c.fftRBuf[i], c.kern[i])
-		err := c.fwPlan[i].ExecAsync(c.fftRBuf[i], c.fftCBuf[i])
+
+		// Get the event for the copy and insert into the
+		// main execution queue
+		ewl := c.fftRBuf[i].GetAllEvents(1)
+		_, err := tmpQueue.EnqueueMarkerWithWaitList(ewl)
+		if err != nil {
+			fmt.Printf("error enqueuing sync marker in initfftkern3d: %+v \n", err)
+		}
+
+		// Launch fwFFT kernel in the main queue
+		err = c.fwPlan[i].ExecAsync(c.fftRBuf[i], c.fftCBuf[i])
 		if err != nil {
 			fmt.Printf("error enqueuing forward fft in initfftkern3d: %+v \n", err)
 		}
 		scale := 2 / float32(c.fwPlan[i].InputLen()) // ??
 
-		// Checkout new queue for zero1 and launch
+		// Checkout new queue for zero1 of gpuFFTKern and launch
+		// Possible for it to run concurrently with fwFFT
 		zq := qm.CheckoutQueue(CmdQueuePool, nil)
 		zero1_async(c.gpuFFTKern[i], zq, []*cl.Event{})
 
 		// Get marker for synchronizing madd2
 		var ev1 *cl.Event
-		ev1, err = zq.EnqueueMarkerWithWaitList({}*cl.Event{})
+		ev1, err = zq.EnqueueMarkerWithWaitList([]*cl.Event{})
 		if err != nil {
 			fmt.Printf("Failed to enqueue marker in initFFTKern3d: %+v \n", err)
 		}
@@ -95,6 +113,9 @@ func (c *MFMConvolution) initFFTKern3D() {
 		// Checkin queue post execution
 		qwg := qm.NewQueueWaitGroup(zq, nil)
 		ReturnQueuePool <- qwg
+
+		// Launch this Madd2 in the fwFFT queue, which will produce fftCBuf
+		// But the kernel will need to sync to the event for zero1 of gpuFFTKernel
 		Madd2(c.gpuFFTKern[i], c.gpuFFTKern[i], c.fftCBuf[i], 0, scale, tmpQueue, []*cl.Event{ev1})
 	}
 }
@@ -102,20 +123,41 @@ func (c *MFMConvolution) initFFTKern3D() {
 // store MFM image in output, based on magnetization in inp.
 func (c *MFMConvolution) Exec(outp, inp, vol *data.Slice, Msat MSlice) {
 	for i := 0; i < 3; i++ {
-		zero1_async(c.fftRBuf[i])
-		copyPadMul(c.fftRBuf[i], inp.Comp(i), vol, c.kernSize, c.size, Msat)
+		// Each loop will use one main queue (fwFFT queue)
+		// New queues will be used for any kernel that
+		// can run concurrently with previously queued
+		// kernels
+
+		// Use queue for the fwFFT
+		tmpQueue := c.fwPlan[i].GetCommandQueue()
+
+		// Launch zero1 kernel
+		zero1_async(c.fftRBuf[i], tmpQueue, []*cl.Event{})
+
+		// Launch copyPadMul kernel
+		copyPadMul(c.fftRBuf[i], inp.Comp(i), vol, c.kernSize, c.size, Msat, tmpQueue, []*cl.Event{})
+
 		var err error
 		if err = c.fwPlan[i].ExecAsync(c.fftRBuf[i], c.fftCBuf[i]); err != nil {
 			fmt.Printf("error enqueuing forward fft in mfmconv exec: %+v \n", err)
 		}
 
 		Nx, Ny := c.fftKernSize[X]/2, c.fftKernSize[Y] //   ??
-		kernMulC_async(c.fftCBuf[i], c.gpuFFTKern[i], Nx, Ny)
+		kernMulC_async(c.fftCBuf[i], c.gpuFFTKern[i], Nx, Ny, tmpQueue, []*cl.Event{})
 
-		if err = c.bwPlan.ExecAsync(c.fftCBuf[i], c.fftRBuf[i]); err != nil {
+		// Now we need to insert marker in queue for bwFFT to sync
+		var ev1 *cl.Event
+		ev1, err = tmpQueue.EnqueueMarkerWithWaitList([]*cl.Event{})
+		tmpQueue = bwPlan[i].GetCommandQueue()
+		_, err = tmpQueue.EnqueueMarkerWithWaitList([]*cl.Event{ev1})
+
+		// Launch bwFFT
+		if err = c.bwPlan[i].ExecAsync(c.fftCBuf[i], c.fftRBuf[i]); err != nil {
 			fmt.Printf("error enqueuing backward fft in mfmconv exec: %+v \n", err)
 		}
-		copyUnPad(outp.Comp(i), c.fftRBuf[i], c.size, c.kernSize)
+
+		// Launch copyUnPad in bwFFT queue
+		copyUnPad(outp.Comp(i), c.fftRBuf[i], c.size, c.kernSize, tmpQueue, []*cl.Event{})
 	}
 }
 
