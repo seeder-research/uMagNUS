@@ -116,7 +116,7 @@ func (c *MFMConvolution) initFFTKern3D() {
 
 		// Launch this Madd2 in the fwFFT queue, which will produce fftCBuf
 		// But the kernel will need to sync to the event for zero1 of gpuFFTKernel
-		Madd2(c.gpuFFTKern[i], c.gpuFFTKern[i], c.fftCBuf[i], 0, scale, tmpQueue, []*cl.Event{ev1})
+		Madd2(c.gpuFFTKern[i], c.gpuFFTKern[i], c.fftCBuf[i], 0, scale, []*cl.CommandQueue{tmpQueue}, []*cl.Event{ev1})
 	}
 }
 
