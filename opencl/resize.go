@@ -9,7 +9,7 @@ import (
 )
 
 // Select and resize one layer for interactive output
-func Resize(dst, src *data.Slice, layer int) {
+func Resize(dst, src *data.Slice, layer int, q *cl.CommandQueue, ewl []*cl.Event) {
 	dstsize := dst.Size()
 	srcsize := src.Size()
 	util.Assert(dstsize[Z] == 1)
@@ -21,22 +21,9 @@ func Resize(dst, src *data.Slice, layer int) {
 
 	cfg := make3DConf(dstsize)
 
-	eventsList := []*cl.Event{}
-	tmpEvtL := dst.GetAllEvents(0)
-	if len(tmpEvtL) > 0 {
-		eventsList = append(eventsList, tmpEvtL...)
-	}
-	tmpEvt := src.GetEvent(0)
-	if tmpEvt != nil {
-		eventsList = append(eventsList, tmpEvt)
-	}
-	if len(eventsList) == 0 {
-		eventsList = nil
-	}
-
 	event := k_resize_async(dst.DevPtr(0), dstsize[X], dstsize[Y], dstsize[Z],
 		src.DevPtr(0), srcsize[X], srcsize[Y], srcsize[Z], layer, scalex, scaley, cfg,
-		eventsList)
+		ewl, q)
 
 	dst.SetEvent(0, event)
 
@@ -48,4 +35,6 @@ func Resize(dst, src *data.Slice, layer int) {
 		fmt.Printf("WaitForEvents failed in resize: %+v \n", err)
 		WaitAndUpdateDataSliceEvents(event, glist, false)
 	}
+
+	return
 }
