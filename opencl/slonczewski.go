@@ -9,95 +9,10 @@ import (
 
 // Add Slonczewski ST torque to torque (Tesla).
 // see slonczewski.cl
-func AddSlonczewskiTorque2(torque, m *data.Slice, Msat, J, fixedP, alpha, pol, λ, ε_prime MSlice, thickness MSlice, flp float64, mesh *data.Mesh) {
+func AddSlonczewskiTorque2(torque, m *data.Slice, Msat, J, fixedP, alpha, pol, λ, ε_prime MSlice, thickness MSlice, flp float64, mesh *data.Mesh, q *cl.CommandQueue, ewl []*cl.Event) {
 	N := torque.Len()
 	cfg := make1DConf(N)
 	meshThickness := mesh.WorldSize()[Z]
-
-	eventList := [](*cl.Event){}
-	tmpEvtL := torque.GetAllEvents(X)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	tmpEvtL = torque.GetAllEvents(Y)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	tmpEvtL = torque.GetAllEvents(Z)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	tmpEvt := m.GetEvent(X)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvt = m.GetEvent(Y)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvt = m.GetEvent(Z)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	if J.GetSlicePtr() != nil {
-		tmpEvt = J.GetEvent(Z)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-	}
-	if fixedP.GetSlicePtr() != nil {
-		tmpEvt = fixedP.GetEvent(X)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-		tmpEvt = fixedP.GetEvent(Y)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-		tmpEvt = fixedP.GetEvent(Z)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-	}
-	if alpha.GetSlicePtr() != nil {
-		tmpEvt = alpha.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-	}
-	if ε_prime.GetSlicePtr() != nil {
-		tmpEvt = ε_prime.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-	}
-	if Msat.GetSlicePtr() != nil {
-		tmpEvt = Msat.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-	}
-	if pol.GetSlicePtr() != nil {
-		tmpEvt = pol.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-	}
-	if λ.GetSlicePtr() != nil {
-		tmpEvt = λ.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-	}
-	if thickness.GetSlicePtr() != nil {
-		tmpEvt = thickness.GetEvent(0)
-		if tmpEvt != nil {
-			eventList = append(eventList, tmpEvt)
-		}
-	}
-	if len(eventList) == 0 {
-		eventList = nil
-	}
 
 	event := k_addslonczewskitorque2_async(
 		torque.DevPtr(X), torque.DevPtr(Y), torque.DevPtr(Z),
@@ -147,14 +62,12 @@ func AddSlonczewskiTorque2(torque, m *data.Slice, Msat, J, fixedP, alpha, pol, �
 	}
 	InsertEventIntoGSlices(event, glist)
 
-	if Debug {
+	if Synchronous || Debug {
 		if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 			fmt.Printf("WaitForEvents failed in addslonczewskitorque2: %+v \n", err)
 		}
 		WaitAndUpdateDataSliceEvents(event, glist, false)
-		return
 	}
 
-	go WaitAndUpdateDataSliceEvents(event, glist, true)
-
+	return
 }
