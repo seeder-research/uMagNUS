@@ -10,40 +10,15 @@ import (
 
 // SetMaxAngle sets dst to the maximum angle of each cells magnetization with all of its neighbors,
 // provided the exchange stiffness with that neighbor is nonzero.
-func SetMaxAngle(dst, m *data.Slice, Aex_red SymmLUT, regions *Bytes, mesh *data.Mesh) {
+func SetMaxAngle(dst, m *data.Slice, Aex_red SymmLUT, regions *Bytes, mesh *data.Mesh, q *cl.CommandQueue, ewl []*cl.Event) {
 	N := mesh.Size()
 	pbc := mesh.PBC_code()
 	cfg := make3DConf(N)
 
-	eventList := [](*cl.Event){}
-	tmpEvtL := dst.GetAllEvents(0)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	tmpEvt := m.GetEvent(X)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvt = m.GetEvent(Y)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvt = m.GetEvent(Z)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvt = regions.GetEvent()
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	if len(eventList) == 0 {
-		eventList = nil
-	}
-
 	event := k_setmaxangle_async(dst.DevPtr(0),
 		m.DevPtr(X), m.DevPtr(Y), m.DevPtr(Z),
 		unsafe.Pointer(Aex_red), regions.Ptr,
-		N[X], N[Y], N[Z], pbc, cfg, eventList)
+		N[X], N[Y], N[Z], pbc, cfg, ewl, q)
 
 	dst.SetEvent(0, event)
 
@@ -51,21 +26,12 @@ func SetMaxAngle(dst, m *data.Slice, Aex_red SymmLUT, regions *Bytes, mesh *data
 	InsertEventIntoGSlices(event, glist)
 	regions.InsertReadEvent(event)
 
-	if Debug {
+	if Synchronous || Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in setmaxangle: %+v \n", err)
 		}
-		WaitAndUpdateDataSliceEvents(event, glist, false)
 		regions.RemoveReadEvent(event)
-		return
 	}
 
-	go WaitAndUpdateDataSliceEvents(event, glist, true)
-	go func(ev *cl.Event, b *Bytes) {
-		if err := cl.WaitForEvents([]*cl.Event{ev}); err != nil {
-			fmt.Printf("WaitForEvents failed in setmaxangle: %+v \n", err)
-		}
-		b.RemoveReadEvent(ev)
-	}(event, regions)
-
+	return
 }

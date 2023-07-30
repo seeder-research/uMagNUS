@@ -10,34 +10,12 @@ import (
 )
 
 // Normalize vec to unit length, unless length or vol are zero.
-func Normalize(vec, vol *data.Slice) {
+func Normalize(vec, vol *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) {
 	util.Argument(vol == nil || vol.NComp() == 1)
 	N := vec.Len()
 	cfg := make1DConf(N)
 
-	eventList := []*cl.Event{}
-	tmpEvtL := vec.GetAllEvents(X)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	tmpEvtL = vec.GetAllEvents(Y)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	tmpEvtL = vec.GetAllEvents(Z)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	volPtr := (unsafe.Pointer)(nil)
-	if vol != nil {
-		volPtr = vol.DevPtr(0)
-		eventList = append(eventList, vol.GetEvent(0))
-	}
-	if len(eventList) == 0 {
-		eventList = nil
-	}
-
-	event := k_normalize2_async(vec.DevPtr(X), vec.DevPtr(Y), vec.DevPtr(Z), volPtr, N, cfg, eventList)
+	event := k_normalize2_async(vec.DevPtr(X), vec.DevPtr(Y), vec.DevPtr(Z), volPtr, N, cfg, ewl, q)
 
 	vec.SetEvent(X, event)
 	vec.SetEvent(Y, event)
@@ -49,18 +27,11 @@ func Normalize(vec, vol *data.Slice) {
 		InsertEventIntoGSlices(event, glist)
 	}
 
-	if Debug {
+	if Synchronous || Debug {
 		if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 			fmt.Printf("WaitForEvents failed in normalize: %+v \n", err)
 		}
-		if len(glist) > 0 {
-			WaitAndUpdateDataSliceEvents(event, glist, false)
-		}
-		return
 	}
 
-	if len(glist) > 0 {
-		go WaitAndUpdateDataSliceEvents(event, glist, true)
-	}
-
+	return
 }
