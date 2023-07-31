@@ -1,6 +1,7 @@
 package opencl
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"sync"
@@ -8,6 +9,7 @@ import (
 
 	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
+	qm "github.com/seeder-research/uMagNUS/queuemanager"
 	util "github.com/seeder-research/uMagNUS/util"
 )
 
@@ -23,19 +25,14 @@ possibly small work-groups.
 */
 
 // Sum of all elements.
-func Sum(in *data.Slice) float32 {
+func Sum(in *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) float32 {
 	util.Argument(in.NComp() == 1)
 	out := reduceBuf(0)
-	// check input slice for event to synchronize (if any)
-	var event *cl.Event
-	syncEvent := in.GetEvent(0)
-	if syncEvent == nil {
-		event = k_reducesum_async(in.DevPtr(0), out, 0,
-			in.Len(), reducecfg, nil)
-	} else {
-		event = k_reducesum_async(in.DevPtr(0), out, 0,
-			in.Len(), reducecfg, []*cl.Event{syncEvent})
-	}
+
+	// Launch kernel
+	event := k_reducesum_async(in.DevPtr(0), out, 0,
+		in.Len(), reducecfg, ewl, q)
+
 	// Must synchronize since out is copied from device back to host
 	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in sum: %+v \n", err)
@@ -51,54 +48,24 @@ func Sum(in *data.Slice) float32 {
 }
 
 // Dot product
-func Dot(a, b *data.Slice) float32 {
+func Dot(a, b *data.Slice, q []*cl.CommandQueue, ewl []*cl.Event) float32 {
 	util.Argument(a.NComp() == b.NComp())
 	util.Argument(a.Len() == b.Len())
+	util.Argument(a.NComp() == len(q))
 	result := float32(0)
 	numComp := a.NComp()
 	out := make([]unsafe.Pointer, numComp)
 	for c := 0; c < numComp; c++ {
 		out[c] = reduceBuf(0)
 	}
-	eventSync := make([]*cl.Event, numComp)
 	hostResult := make([]float32, numComp)
-	var wg sync.WaitGroup
-	// async over components
 	for c := 0; c < numComp; c++ {
-		eventIntList := []*cl.Event{}
-		tmpEvt := a.GetEvent(c)
-		if tmpEvt != nil {
-			eventIntList = append(eventIntList, tmpEvt)
-		}
-		tmpEvt = b.GetEvent(c)
-		if tmpEvt != nil {
-			eventIntList = append(eventIntList, tmpEvt)
-		}
-		if len(eventIntList) > 0 {
-			eventSync[c] = k_reducedot_async(a.DevPtr(c), b.DevPtr(c), out[c], 0,
-				a.Len(), reducecfg, eventIntList) // all components add to out
-		} else {
-			eventSync[c] = k_reducedot_async(a.DevPtr(c), b.DevPtr(c), out[c], 0,
-				a.Len(), reducecfg, nil) // all components add to out
-		}
-		wg.Add(1)
-		go func(idx int, eventList []*cl.Event, outBufferPtr unsafe.Pointer, res *float32) {
-			defer wg.Done()
-			if err := cl.WaitForEvents(eventList); err != nil {
-				fmt.Printf("WaitForEvents failed at index %d in dot: %+v \n", idx, err)
-			}
-			//			results := copybackSlice(outBufferPtr)
-			//			tmp := float32(0)
-			//			for _, v := range results {
-			//				tmp += v
-			//			}
-			//			*res = tmp
-			results := copyback(outBufferPtr)
-			*res = results
-		}(c, []*cl.Event{eventSync[c]}, out[c], &hostResult[c])
+		// Launch kernel
+		event := k_reducedot_async(a.DevPtr(c), b.DevPtr(c), out[c], 0,
+			a.Len(), reducecfg, ewl, q[c]) // all components add to out
 	}
-	// Must synchronize since result is copied from device back to host
-	wg.Wait()
+	// Copy back to host...
+
 	for _, oVal := range hostResult {
 		result += oVal
 	}
@@ -106,7 +73,7 @@ func Dot(a, b *data.Slice) float32 {
 }
 
 // Maximum of absolute values of all elements.
-func MaxAbs(in *data.Slice) float32 {
+func MaxAbs(in *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) float32 {
 	util.Argument(in.NComp() == 1)
 	out := reduceBuf(0)
 	// check input slice for event to synchronize (if any)
@@ -134,7 +101,7 @@ func MaxAbs(in *data.Slice) float32 {
 }
 
 // Maximum element-wise difference
-func MaxDiff(a, b *data.Slice) []float32 {
+func MaxDiff(a, b *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) []float32 {
 	util.Argument(a.NComp() == b.NComp())
 	util.Argument(a.Len() == b.Len())
 	numComp := a.NComp()
@@ -186,7 +153,7 @@ func MaxDiff(a, b *data.Slice) []float32 {
 // Maximum of the norms of all vectors (x[i], y[i], z[i]).
 //
 //	max_i sqrt( x[i]*x[i] + y[i]*y[i] + z[i]*z[i] )
-func MaxVecNorm(v *data.Slice) float64 {
+func MaxVecNorm(v *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) float64 {
 	util.Argument(v.NComp() == 3)
 	out := reduceBuf(0)
 	// check input slice for events to synchronize (if any)
@@ -223,7 +190,7 @@ func MaxVecNorm(v *data.Slice) float64 {
 //
 //	(dx, dy, dz) = (x1, y1, z1) - (x2, y2, z2)
 //	max_i sqrt( dx[i]*dx[i] + dy[i]*dy[i] + dz[i]*dz[i] )
-func MaxVecDiff(x, y *data.Slice) float64 {
+func MaxVecDiff(x, y *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) float64 {
 	util.Argument(x.Len() == y.Len())
 	util.Argument(x.NComp() == 3)
 	util.Argument(y.NComp() == 3)
@@ -273,17 +240,31 @@ func reduceBuf(initVal float32) unsafe.Pointer {
 		initReduceBuf()
 	}
 	buf := <-reduceBuffers
+
+	// Checkout queue
+	tmpQueue := qm.CheckoutQueue(CmdQueuePool, nil)
+
+	// Launch kernel
 	//	waitEvent, err := ClCmdQueue.EnqueueFillBuffer(buf, unsafe.Pointer(&initVal), SIZEOF_FLOAT32, 0, ReduceWorkgroups*SIZEOF_FLOAT32, nil)
-	waitEvent, err := ClCmdQueue.EnqueueFillBuffer(buf, unsafe.Pointer(&initVal), SIZEOF_FLOAT32, 0, SIZEOF_FLOAT32, nil)
+	waitEvent, err := tmpQueue.EnqueueFillBuffer(buf, unsafe.Pointer(&initVal), SIZEOF_FLOAT32, 0, SIZEOF_FLOAT32, nil)
 	if err != nil {
 		fmt.Printf("reduceBuf failed: %+v \n", err)
 		return nil
 	}
+
+	// always synchronize reduceBuf()
 	err = cl.WaitForEvents([]*cl.Event{waitEvent})
+
+	// Check in queue post execution
+	qwg := qm.NewQueueWaitGroup(tmpQueue, nil)
+	ReturnQueuePool <- qwg
+
 	if err != nil {
 		fmt.Printf("First WaitForEvents in reduceBuf failed: %+v \n", err)
+		reduceBuffers <- buf
 		return nil
 	}
+
 	return (unsafe.Pointer)(buf)
 }
 
@@ -319,3 +300,66 @@ func initReduceBuf() {
 var reducecfg = &config{Grid: []int{1, 1, 1}, Block: []int{1, 1, 1}}
 var ReduceWorkitems int
 var ReduceWorkgroups int
+
+// Use a small bunch of goroutines to handle copybacks
+
+// Data type to pass to goroutines
+type reduceEventAndPointer struct {
+	event []*cl.Event
+	cmdQ  *cl.CommandQueue
+	ptr   unsafe.Pointer
+	idx   int
+}
+
+type reduceOutput struct {
+	res float32
+	idx int
+}
+
+// Variables for managing the goroutines
+var (
+	reduceManagerContext  context.Context
+	reduceManagerKillFunc context.CancelFunc
+	reduceThreadCount     = int(-1)
+	reduceItem            chan reduceEventAndPointer
+	reduceOutput          chan float32
+	reduceWaitGroup       sync.WaitGroup
+)
+
+// Initialize the goroutines for reduction output
+func reduceInit(n int) {
+	// Initialize globals
+	reduceManagerContext, reduceManagerKillFunc = context.WithCancel(context.Background())
+	reduceThreadCount = n
+	reduceItem = make(reduceEventAndPointer, reduceThreadCount)
+	reduceOutput = make(float32, reduceThreadCount)
+
+	for j := 0; j < reduceThreads; j++ {
+		go threadedCopyBack(reduceIten, reduceOutput, &reduceWaitGroup)
+	}
+}
+
+// Teardown of goroutines for reduction output
+func reduceTeardown() {
+	if reduceThreadCount > 0 {
+		reduceManagerKillFunc()
+	}
+	reduceThreadCount = -1
+}
+
+// function executed by goroutines
+func threadedCopyBack(in <-chan reduceEventAndPointer, out chan<- reduceOutput, wg_ *sync.WaitGroup) {
+	for {
+		select {
+		case item <- in:
+			if err := cl.WaitForEvents(in.event); err == nil {
+				out <- reduceOutput{copyback(item.ptr), item.idx}
+			} else {
+				fmt.Printf("Failed to WaitForEvents: %+v \n", err)
+			}
+			wg_.Done()
+		case <-reduceManagerContext.Done():
+			return
+		}
+	}
+}

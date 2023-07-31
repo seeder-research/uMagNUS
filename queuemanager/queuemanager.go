@@ -64,18 +64,19 @@ func (qw *QueueWaitGroup) GetWaitGroup() *sync.WaitGroup {
 }
 
 func Init(numRoutines int, in chan QueueWaitGroup, queuePool chan *cl.CommandQueue) {
-	// Initialize globals
-	queueManagerContext, queueManagerKillFunc = context.WithCancel(context.Background())
-	routineCount = numRoutines
+	if numRoutines < 1 {
+		panic("queuemanager initialized with numRoutines < 1")
+	} else {
+		// Initialize globals
+		queueManagerContext, queueManagerKillFunc = context.WithCancel(context.Background())
+		routineCount = numRoutines
 
-	// Start goroutines
-	for i := 0; i < numRoutines; i++ {
-		// go threadFunction(in, queuePool)
-		go signalWorkgroupOnQueueFinish(in, queuePool, &ThreadSignals)
+		// Start goroutines
+		for i := 0; i < numRoutines; i++ {
+			// go threadFunction(in, queuePool)
+			go signalWorkgroupOnQueueFinish(in, queuePool, &ThreadSignals)
+		}
 	}
-
-	// Start goroutine for updating events tracked in buffers
-	initEventRoutine()
 }
 
 func GetContext() context.Context {
@@ -87,7 +88,10 @@ func GetKillFunction() context.CancelFunc {
 }
 
 func Teardown() {
-	queueManagerKillFunc()
+	if routineCount > 0 {
+		queueManagerKillFunc()
+	}
+	routineCount = -1
 	killEventRoutine()
 }
 
