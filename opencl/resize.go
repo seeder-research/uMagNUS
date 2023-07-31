@@ -21,19 +21,14 @@ func Resize(dst, src *data.Slice, layer int, q *cl.CommandQueue, ewl []*cl.Event
 
 	cfg := make3DConf(dstsize)
 
+	// Launch kernel
 	event := k_resize_async(dst.DevPtr(0), dstsize[X], dstsize[Y], dstsize[Z],
 		src.DevPtr(0), srcsize[X], srcsize[Y], srcsize[Z], layer, scalex, scaley, cfg,
 		ewl, q)
 
-	dst.SetEvent(0, event)
-
-	glist := []GSlice{src}
-	InsertEventIntoGSlices(event, glist)
-
-	// Synchronize for resize
+	// Must synchronize for resize
 	if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 		fmt.Printf("WaitForEvents failed in resize: %+v \n", err)
-		WaitAndUpdateDataSliceEvents(event, glist, false)
 	}
 
 	return

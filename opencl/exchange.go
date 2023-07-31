@@ -24,6 +24,7 @@ func AddExchange(B, m *data.Slice, Aex_red SymmLUT, Msat MSlice, regions *Bytes,
 	pbc := mesh.PBC_code()
 	cfg := make3DConf(N)
 
+	// Launch kernel
 	event := k_addexchange_async(B.DevPtr(X), B.DevPtr(Y), B.DevPtr(Z),
 		m.DevPtr(X), m.DevPtr(Y), m.DevPtr(Z),
 		Msat.DevPtr(0), Msat.Mul(0),
@@ -31,22 +32,10 @@ func AddExchange(B, m *data.Slice, Aex_red SymmLUT, Msat MSlice, regions *Bytes,
 		wx, wy, wz, N[X], N[Y], N[Z], pbc, cfg,
 		ewl, q)
 
-	B.SetEvent(X, event)
-	B.SetEvent(Y, event)
-	B.SetEvent(Z, event)
-
-	glist := []GSlice{m}
-	if Msat.GetSlicePtr() != nil {
-		glist = append(glist, Msat)
-	}
-	InsertEventIntoGSlices(event, glist)
-	regions.InsertReadEvent(event)
-
-	if Synchronous || Debug {
+	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in addexchange: %+v", err)
 		}
-		regions.RemoveReadEvent(event)
 	}
 
 	return
@@ -62,19 +51,15 @@ func ExchangeDecode(dst *data.Slice, Aex_red SymmLUT, regions *Bytes, mesh *data
 	pbc := mesh.PBC_code()
 	cfg := make3DConf(N)
 
+	// Launch kernel
 	event := k_exchangedecode_async(dst.DevPtr(0), unsafe.Pointer(Aex_red), regions.Ptr,
 		wx, wy, wz, N[X], N[Y], N[Z], pbc, cfg,
 		ewl, q)
 
-	dst.SetEvent(0, event)
-
-	regions.InsertReadEvent(event)
-
-	if Synchronous || Debug {
+	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in exchangedecode: %+v", err)
 		}
-		regions.RemoveReadEvent(event)
 	}
 
 	return

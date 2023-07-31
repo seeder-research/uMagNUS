@@ -15,6 +15,7 @@ func RegionAddV(dst *data.Slice, lut LUTPtrs, regions *Bytes, q *cl.CommandQueue
 	N := dst.Len()
 	cfg := make1DConf(N)
 
+	// Launch kernel
 	event := k_regionaddv_async(dst.DevPtr(X), dst.DevPtr(Y), dst.DevPtr(Z),
 		lut[X], lut[Y], lut[Z], regions.Ptr, N, cfg, ewl, q)
 
@@ -22,13 +23,10 @@ func RegionAddV(dst *data.Slice, lut LUTPtrs, regions *Bytes, q *cl.CommandQueue
 	dst.SetEvent(Y, event)
 	dst.SetEvent(Z, event)
 
-	regions.InsertReadEvent(event)
-
-	if Synchronous || Debug {
+	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents in regionaddv failed: %+v \n", err)
 		}
-		regions.RemoveReadEvent(event)
 	}
 
 	return
@@ -40,17 +38,14 @@ func RegionAddS(dst *data.Slice, lut LUTPtr, regions *Bytes, q *cl.CommandQueue,
 	N := dst.Len()
 	cfg := make1DConf(N)
 
+	// Launch kernel
 	event := k_regionadds_async(dst.DevPtr(0), unsafe.Pointer(lut), regions.Ptr, N, cfg,
 		ewl, q)
 
-	dst.SetEvent(0, event)
-	regions.InsertReadEvent(event)
-
-	if Synchronous || Debug {
+	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents in regionadds failed: %+v \n", err)
 		}
-		regions.RemoveReadEvent(event)
 	}
 
 	return
@@ -61,17 +56,14 @@ func RegionDecode(dst *data.Slice, lut LUTPtr, regions *Bytes, q *cl.CommandQueu
 	N := dst.Len()
 	cfg := make1DConf(N)
 
+	// Launch kernel
 	event := k_regiondecode_async(dst.DevPtr(0), unsafe.Pointer(lut), regions.Ptr, N, cfg,
 		ewl, q)
 
-	dst.SetEvent(0, event)
-	regions.InsertReadEvent(event)
-
-	if Synchronous || Debug {
+	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents in regiondecode failed: %+v \n", err)
 		}
-		regions.RemoveReadEvent(event)
 	}
 
 	return
@@ -85,14 +77,11 @@ func RegionSelect(dst, src *data.Slice, regions *Bytes, region byte, q []*cl.Com
 	cfg := make1DConf(N)
 
 	for c := 0; c < dst.NComp(); c++ {
+		// Launch kernel
 		event := k_regionselect_async(dst.DevPtr(c), src.DevPtr(c), regions.Ptr, region, N, cfg,
 			ewl, q[c])
 
-		dst.SetEvent(c, event)
-		src.InsertReadEvent(c, event)
-		regions.InsertReadEvent(event)
-
-		if Synchronous || Debug {
+		if Debug {
 			if err := cl.WaitForEvents(event); err != nil {
 				fmt.Printf("WaitForEvents in regionselect failed: %+v \n", err)
 			}

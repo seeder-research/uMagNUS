@@ -16,20 +16,15 @@ func VecNorm(dst *data.Slice, a *data.Slice, q *cl.CommandQueue, ewl []*cl.Event
 	N := dst.Len()
 	cfg := make1DConf(N)
 
+	// Launch kernel
 	event := k_vecnorm_async(dst.DevPtr(0),
 		a.DevPtr(X), a.DevPtr(Y), a.DevPtr(Z),
 		N, cfg, ewl, q)
 
-	dst.SetEvent(0, event)
-
-	glist := []GSlice{a}
-	InsertEventIntoGSlices(event, glist)
-
-	if Synchronous || Debug {
+	if Debug {
 		if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 			fmt.Printf("WaitForEvents failed in vecnorm: %+v \n", err)
 		}
-		WaitAndUpdateDataSliceEvents(event, glist, false)
 	}
 
 	return

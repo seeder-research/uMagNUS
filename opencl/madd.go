@@ -16,15 +16,13 @@ func Mul(dst, a, b *data.Slice, q []*cl.CommandQueue, ewl []*cl.Event) {
 	util.Assert(a.Len() == N && a.NComp() == nComp && b.Len() == N && b.NComp() == nComp)
 	util.Assert(nComp == len(q))
 	cfg := make1DConf(N)
+
 	for c := 0; c < nComp; c++ {
+		// Launch kernel
 		event := k_mul_async(dst.DevPtr(c), a.DevPtr(c), b.DevPtr(c), N, cfg,
 			ewl, q[c])
 
-		dst.SetEvent(c, event)
-		a.InsertReadEvent(c, event)
-		b.InsertReadEvent(c, event)
-
-		if Synchronous || Debug {
+		if Debug {
 			if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 				fmt.Printf("WaitForEvents failed in mul: %+v \n", err)
 			}
@@ -42,15 +40,13 @@ func Div(dst, a, b *data.Slice, q []*cl.CommandQueue, ewl []*cl.Event) {
 	util.Assert(a.Len() == N && a.NComp() == nComp && b.Len() == N && b.NComp() == nComp)
 	util.Assert(nComp == len(q))
 	cfg := make1DConf(N)
+
 	for c := 0; c < nComp; c++ {
+		// Launch kernel
 		event := k_pointwise_div_async(dst.DevPtr(c), a.DevPtr(c), b.DevPtr(c), N, cfg,
 			ewl, q[c])
 
-		dst.SetEvent(c, event)
-		a.InsertReadEvent(c, event)
-		b.InsertReadEvent(c, event)
-
-		if Synchronous || Debug {
+		if Debug {
 			if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 				fmt.Printf("WaitForEvents failed in div: %+v \n", err)
 			}
@@ -76,15 +72,12 @@ func Madd2(dst, src1, src2 *data.Slice, factor1, factor2 float32, q []*cl.Comman
 	cfg := make1DConf(N)
 
 	for c := 0; c < nComp; c++ {
+		// Launch kernel
 		event := k_madd2_async(dst.DevPtr(c), src1.DevPtr(c), factor1,
 			src2.DevPtr(c), factor2, N, cfg,
 			ewl, q[c])
 
-		dst.SetEvent(c, event)
-		src1.InsertReadEvent(c, event)
-		src2.InsertReadEvent(c, event)
-
-		if Synchronous || Debug {
+		if Debug {
 			if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 				fmt.Printf("WaitForEvents failed in madd2: %+v \n", err)
 			}
@@ -104,16 +97,12 @@ func Madd3(dst, src1, src2, src3 *data.Slice, factor1, factor2, factor3 float32,
 	cfg := make1DConf(N)
 
 	for c := 0; c < nComp; c++ {
+		// Launch kernel
 		event := k_madd3_async(dst.DevPtr(c), src1.DevPtr(c), factor1,
 			src2.DevPtr(c), factor2, src3.DevPtr(c), factor3, N, cfg,
 			ewl, q[c])
 
-		dst.SetEvent(c, event)
-		src1.InsertReadEvent(c, event)
-		src2.InsertReadEvent(c, event)
-		src3.InsertReadEvent(c, event)
-
-		if Synchronous || Debug {
+		if Debug {
 			if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 				fmt.Printf("WaitForEvents failed in madd3: %+v \n", err)
 			}
@@ -133,6 +122,7 @@ func Madd4(dst, src1, src2, src3, src4 *data.Slice, factor1, factor2, factor3, f
 	cfg := make1DConf(N)
 
 	for c := 0; c < nComp; c++ {
+		// Launch kernel
 		event := k_madd4_async(dst.DevPtr(c),
 			src1.DevPtr(c), factor1,
 			src2.DevPtr(c), factor2,
@@ -140,13 +130,7 @@ func Madd4(dst, src1, src2, src3, src4 *data.Slice, factor1, factor2, factor3, f
 			src4.DevPtr(c), factor4, N, cfg,
 			ewl, q[c])
 
-		dst.SetEvent(c, event)
-		src1.InsertReadEvent(c, event)
-		src2.InsertReadEvent(c, event)
-		src3.InsertReadEvent(c, event)
-		src4.InsertReadEvent(c, event)
-
-		if Synchronous || Debug {
+		if Debug {
 			if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 				fmt.Printf("WaitForEvents failed in madd4: %+v \n", err)
 			}
@@ -166,6 +150,7 @@ func Madd5(dst, src1, src2, src3, src4, src5 *data.Slice, factor1, factor2, fact
 	cfg := make1DConf(N)
 
 	for c := 0; c < nComp; c++ {
+		// Launch kernel
 		event := k_madd5_async(dst.DevPtr(c),
 			src1.DevPtr(c), factor1,
 			src2.DevPtr(c), factor2,
@@ -174,14 +159,7 @@ func Madd5(dst, src1, src2, src3, src4, src5 *data.Slice, factor1, factor2, fact
 			src5.DevPtr(c), factor5, N, cfg,
 			ewl, q[c])
 
-		dst.SetEvent(c, event)
-		src1.InsertReadEvent(c, event)
-		src2.InsertReadEvent(c, event)
-		src3.InsertReadEvent(c, event)
-		src4.InsertReadEvent(c, event)
-		src5.InsertReadEvent(c, event)
-
-		if Synchronous || Debug {
+		if Debug {
 			if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 				fmt.Printf("WaitForEvents failed in madd5: %+v \n", err)
 			}
@@ -201,6 +179,7 @@ func Madd6(dst, src1, src2, src3, src4, src5, src6 *data.Slice, factor1, factor2
 	cfg := make1DConf(N)
 
 	for c := 0; c < nComp; c++ {
+		// Launch kernel
 		event := k_madd6_async(dst.DevPtr(c),
 			src1.DevPtr(c), factor1,
 			src2.DevPtr(c), factor2,
@@ -210,15 +189,7 @@ func Madd6(dst, src1, src2, src3, src4, src5, src6 *data.Slice, factor1, factor2
 			src6.DevPtr(c), factor6, N, cfg,
 			ewl, q[c])
 
-		dst.SetEvent(c, event)
-		src1.InsertReadEvent(c, event)
-		src2.InsertReadEvent(c, event)
-		src3.InsertReadEvent(c, event)
-		src4.InsertReadEvent(c, event)
-		src5.InsertReadEvent(c, event)
-		src6.InsertReadEvent(c, event)
-
-		if Synchronous || Debug {
+		if Debug {
 			if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 				fmt.Printf("WaitForEvents failed in madd6: %+v \n", err)
 			}
@@ -238,6 +209,7 @@ func Madd7(dst, src1, src2, src3, src4, src5, src6, src7 *data.Slice, factor1, f
 	cfg := make1DConf(N)
 
 	for c := 0; c < nComp; c++ {
+		// Launch kernel
 		event := k_madd7_async(dst.DevPtr(c),
 			src1.DevPtr(c), factor1,
 			src2.DevPtr(c), factor2,
@@ -248,16 +220,7 @@ func Madd7(dst, src1, src2, src3, src4, src5, src6, src7 *data.Slice, factor1, f
 			src7.DevPtr(c), factor7, N, cfg,
 			ewl, q[c])
 
-		dst.SetEvent(c, event)
-		src1.InsertReadEvent(c, event)
-		src2.InsertReadEvent(c, event)
-		src3.InsertReadEvent(c, event)
-		src4.InsertReadEvent(c, event)
-		src5.InsertReadEvent(c, event)
-		src6.InsertReadEvent(c, event)
-		src7.InsertReadEvent(c, event)
-
-		if Synchronous || Debug {
+		if Debug {
 			if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 				fmt.Printf("WaitForEvents failed in madd7: %+v \n", err)
 			}

@@ -18,15 +18,16 @@ func Divide(dst, a, b *data.Slice, q []*cl.CommandQueue, ewl []*cl.Event) {
 	cfg := make1DConf(N)
 
 	for c := 0; c < nComp; c++ {
+		// Launch kernel
 		event := k_divide_async(dst.DevPtr(c), a.DevPtr(c), b.DevPtr(c), N, cfg,
 			ewl, q[c])
-		dst.SetEvent(c, event)
-		a.InsertReadEvent(c, event)
-		b.InsertReadEvent(c, event)
-		if Synchronous {
+
+		if Debug {
 			if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 				fmt.Printf("WaitForEvents failed in divide (comp %d: %+v \n", c, err)
 			}
 		}
 	}
+
+	return
 }

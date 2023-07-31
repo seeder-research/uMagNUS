@@ -26,7 +26,7 @@ func AddDotProduct(dst *data.Slice, prefactor float32, a, b *data.Slice, q *cl.C
 	glist := []GSlice{a, b}
 	InsertEventIntoGSlices(event, glist)
 
-	if Synchronous || Debug {
+	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in adddotproduct: %+v \n", err)
 		}

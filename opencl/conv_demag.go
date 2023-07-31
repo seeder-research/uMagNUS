@@ -210,14 +210,6 @@ func (c *DemagConvolution) is2D() bool {
 
 // zero 1-component slice
 func zero1_async(dst *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) {
-	// synchronization should be done by code using
-	// opencl library
-
-	if Synchronous { // debug
-		for len(CmdQueuePool) < QueuePoolSz {
-		}
-	}
-
 	val := float32(0.0)
 	if dst == nil {
 		panic("ERROR (zero1_async): dst pointer cannot be nil")
@@ -226,12 +218,11 @@ func zero1_async(dst *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) {
 	// Launch kernel
 	event, err := q.EnqueueFillBuffer((*cl.MemObject)(dst.DevPtr(0)), unsafe.Pointer(&val), SIZEOF_FLOAT32, 0, dst.Len()*SIZEOF_FLOAT32, ewl)
 
-	dst.SetEvent(0, event)
 	if err != nil {
 		fmt.Printf("EnqueueFillBuffer failed: %+v \n", err)
 	}
 
-	if Synchronous {
+	if Debug {
 		if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in zero1_async: %+v \n", err)
 		}

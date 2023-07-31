@@ -19,17 +19,18 @@ func Crop(dst, src *data.Slice, offX, offY, offZ int, q []*cl.CommandQueue, ewl 
 
 	cfg := make3DConf(D)
 
-	eventList := make([](*cl.Event), dst.NComp())
 	for c := 0; c < dst.NComp(); c++ {
-		eventList[c] = k_crop_async(dst.DevPtr(c), D[X], D[Y], D[Z],
+		// Launch kernel
+		event := k_crop_async(dst.DevPtr(c), D[X], D[Y], D[Z],
 			src.DevPtr(c), S[X], S[Y], S[Z],
 			offX, offY, offZ, cfg, ewl, q[c])
-		dst.SetEvent(c, eventList[c])
-		src.InsertReadEvent(c, eventList[c])
-	}
-	if Synchronous || Debug {
-		if err := cl.WaitForEvents(eventList); err != nil {
-			fmt.Printf("WaitForEvents failed in crop: %+v \n", err)
+
+		if Debug {
+			if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
+				fmt.Printf("WaitForEvents failed in crop: %+v \n", err)
+			}
 		}
 	}
+
+	return
 }

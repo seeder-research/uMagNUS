@@ -14,6 +14,7 @@ func AddOommfSlonczewskiTorque(torque, m *data.Slice, Msat, J, fixedP, alpha, pf
 	cfg := make1DConf(N)
 	flt := float32(mesh.WorldSize()[Z])
 
+	// Launch kernel
 	event := k_addoommfslonczewskitorque_async(
 		torque.DevPtr(X), torque.DevPtr(Y), torque.DevPtr(Z),
 		m.DevPtr(X), m.DevPtr(Y), m.DevPtr(Z),
@@ -31,46 +32,10 @@ func AddOommfSlonczewskiTorque(torque, m *data.Slice, Msat, J, fixedP, alpha, pf
 		unsafe.Pointer(uintptr(0)), flt,
 		N, cfg, eventList)
 
-	torque.SetEvent(X, event)
-	torque.SetEvent(Y, event)
-	torque.SetEvent(Z, event)
-
-	glist := []GSlice{m}
-	if J.GetSlicePtr() != nil {
-		glist = append(glist, J)
-	}
-	if Msat.GetSlicePtr() != nil {
-		glist = append(glist, Msat)
-		Msat.SetEvent(0, event)
-	}
-	if fixedP.GetSlicePtr() != nil {
-		glist = append(glist, fixedP)
-	}
-	if ε_prime.GetSlicePtr() != nil {
-		glist = append(glist, ε_prime)
-	}
-	if alpha.GetSlicePtr() != nil {
-		glist = append(glist, alpha)
-	}
-	if pfix.GetSlicePtr() != nil {
-		glist = append(glist, pfix)
-	}
-	if pfree.GetSlicePtr() != nil {
-		glist = append(glist, pfree)
-	}
-	if λfix.GetSlicePtr() != nil {
-		glist = append(glist, λfix)
-	}
-	if λfree.GetSlicePtr() != nil {
-		glist = append(glist, λfree)
-	}
-	InsertEventIntoGSlices(event, glist)
-
-	if Synchronous || Debug {
+	if Debug {
 		if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 			fmt.Printf("WaitForEvents failed in addoommfslonczewskitorque: %+v \n", err)
 		}
-		WaitAndUpdateDataSliceEvents(event, glist, false)
 	}
 
 	return

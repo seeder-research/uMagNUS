@@ -43,6 +43,7 @@ func SetTemperature(Bth, noise *data.Slice, k2mu0_Mu0VgammaDt float64, Msat, Tem
 		Alpha_X = Alpha.DevPtr(0)
 	}
 
+	// Launch kernel
 	event := k_settemperature2_async(Beff, nois, float32(k2mu0_Mu0VgammaDt),
 		Msat_X, Msat.Mul(0),
 		Temp_X, Temp.Mul(0),
@@ -50,25 +51,10 @@ func SetTemperature(Bth, noise *data.Slice, k2mu0_Mu0VgammaDt float64, Msat, Tem
 		N, cfg,
 		ewl, q)
 
-	Bth.SetEvent(0, event)
-
-	glist := []GSlice{noise}
-	if Msat_X != nil {
-		glist = append(glist, Msat)
-	}
-	if Temp_X != nil {
-		glist = append(glist, Temp)
-	}
-	if Alpha_X != nil {
-		glist = append(glist, Alpha)
-	}
-	InsertEventIntoGSlices(event, glist)
-
-	if Synchronous || Debug {
+	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in settemperature: %+v \n", err)
 		}
-		WaitAndUpdateDataSliceEvents(event, glist, false)
 	}
 
 	return

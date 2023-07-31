@@ -15,22 +15,16 @@ func SetMaxAngle(dst, m *data.Slice, Aex_red SymmLUT, regions *Bytes, mesh *data
 	pbc := mesh.PBC_code()
 	cfg := make3DConf(N)
 
+	// Launch kernel
 	event := k_setmaxangle_async(dst.DevPtr(0),
 		m.DevPtr(X), m.DevPtr(Y), m.DevPtr(Z),
 		unsafe.Pointer(Aex_red), regions.Ptr,
 		N[X], N[Y], N[Z], pbc, cfg, ewl, q)
 
-	dst.SetEvent(0, event)
-
-	glist := []GSlice{m}
-	InsertEventIntoGSlices(event, glist)
-	regions.InsertReadEvent(event)
-
-	if Synchronous || Debug {
+	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in setmaxangle: %+v \n", err)
 		}
-		regions.RemoveReadEvent(event)
 	}
 
 	return

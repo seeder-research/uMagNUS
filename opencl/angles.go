@@ -9,13 +9,6 @@ import (
 )
 
 func SetPhi(s *data.Slice, m *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) {
-	// need to synchronize on previous accesses to s and m
-	// which can be seen from code using opencl library
-
-	if Synchronous { // debug
-		for len(CmdQueuePool) < QueuePoolSz {
-		}
-	}
 	N := s.Size()
 	util.Argument(m.Size() == N)
 	cfg := make3DConf(N)
@@ -27,11 +20,7 @@ func SetPhi(s *data.Slice, m *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) {
 		cfg, ewl,
 		q)
 
-	s.SetEvent(0, event)
-	m.InsertReadEvent(X, event)
-	m.InsertReadEvent(Y, event)
-
-	if Synchronous || Debug {
+	if Debug {
 		if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 			fmt.Printf("WaitForEvents failed in setphi: %+v \n", err)
 		}
@@ -41,13 +30,6 @@ func SetPhi(s *data.Slice, m *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) {
 }
 
 func SetTheta(s *data.Slice, m *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) {
-	// need to synchronize on previous accesses to s and m
-	// which can be seen from code using opencl library
-
-	if Synchronous { // debug
-		for len(CmdQueuePool) < QueuePoolSz {
-		}
-	}
 	N := s.Size()
 	util.Argument(m.Size() == N)
 	cfg := make3DConf(N)
@@ -58,10 +40,7 @@ func SetTheta(s *data.Slice, m *data.Slice, q *cl.CommandQueue, ewl []*cl.Event)
 		cfg, ewl,
 		q)
 
-	s.SetEvent(0, event)
-	m.InsertReadEvent(Z, event)
-
-	if Synchronous || Debug {
+	if Debug {
 		if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 			fmt.Printf("WaitForEvents failed in settheta: %+v \n", err)
 		}

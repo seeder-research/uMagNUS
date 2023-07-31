@@ -23,7 +23,7 @@ var (
 	Flag_port        = flag.String("http", ":35367", "Port to serve web gui")
 	Flag_selftest    = flag.Bool("paranoid", false, "Enable convolution self-test for cuFFT sanity.")
 	Flag_silent      = flag.Bool("s", false, "Silent") // provided for backwards compatibility
-	Flag_sync        = flag.Bool("sync", false, "Synchronize all OpenCL calls (debug)")
+	Flag_sync        = flag.Bool("sync", false, "Synchronize all data transfers")
 	Flag_forceclean  = flag.Bool("f", false, "Force start, clean existing output directory")
 	Flag_failfast    = flag.Bool("failfast", false, "If one simulation fails, stop entire batch immediately")
 	Flag_test        = flag.Bool("test", false, "OpenCL test (internal)")

@@ -11,8 +11,8 @@ import (
 
 // Add effective field due to bulk Dzyaloshinskii-Moriya interaction to Beff.
 // See dmibulk.cl
-func AddDMIBulk(Beff *data.Slice, m *data.Slice, Aex_red, D_red SymmLUT, Msat MSlice, regions *Bytes, mesh *data.Mesh, OpenBC bool
-		q *cl.CommandQueue, ewl []*cl.Event) {
+func AddDMIBulk(Beff *data.Slice, m *data.Slice, Aex_red, D_red SymmLUT, Msat MSlice, regions *Bytes, mesh *data.Mesh, OpenBC bool,
+	q *cl.CommandQueue, ewl []*cl.Event) {
 	cellsize := mesh.CellSize()
 	N := Beff.Size()
 	util.Argument(m.Size() == N)
@@ -22,6 +22,7 @@ func AddDMIBulk(Beff *data.Slice, m *data.Slice, Aex_red, D_red SymmLUT, Msat MS
 		openBC = 1
 	}
 
+	// Launch kernel
 	event := k_adddmibulk_async(Beff.DevPtr(X), Beff.DevPtr(Y), Beff.DevPtr(Z),
 		m.DevPtr(X), m.DevPtr(Y), m.DevPtr(Z),
 		Msat.DevPtr(0), Msat.Mul(0),
@@ -30,18 +31,7 @@ func AddDMIBulk(Beff *data.Slice, m *data.Slice, Aex_red, D_red SymmLUT, Msat MS
 		N[X], N[Y], N[Z], mesh.PBC_code(), openBC, cfg,
 		ewl, q)
 
-	Beff.SetEvent(X, event)
-	Beff.SetEvent(Y, event)
-	Beff.SetEvent(Z, event)
-
-	glist := []GSlice{m}
-	if Msat.GetSlicePtr() != nil {
-		glist = append(glist, Msat)
-	}
-	InsertEventIntoGSlices(event, glist)
-	regions.InsertReadEvent(event)
-
-	if Synchronous || Debug {
+	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in adddmibulk: %+v \n", err)
 		}

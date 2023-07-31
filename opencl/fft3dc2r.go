@@ -26,7 +26,6 @@ func newFFT3DC2R(Nx, Ny, Nz int) fft3DC2RPlan {
 // src and dst are 3D arrays stored 1D arrays.
 func (p *fft3DC2RPlan) ExecAsync(src, dst *data.Slice) error {
 	if Synchronous {
-		ClCmdQueue.Finish()
 		timer.Start("fft")
 	}
 	oksrclen := p.InputLenFloats()
@@ -42,48 +41,12 @@ func (p *fft3DC2RPlan) ExecAsync(src, dst *data.Slice) error {
 	tmpPtr = dst.DevPtr(0)
 	dstMemObj := *(*cl.MemObject)(tmpPtr)
 
-	// Synchronize in the beginning
-	var err error
-	eventList := []*cl.Event{}
-	tmpEvt := src.GetEvent(0)
-	if tmpEvt != nil {
-		eventList = append(eventList, tmpEvt)
-	}
-	tmpEvtL := dst.GetAllEvents(0)
-	if len(tmpEvtL) > 0 {
-		eventList = append(eventList, tmpEvtL...)
-	}
-	if len(eventList) != 0 {
-		if err = cl.WaitForEvents(eventList); err != nil {
-			fmt.Printf("WaitForEvents failed in bwPlan.ExecAsync: %+v \n", err)
-		}
-	}
-
-	err = p.handle.EnqueueBackwardTransform([]*cl.MemObject{&srcMemObj}, []*cl.MemObject{&dstMemObj})
+	err := p.handle.EnqueueBackwardTransform([]*cl.MemObject{&srcMemObj}, []*cl.MemObject{&dstMemObj})
 	if Synchronous {
 		p.handle.QueueFinish()
 		timer.Stop("fft")
 	}
-	// WaitForEvents in ClCmdQueue is useless since FFT plans run in their own queues
-	tmpEvt, err = ClCmdQueue.EnqueueMarkerWithWaitList(nil)
-	if err != nil {
-		fmt.Printf("Failed to enqueue marker in bwPlan.ExecAsync: %+v \n", err)
-	}
-	dst.SetEvent(0, tmpEvt)
-	src.InsertReadEvent(0, tmpEvt)
-	if Debug {
-		if err0 := cl.WaitForEvents([]*cl.Event{tmpEvt}); err0 != nil {
-			fmt.Printf("WaitForEvents failed before returning bwPlan.ExecAsync: %+v \n", err0)
-		}
-		src.RemoveReadEvent(0, tmpEvt)
-	} else {
-		go func(evt *cl.Event, sl *data.Slice) {
-			if err1 := cl.WaitForEvents([]*cl.Event{evt}); err1 != nil {
-				fmt.Printf("WaitForEvents failed before returning bwPlan.ExecAsync: %+v \n", err1)
-			}
-			sl.RemoveReadEvent(0, evt)
-		}(tmpEvt, src)
-	}
+
 	return err
 }
 

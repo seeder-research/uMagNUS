@@ -16,22 +16,17 @@ func SetTopologicalChargeLattice(s *data.Slice, m *data.Slice, mesh *data.Mesh, 
 	cfg := make3DConf(N)
 	icxcy := float32(1.0 / (cellsize[X] * cellsize[Y]))
 
+	// Launch kernel
 	event := k_settopologicalchargelattice_async(
 		s.DevPtr(X),
 		m.DevPtr(X), m.DevPtr(Y), m.DevPtr(Z),
 		icxcy, N[X], N[Y], N[Z], mesh.PBC_code(),
 		cfg, ewl, q)
 
-	s.SetEvent(X, event)
-
-	glist := []GSlice{m}
-	InsertEventIntoGSlices(event, glist)
-
-	if Synchronous || Debug {
+	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in settopologicalchargelattice: %+v \n", err)
 		}
-		WaitAndUpdateDataSliceEvents(event, glist, false)
 	}
 
 	return

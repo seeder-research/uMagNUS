@@ -23,6 +23,7 @@ func AddDMI(Beff *data.Slice, m *data.Slice, Aex_red, Dex_red SymmLUT, Msat MSli
 		openBC = 1
 	}
 
+	// Launch kernel
 	event := k_adddmi_async(Beff.DevPtr(X), Beff.DevPtr(Y), Beff.DevPtr(Z),
 		m.DevPtr(X), m.DevPtr(Y), m.DevPtr(Z),
 		Msat.DevPtr(0), Msat.Mul(0),
@@ -31,22 +32,10 @@ func AddDMI(Beff *data.Slice, m *data.Slice, Aex_red, Dex_red SymmLUT, Msat MSli
 		N[X], N[Y], N[Z], mesh.PBC_code(), openBC, cfg,
 		ewl, q)
 
-	Beff.SetEvent(X, event)
-	Beff.SetEvent(Y, event)
-	Beff.SetEvent(Z, event)
-
-	glist := []GSlice{m}
-	if Msat.GetSlicePtr() != nil {
-		glist = append(glist, Msat)
-	}
-	InsertEventIntoGSlices(event, glist)
-	regions.InsertReadEvent(event)
-
-	if Synchronous || Debug {
+	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in adddmi: %+v \n", err)
 		}
-		regions.RemoveReadEvent(event)
 	}
 
 	return

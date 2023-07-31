@@ -14,12 +14,10 @@ func ZeroMask(dst *data.Slice, mask LUTPtr, regions *Bytes, q []*cl.CommandQueue
 	cfg := make1DConf(N)
 
 	for c := 0; c < dst.NComp(); c++ {
+		// Launch kernel
 		event := k_zeromask_async(dst.DevPtr(c), unsafe.Pointer(mask), regions.Ptr, N, cfg, eql, q)
 
-		dst.SetEvent(c, eventList[c])
-
-		regions.InsertReadEvent(eventList[c])
-		if Synchronous || Debug {
+		if Debug {
 			if err := cl.WaitForEvents(eventList); err != nil {
 				fmt.Printf("WaitForEvents failed in zeromask: %+v \n", err)
 			}

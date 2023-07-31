@@ -25,6 +25,7 @@ func AddRegionSpinTorque(torque, m *data.Slice, Msat MSlice, regions *Bytes, reg
 	N := mesh.Size()
 	cfg := make3DConf(N)
 
+	// Launch kernel
 	event := k_addtworegionoommfslonczewskitorque_async(torque.DevPtr(X), torque.DevPtr(Y), torque.DevPtr(Z),
 		m.DevPtr(X), m.DevPtr(Y), m.DevPtr(Z),
 		Msat.DevPtr(0), Msat.Mul(0),
@@ -34,23 +35,10 @@ func AddRegionSpinTorque(torque, m *data.Slice, Msat MSlice, regions *Bytes, reg
 		cfg,
 		ewl, q)
 
-	torque.SetEvent(X, event)
-	torque.SetEvent(Y, event)
-	torque.SetEvent(Z, event)
-
-	glist := []GSlice{m}
-	if Msat.GetSlicePtr() != nil {
-		glist = append(glist, Msat)
-	}
-	InsertEventIntoGSlices(event, glist)
-	regions.InsertReadEvent(event)
-
-	if Synchronous || Debug {
+	if Debug {
 		if err := cl.WaitForEvents([](*cl.Event){event}); err != nil {
 			fmt.Printf("WaitForEvents failed in addtworegionoommfslonczewskitorque: %+v", err)
 		}
-		WaitAndUpdateDataSliceEvents(event, glist, false)
-		regions.RemoveReadEvent(event)
 	}
 
 	return
