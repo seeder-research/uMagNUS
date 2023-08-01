@@ -297,6 +297,8 @@ func Init(gpu int) {
 		reducecfg.Grid[0] = ReduceWorkgroups * reducecfg.Block[0]
 	}
 
+	reduceInit(3)
+
 	if Debug {
 		fmt.Printf("    PlatformInfo: \n%+v \n", PlatformInfo)
 		fmt.Printf("    GPUInfo: \n%+v \n", GPUInfo)
@@ -320,6 +322,7 @@ func (s *GPU) getGpuPlatform() *cl.Platform {
 }
 
 func ReleaseAndClean() {
+	reduceTeardown()
 	ClCmdQueue.Release()
 	ClProgram.Release()
 	ClCtx.Release()
