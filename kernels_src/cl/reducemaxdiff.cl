@@ -27,13 +27,20 @@ reducemaxdiff(         __global real_t* __restrict    src1,
     scratch[local_idx] = mine;
     barrier(CLK_LOCAL_MEM_FENCE);
 
-    // Reduce using lor loop
-    for (unsigned int s = (grp_sz >> 1); s > 32; s >>= 1) {
-        if (local_idx < s) {
-            scratch[local_idx] = fmax(scratch[local_idx], scratch[local_idx + s]);
-        }
-
-        // Synchronize workitems before next iteration
+    // Perform reduction in the shared memory.
+    if (grp_sz >= 512) {
+        if (local_idx < 256)
+            scratch[local_idx] = fmax(scratch[local_idx], scratch[local_idx + 256]);
+        barrier(CLK_LOCAL_MEM_FENCE);
+    }
+    if (grp_sz >= 256) {
+        if (local_idx < 128)
+            scratch[local_idx] = fmax(scratch[local_idx], scratch[local_idx + 128]);
+        barrier(CLK_LOCAL_MEM_FENCE);
+    }
+    if (grp_sz >= 128) {
+        if (local_idx < 64)
+            scratch[local_idx] = fmax(scratch[local_idx], scratch[local_idx + 64]);
         barrier(CLK_LOCAL_MEM_FENCE);
     }
 

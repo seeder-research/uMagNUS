@@ -8,21 +8,59 @@ reducedot(         __global real_t* __restrict     src1,
 
     ulong const block_size = get_local_size(0);
     ulong const idx_in_block = get_local_id(0);
-    ulong idx_global = get_group_id(0) * (get_local_size(0) * 2) + get_local_id(0);
-    ulong const grid_size = block_size * 2 * get_num_groups(0);
-    scratch[idx_in_block] = (idx_global < n) ? src1[idx_global]*src2[idx_global] : 0;
+    ulong idx_global = get_group_id(0) * threads_per_group + idx_in_block;
+    ulong const stride =  threads_per_group * get_num_groups(0);
+    uint v1idx0 = 0; uint v1idx1 = 0;
+    uint v2idx0 = 0; uint v2idx1 = 0;
 
-    // We reduce multiple elements per thread.
-    // The number is determined by the number of active thread blocks (via gridDim).
-    // More blocks will result in a larger grid_size and therefore fewer elements per thread.
+    real_t v1[8];
+    real_t v2[4];
+
+    scratch[idx_in_block] = (real_t)(0.);
+    v1[0] = (real_t)(0.); v1[1] = (real_t)(0.); v1[2] = (real_t)(0.); v1[3] = (real_t)(0.);
+    v1[4] = (real_t)(0.); v1[5] = (real_t)(0.); v1[6] = (real_t)(0.); v1[7] = (real_t)(0.);
+    v2[0] = (real_t)(0.); v2[1] = (real_t)(0.); v2[2] = (real_t)(0.); v2[3] = (real_t)(0.);
+
+    // Read from global and accumulate in work-item registers
     while (idx_global < n) {
-        scratch[idx_in_block] += src1[idx_global]*src2[idx_global];
-        // Ensure we don't read out of bounds -- this is optimized away for powerOf2 sized arrays.
-        if (idx_global + block_size < n)
-            scratch[idx_in_block] += src1[idx_global + block_size]*src2[idx_global + block_size];
-        idx_global += grid_size;
+        // First 4 datapoints
+        v1[v1idx0] += (idx_in_block < threads_per_group) ? src1[idx_global]*src2[idx_global] : 0;
+        idx_global += stride;
+        if (v1idx0 == 8) {
+            v1idx0 = 0;
+            v1idx1++;
+            if (v1idx1 == 5) {
+               // accumulate all values in v1 into an entry in v2
+               v1[0] += v1[4]; v1[1] += v1[5]; v1[2] += v1[6]; v1[3] += v1[7];
+               v1[0] += v1[2]; v1[1] += v1[3];
+               v1[0] += v1[1];
+               v2[v2idx0] += v1[0];
+               v1[0] = (real_t)(0.); v1[1] = (real_t)(0.); v1[2] = (real_t)(0.); v1[3] = (real_t)(0.);
+               v1[4] = (real_t)(0.); v1[5] = (real_t)(0.); v1[6] = (real_t)(0.); v1[7] = (real_t)(0.);
+               v1idx1 = 0;
+               v2idx0++;
+               if (v2idx0 == 4) {
+                   v2idx0 = 0;
+                   v2idx1++;
+                   if (v2idx1 == 4) {
+                       // accumulate all values in v2 into local memory
+                       v2[0] += v2[2]; v2[1] += v2[3];
+                       v2[0] += v2[1];
+                       scratch[idx_in_block] += v2[0];
+                       v2[0] = (real_t)(0.); v2[1] = (real_t)(0.); v2[2] = (real_t)(0.); v2[3] = (real_t)(0.);
+                       v2idx1 = 0;
+                   }
+               }
+            }
     }
 
+    v1[0] += v1[4]; v1[1] += v1[5]; v1[2] += v1[6]; v1[3] += v1[7];
+    v1[0] += v1[2]; v1[1] += v1[3];
+    v1[0] += v1[1];
+    v2[3] += v1[0];
+    v2[0] += v2[2]; v2[1] += v2[3];
+    v2[0] += v2[1];
+    scratch[idx_in_block] += v2[0];
     barrier(CLK_LOCAL_MEM_FENCE);
 
     // Perform reduction in the shared memory.
