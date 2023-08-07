@@ -49,6 +49,18 @@ var (
 	QueuePoolSz     = 8                       // number of command queues in pool (default to 8)
 )
 
+// ClCUnits is obtained by directly querying the GPU using clGetDeviceInfo
+// and asking for CL_DEVICE_MAX_COMPUTE_UNITS
+// On AMD GPUs, ClCUnits has been defined as a unit that executes
+//    individual wavefronts. Each wavefront contains 64 FP32 threads and
+//    32 FP64 threads.
+// On Intel GPUs, ClCUnits is contained within a slice and is called as
+//    an execution unit (EU). Each compute unit contains 64 FP32 threads.
+//    Each compute unit cannot handle FP64 threads.
+// On Nvidia GPUs, ClCUnits corresponds to total number of SMs available
+//    the number of FP32 and FP64 units per SM depends on architecture.
+//    Pascal (64 or 128)
+
 // Locks to an OS thread and initializes CUDA for that thread.
 func Init(gpu int) {
 	defer func() {
