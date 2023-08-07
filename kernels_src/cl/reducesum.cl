@@ -31,6 +31,9 @@
 //    to location in output buffer corresponding to the
 //    workgroup ID. Will need one more reduce stage to
 //    merge.
+// 9) Number of workitems per block should be a power of 2.
+//    However, threads_pre_group will be used to determine
+//    which workitems in the workgroup will be active.
 __kernel void
 reducesum(         __global real_t*    __restrict     src,
           volatile __global real_t*    __restrict     dst,
