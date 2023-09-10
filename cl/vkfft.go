@@ -286,7 +286,7 @@ func (plan *VkfftPlan) GetCommandQueue() *CommandQueue {
 	queue := new(CommandQueue)
 	dev := new(Device)
 	queue.clQueue = C.vkfftPlanGetCommandQueue(plan.GetPlanPointer())
-	device.id = C.vkfftPlanGetDevice(plan.GetPlanPointer())
+	dev.id = C.vkfftPlanGetDevice(plan.GetPlanPointer())
 	queue.device = dev
 	return queue
 }

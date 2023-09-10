@@ -53,42 +53,43 @@ hooks: .git/hooks/post-commit .git/hooks/pre-commit
 
 
 mod: $(DIR_TARGET)
+	rm -f go.mod
 	go mod init github.com/seeder-research/uMagNUS
 
 
-cl-binds: go.mod
+cl-binds: mod
 	$(MAKE) -C ./cl install
 
 
-clkernels: go.mod
+clkernels: mod
 	$(MAKE) -C ./opencl all
 
 
-clkernels64: go.mod
+clkernels64: mod
 	$(MAKE) -C ./opencl64 all
 
 
-freetype: go.mod
+freetype: mod
 	go install -v $(GO_BUILDFLAGS) github.com/seeder-research/uMagNUS/freetype/raster
 
 
-gui: go.mod
+gui: mod
 	$(MAKE) -C ./gui all
 
 
-httpfs: go.mod
+httpfs: mod
 	$(MAKE) -C ./httpfs all
 
 
-timer: go.mod
+timer: mod
 	$(MAKE) -C ./timer all
 
 
-util: go.mod
+util: mod
 	$(MAKE) -C ./util all
 
 
-ocl2go: go.mod
+ocl2go: mod
 	$(MAKE) -C ./ocl2go all
 
 
