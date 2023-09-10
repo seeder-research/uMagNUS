@@ -22,7 +22,7 @@ CGO_CFLAGS_ALLOW='(-fno-schedule-insns|-malign-double|-ffast-math)'
 
 DIR_TARGET = $(BUILDPATH)
 
-BUILD_TARGETS = all base mod cl-binds cl-compiler clkernels clean data data64 draw draw64 dump dump64 engine engine64 freetype gui realclean hooks httpfs mag mag64 oommf oommf64 script script64 timer uMagNUS uMagNUS64 util loader loader64 kernloader kernloader64 libumagnus libumagnus64 libs
+BUILD_TARGETS = all base mod cl-binds cl-compiler clkernels clean data data64 draw draw64 dump dump64 engine engine64 gui realclean hooks httpfs mag mag64 oommf oommf64 script script64 timer uMagNUS uMagNUS64 util loader loader64 kernloader kernloader64 libumagnus libumagnus64 libs
 
 .PHONY: $(BUILD_TARGETS)
 
@@ -53,7 +53,7 @@ hooks: .git/hooks/post-commit .git/hooks/pre-commit
 
 
 mod: $(DIR_TARGET)
-	rm -f go.mod
+	rm -f go.mod go.sum
 	go mod init github.com/seeder-research/uMagNUS
 
 
@@ -67,10 +67,6 @@ clkernels: mod
 
 clkernels64: mod
 	$(MAKE) -C ./opencl64 all
-
-
-freetype: mod
-	go install -v $(GO_BUILDFLAGS) github.com/seeder-research/uMagNUS/freetype/raster
 
 
 gui: mod
@@ -149,11 +145,11 @@ script64: data64
 	$(MAKE) -C ./script64 all
 
 
-draw: data freetype util
+draw: data util
 	$(MAKE) -C ./draw all
 
 
-draw64: data64 freetype util
+draw64: data64 util
 	$(MAKE) -C ./draw64 all
 
 
@@ -199,7 +195,7 @@ uMagNUS64: engine64
 
 clean:
 	rm -frv $(BUILDPATH)/pkg/*/github.com/seeder-research/uMagNUS/*
-	rm -frv $(BUILDPATH)/bin/mumax3* $(BUILDPATH)/bin/uMagNUS* go.mod
+	rm -frv $(BUILDPATH)/bin/mumax3* $(BUILDPATH)/bin/uMagNUS* go.mod go.sum
 	$(CLEANLIBFILES)
 	$(MAKE) -C ./cl_loader clean
 	$(MAKE) -C ./opencl clean

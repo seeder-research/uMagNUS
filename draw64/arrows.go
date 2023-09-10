@@ -6,7 +6,7 @@ import (
 	"math"
 
 	data "github.com/seeder-research/uMagNUS/data64"
-	raster "github.com/seeder-research/uMagNUS/freetype/raster"
+	raster "github.com/seeder-research/uMagNUS-freetype/raster"
 )
 
 func drawArrows(img *image.RGBA, arr [3][][][]float64, sub int) {

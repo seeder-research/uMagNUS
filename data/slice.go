@@ -10,7 +10,7 @@ import (
 	"sync"
 	"unsafe"
 
-	cl "github.com/seeder-research/uMagNUS/cl"
+	cl "github.com/seeder-research/go2opencl"
 	util "github.com/seeder-research/uMagNUS/util"
 )
 
