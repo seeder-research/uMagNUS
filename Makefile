@@ -22,7 +22,7 @@ CGO_CFLAGS_ALLOW='(-fno-schedule-insns|-malign-double|-ffast-math)'
 
 DIR_TARGET = $(BUILDPATH)
 
-BUILD_TARGETS = all base mod cl-binds cl-compiler clkernels clean data data64 draw draw64 dump dump64 engine engine64 gui realclean hooks httpfs mag mag64 oommf oommf64 script script64 timer uMagNUS uMagNUS64 util loader loader64 kernloader kernloader64 libumagnus libumagnus64 libs
+BUILD_TARGETS = all base mod cl-binds cl-compiler clkernels clean data data64 draw draw64 dump dump64 engine engine64 gui realclean hooks httpfs mag mag64 oommf oommf64 script script64 timer uMagNUS uMagNUS64 freetype svgo util loader loader64 kernloader kernloader64 libumagnus libumagnus64 libs
 
 .PHONY: $(BUILD_TARGETS)
 
@@ -55,10 +55,12 @@ hooks: .git/hooks/post-commit .git/hooks/pre-commit
 mod: $(DIR_TARGET)
 	rm -f go.mod go.sum
 	go mod init github.com/seeder-research/uMagNUS
+	go mod edit -replace github.com/seeder-research/uMagNUS/data=./data
+	go mod edit -replace github.com/seeder-research/uMagNUS/data64=./data64
 
 
 cl-binds: mod
-	$(MAKE) -C ./cl install
+	go get -v github.com/seeder-research/go2opencl@v1.0.0
 
 
 clkernels: mod
@@ -69,24 +71,32 @@ clkernels64: mod
 	$(MAKE) -C ./opencl64 all
 
 
+freetype: mod
+	go get -v github.com/seeder-research/uMagNUS-Pkgs-freetype/raster@v0.0.1
+
+
 gui: mod
-	$(MAKE) -C ./gui all
+	go get -v github.com/seeder-research/uMagNUS-Pkgs-gui/gui@v0.0.1
 
 
 httpfs: mod
-	$(MAKE) -C ./httpfs all
+	go get -v github.com/seeder-research/uMagNUS-Pkgs-httpfs/httpfs@v0.0.1
+
+
+svgo: mod
+	go get -v github.com/seeder-research/uMagNUS-Pkgs-svgo/svgo@v0.0.1
 
 
 timer: mod
-	$(MAKE) -C ./timer all
+	go get -v github.com/seeder-research/uMagNUS-Pkgs-timer/timer@v0.0.4
 
 
 util: mod
-	$(MAKE) -C ./util all
+	go get -v github.com/seeder-research/uMagNUS-Pkgs-util/util@v0.0.2
 
 
 ocl2go: mod
-	$(MAKE) -C ./ocl2go all
+	go install -v github.com/seeder-research/uMagNUS-Tools-ocl2go@v0.0.3
 
 
 cl-compiler: cl-binds
@@ -145,11 +155,11 @@ script64: data64
 	$(MAKE) -C ./script64 all
 
 
-draw: data util
+draw: data util freetype svgo
 	$(MAKE) -C ./draw all
 
 
-draw64: data64 util
+draw64: data64 util freetype svgo
 	$(MAKE) -C ./draw64 all
 
 

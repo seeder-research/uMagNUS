@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	data "github.com/seeder-research/uMagNUS/data"
-	util "github.com/seeder-research/uMagNUS/util"
+	util "github.com/seeder-research/uMagNUS-Pkgs-util/util"
 )
 
 // Renders an image of slice. fmin, fmax = "auto" or a number to set the min/max color scale.

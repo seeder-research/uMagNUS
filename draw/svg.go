@@ -5,7 +5,7 @@ import (
 	"io"
 	"math"
 
-	svgo "github.com/seeder-research/uMagNUS/svgo"
+	svgo "github.com/seeder-research/uMagNUS-Pkgs-svgo/svgo"
 )
 
 // Renders svg image of vector data.

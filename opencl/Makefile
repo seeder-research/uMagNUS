@@ -24,7 +24,7 @@ wrappers: $(WRAPPERS)
 
 
 ocl2go:
-	$(MAKE) -C ../ocl2go all
+	go install -v github.com/seeder-research/uMagNUS-Tools-ocl2go@v0.0.3
 
 
 opencl2go: ocl2go
@@ -33,7 +33,7 @@ opencl2go: ocl2go
 
 
 %_wrapper.go: ../kernels_src/cl/%.cl ocl2go
-	../ocl2go/ocl2go -outdir="." $< > /dev/null
+	$(GOPATH)/bin/uMagNUS-Tools-ocl2go -outdir="." $< > /dev/null
 	gofmt -w -s -l ./$@ > /dev/null
 
 

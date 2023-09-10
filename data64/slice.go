@@ -10,8 +10,8 @@ import (
 	"sync"
 	"unsafe"
 
-	cl "github.com/seeder-research/uMagNUS/cl"
-	util "github.com/seeder-research/uMagNUS/util"
+	cl "github.com/seeder-research/go2opencl"
+	util "github.com/seeder-research/uMagNUS-Pkgs-util/util"
 )
 
 const SIZEOF_FLOAT32 = 4

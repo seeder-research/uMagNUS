@@ -31,7 +31,7 @@ fp64wrappers: $(WRAPPERS64)
 
 
 ocl2go:
-	$(MAKE) -C ../ocl2go all
+	go install -v github.com/seeder-research/uMagNUS-Tools-ocl2go@v0.0.3
 
 
 opencl2go: ocl2go
@@ -40,12 +40,12 @@ opencl2go: ocl2go
 
 
 %_wrapper.go: ../kernels_src/cl/%.cl
-	../ocl2go/ocl2go -outdir="." -lib64 $< > /dev/null
+	$(GOPATH)/bin/uMagNUS-Tools-ocl2go -outdir="." -lib64 $< > /dev/null
 	gofmt -w -s -l ./$@ > /dev/null
 
 
 %_fp64_wrapper.go: ../kernels_src/cl64/%.cl
-	../ocl2go/ocl2go -outdir="." -lib64 -double $< > /dev/null
+	$(GOPATH)/bin/uMagNUS-Tools-ocl2go -outdir="." -lib64 -double $< > /dev/null
 	gofmt -w -s -l ./$@ > /dev/null
 
 
