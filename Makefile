@@ -55,8 +55,6 @@ hooks: .git/hooks/post-commit .git/hooks/pre-commit
 mod: $(DIR_TARGET)
 	rm -f go.mod go.sum
 	go mod init github.com/seeder-research/uMagNUS
-	go mod edit -replace github.com/seeder-research/uMagNUS/data=./data
-	go mod edit -replace github.com/seeder-research/uMagNUS/data64=./data64
 
 
 cl-binds: mod
@@ -72,27 +70,27 @@ clkernels64: mod
 
 
 freetype: mod
-	go get -v github.com/seeder-research/uMagNUS-Pkgs-freetype/raster@v0.0.1
+	#go get -v github.com/seeder-research/uMagNUS-Pkgs-freetype/raster@v0.0.1
 
 
 gui: mod
-	go get -v github.com/seeder-research/uMagNUS-Pkgs-gui/gui@v0.0.1
+	#go get -v github.com/seeder-research/uMagNUS-Pkgs-gui/gui@v0.0.1
 
 
 httpfs: mod
-	go get -v github.com/seeder-research/uMagNUS-Pkgs-httpfs/httpfs@v0.0.1
+	#go get -v github.com/seeder-research/uMagNUS-Pkgs-httpfs/httpfs@v0.0.1
 
 
 svgo: mod
-	go get -v github.com/seeder-research/uMagNUS-Pkgs-svgo/svgo@v0.0.1
+	#go get -v github.com/seeder-research/uMagNUS-Pkgs-svgo/svgo@v0.0.1
 
 
 timer: mod
-	go get -v github.com/seeder-research/uMagNUS-Pkgs-timer/timer@v0.0.4
+	#go get -v github.com/seeder-research/uMagNUS-Pkgs-timer/timer@v0.0.4
 
 
 util: mod
-	go get -v github.com/seeder-research/uMagNUS-Pkgs-util/util@v0.0.2
+	#go get -v github.com/seeder-research/uMagNUS-Pkgs-util/util@v0.0.2
 
 
 ocl2go: mod
@@ -140,11 +138,11 @@ libs: libumagnus libumagnus64
 
 
 data: cl-binds util
-	$(MAKE) -C ./data all
+	$(MAKE) -C ./data float
 
 
 data64: cl-binds util
-	$(MAKE) -C ./data64 all
+	$(MAKE) -C ./data double
 
 
 script: data

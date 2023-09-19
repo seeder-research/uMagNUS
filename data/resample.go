@@ -33,7 +33,7 @@ func Resample(in *Slice, N [3]int) *Slice {
 // Downsample returns a slice of new size N, smaller than in.Size().
 // Averaging interpolation over the input slice.
 // in is returned untouched if the sizes are equal.
-func Downsample(In [][][][]float32, N [3]int) [][][][]float32 {
+func Downsample(In [][][][]DataType, N [3]int) [][][][]DataType {
 	if SizeOf(In[0]) == N {
 		return In // nothing to do
 	}
@@ -77,7 +77,7 @@ func Downsample(In [][][][]float32, N [3]int) [][][][]float32 {
 							}
 						}
 					}
-					Out[c][iz][iy][ix] = float32(sum / n)
+					Out[c][iz][iy][ix] = DataType(sum / n)
 				}
 			}
 		}
@@ -87,6 +87,6 @@ func Downsample(In [][][][]float32, N [3]int) [][][][]float32 {
 }
 
 // Returns the 3D size of block
-func SizeOf(block [][][]float32) [3]int {
+func SizeOf(block [][][]DataType) [3]int {
 	return [3]int{len(block[0][0]), len(block[0]), len(block)}
 }

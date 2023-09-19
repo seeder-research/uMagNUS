@@ -14,9 +14,6 @@ import (
 	util "github.com/seeder-research/uMagNUS-Pkgs-util/util"
 )
 
-const SIZEOF_FLOAT32 = 4
-const SIZEOF_FLOAT64 = 8
-
 type SliceEventMap struct {
 	ReadEvents map[*cl.Event]int8
 	sync.RWMutex
@@ -201,11 +198,11 @@ func (s *Slice) DevPtr(component int) unsafe.Pointer {
 
 // Host returns the Slice as a [][]float32 indexed by component, cell number.
 // It should have CPUAccess() == true.
-func (s *Slice) Host() [][]float32 {
+func (s *Slice) Host() [][]DataType {
 	if !s.CPUAccess() {
 		log.Panic("slice not accessible by CPU")
 	}
-	list := make([][]float32, s.NComp())
+	list := make([][]DataType, s.NComp())
 	for c := range list {
 		hdr := (*reflect.SliceHeader)(unsafe.Pointer(&list[c]))
 		hdr.Data = uintptr(s.ptrs[c])
@@ -304,7 +301,7 @@ func Copy(dst, src *Slice) {
 		panic(fmt.Sprintf("slice copy: illegal sizes: dst: %vx%v, src: %vx%v", dst.NComp(), dst.Len(), src.NComp(), src.Len()))
 	}
 	d, s := dst.GPUAccess(), src.GPUAccess()
-	bytes := SIZEOF_FLOAT32 * dst.Len()
+	bytes := SIZEOF_DATATYPE * dst.Len()
 	switch {
 	default:
 		panic("bug")
@@ -335,7 +332,7 @@ func Copy(dst, src *Slice) {
 // Floats returns the data as 3D array,
 // indexed by cell position. Data should be
 // scalar (1 component) and have CPUAccess() == true.
-func (f *Slice) Scalars() [][][]float32 {
+func (f *Slice) Scalars() [][][]DataType {
 	x := f.Tensors()
 	if len(x) != 1 {
 		panic(fmt.Sprintf("expecting 1 component, got %v", f.NComp()))
@@ -346,19 +343,19 @@ func (f *Slice) Scalars() [][][]float32 {
 // Vectors returns the data as 4D array,
 // indexed by component, cell position. Data should have
 // 3 components and have CPUAccess() == true.
-func (f *Slice) Vectors() [3][][][]float32 {
+func (f *Slice) Vectors() [3][][][]DataType {
 	x := f.Tensors()
 	if len(x) != 3 {
 		panic(fmt.Sprintf("expecting 3 components, got %v", f.NComp()))
 	}
-	return [3][][][]float32{x[0], x[1], x[2]}
+	return [3][][][]DataType{x[0], x[1], x[2]}
 }
 
 // Tensors returns the data as 4D array,
 // indexed by component, cell position.
 // Requires CPUAccess() == true.
-func (f *Slice) Tensors() [][][][]float32 {
-	tensors := make([][][][]float32, f.NComp())
+func (f *Slice) Tensors() [][][][]DataType {
+	tensors := make([][][][]DataType, f.NComp())
 	host := f.Host()
 	for i := range tensors {
 		tensors[i] = reshape(host[i], f.Size())
@@ -385,18 +382,18 @@ func (s *Slice) String() string {
 
 func (s *Slice) Set(comp, ix, iy, iz int, value float64) {
 	s.checkComp(comp)
-	s.Host()[comp][s.Index(ix, iy, iz)] = float32(value)
+	s.Host()[comp][s.Index(ix, iy, iz)] = DataType(value)
 }
 
 func (s *Slice) SetVector(ix, iy, iz int, v Vector) {
 	i := s.Index(ix, iy, iz)
 	for c := range v {
-		s.Host()[c][i] = float32(v[c])
+		s.Host()[c][i] = DataType(v[c])
 	}
 }
 
 func (s *Slice) SetScalar(ix, iy, iz int, v float64) {
-	s.Host()[0][s.Index(ix, iy, iz)] = float32(v)
+	s.Host()[0][s.Index(ix, iy, iz)] = DataType(v)
 }
 
 func (s *Slice) Get(comp, ix, iy, iz int) float64 {

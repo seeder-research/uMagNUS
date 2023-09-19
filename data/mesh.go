@@ -86,7 +86,7 @@ func (m *Mesh) String() string {
 	if m.pbc != [3]int{0, 0, 0} {
 		pbc = fmt.Sprintf(", PBC: [%v x %v x %v],", m.pbc[0], m.pbc[1], m.pbc[2])
 	}
-	return fmt.Sprintf("[%v x %v x %v] x [%vm x %vm x %vm]%v", s[0], s[1], s[2], float32(c[0]), float32(c[1]), float32(c[2]), pbc)
+	return fmt.Sprintf("[%v x %v x %v] x [%vm x %vm x %vm]%v", s[0], s[1], s[2], DataType(c[0]), DataType(c[1]), DataType(c[2]), pbc)
 }
 
 // product of elements.
