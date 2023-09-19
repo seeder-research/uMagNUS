@@ -307,7 +307,7 @@ cl_event vkfftGetPlanEvent(interfaceFFTPlan* plan) {
 }
 
 cl_command_queue vkfftPlanGetCommandQueue(interfaceFFTPlan* plan) {
-    return *(plan->app->configuration.commandQueue[0]);
+    return plan->app->configuration.commandQueue[0];
 }
 
 cl_device_id vkfftPlanGetDevice(interfaceFFTPlan* plan) {
@@ -315,11 +315,11 @@ cl_device_id vkfftPlanGetDevice(interfaceFFTPlan* plan) {
 }
 
 cl_int vkfftPlanQueueFinish(interfaceFFTPlan* plan) {
-    return clFinish(*(plan->app->configuration.commandQueue[0]));
+    return clFinish(plan->app->configuration.commandQueue[0]);
 }
 
 cl_int vkfftPlanQueueFlush(interfaceFFTPlan* plan) {
-    return clFlush(*(plan->app->configuration.commandQueue[0]));
+    return clFlush(plan->app->configuration.commandQueue[0]);
 }
 
 #endif // __FFT_INTERFACE__
