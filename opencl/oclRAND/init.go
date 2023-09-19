@@ -22,12 +22,12 @@ func Init(q *cl.CommandQueue, synch bool, kList map[string]*cl.Kernel) {
 	KernList = kList
 }
 
-func LaunchKernel(kernname string, gridDim, workDim []int, events []*cl.Event) *cl.Event {
+func LaunchKernel(kernname string, gridDim, workDim []int, queue *cl.CommandQueue, events []*cl.Event) *cl.Event {
 	if KernList[kernname] == nil {
 		log.Panic("Kernel " + kernname + " does not exist!")
 		return nil
 	}
-	KernEvent, err := ClCmdQueue.EnqueueNDRangeKernel(KernList[kernname], nil, gridDim, workDim, events)
+	KernEvent, err := queue.EnqueueNDRangeKernel(KernList[kernname], nil, gridDim, workDim, events)
 	if err != nil {
 		log.Fatal(err)
 		return nil

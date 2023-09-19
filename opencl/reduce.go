@@ -34,20 +34,20 @@ var (
 	reduceManagerKillFunc context.CancelFunc
 	reduceThreadCount     = int(-1)
 	reduceItem            chan reduceEventAndPointer
-	reduceOutput          chan float32
+	reduceRes             chan reduceOutput
 	reduceWaitGroup       sync.WaitGroup
 )
 
 // function executed by goroutines
 func threadedCopyBack(in <-chan reduceEventAndPointer, out chan<- reduceOutput, bufPool chan<- (*cl.MemObject), wg_ *sync.WaitGroup) {
-	tmpQueue, err := ClCxt.CreateCommandQueue(ClDevice, 0)
+	tmpQueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("Failed to create command queue in goroutine: %+v \n", err)
 	}
 	for {
 		select {
-		case item <- in:
-			if err = cl.WaitForEvents(in.event); err != nil {
+		case item := <-in:
+			if err = cl.WaitForEvents(item.event); err != nil {
 				fmt.Printf("Failed to WaitForEvents: %+v \n", err)
 			}
 			var val float32
@@ -77,11 +77,11 @@ func reduceInit(n int) {
 	// Initialize globals
 	reduceManagerContext, reduceManagerKillFunc = context.WithCancel(context.Background())
 	reduceThreadCount = n
-	reduceItem = make(reduceEventAndPointer, reduceThreadCount)
-	reduceOutput = make(float32, reduceThreadCount)
+	reduceItem = make(chan reduceEventAndPointer, reduceThreadCount)
+	reduceRes = make(chan reduceOutput, reduceThreadCount)
 
-	for j := 0; j < reduceThreads; j++ {
-		go threadedCopyBack(reduceIten, reduceOutput, reduceBuffers, &reduceWaitGroup)
+	for j := 0; j < reduceThreadCount; j++ {
+		go threadedCopyBack(reduceItem, reduceRes, reduceBuffers, &reduceWaitGroup)
 	}
 }
 
@@ -122,7 +122,7 @@ func Sum(in *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) float32 {
 
 	// Ensure all reduction kernel has completed
 	reduceWaitGroup.Wait()
-	tmp := <-reduceOutput
+	tmp := <-reduceRes
 
 	return tmp.res
 }
@@ -138,14 +138,14 @@ func Dot(a, b *data.Slice, q []*cl.CommandQueue, ewl []*cl.Event) float32 {
 	for c := 0; c < numComp; c++ {
 		out[c] = reduceBuf(0)
 	}
-	hostResult := make([]float32, numComp)
+	//hostResult := make([]float32, numComp)
 
 	// Ensure no other reduction kernel is running
 	reduceWaitGroup.Wait()
 	for c := 0; c < numComp; c++ {
 		// Launch kernel
-		event := k_reducedot_async(a.DevPtr(c), b.DevPtr(c), out[c], 0,
-			a.Len(), reducecfg, ewl, q[c]) // all components add to out
+		event := k_reducedot_async(a.DevPtr(c), b.DevPtr(c), out[c], float32(0.0), int(0),
+			a.Len(), int(64), reducecfg, ewl, q[c]) // all components add to out
 
 		// Copy back to host in goroutine
 		reduceWaitGroup.Add(1)
@@ -155,7 +155,7 @@ func Dot(a, b *data.Slice, q []*cl.CommandQueue, ewl []*cl.Event) float32 {
 	// Ensure all reduction kernel has completed
 	reduceWaitGroup.Wait()
 	for c := 0; c < numComp; c++ {
-		tmp := <-reduceOutput
+		tmp := <-reduceRes
 		result += tmp.res
 	}
 
@@ -171,7 +171,7 @@ func MaxAbs(in *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) float32 {
 	reduceWaitGroup.Wait()
 
 	// Launch kernel
-	event = k_reducemaxabs_async(in.DevPtr(0), out, 0,
+	event := k_reducemaxabs_async(in.DevPtr(0), out, 0,
 		in.Len(), reducecfg, ewl, q)
 
 	// Copy back to host in goroutine
@@ -180,13 +180,13 @@ func MaxAbs(in *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) float32 {
 
 	// Ensure all reduction kernel has completed
 	reduceWaitGroup.Wait()
-	tmp := <-reduceOutput
+	tmp := <-reduceRes
 
 	return float32(tmp.res)
 }
 
 // Maximum element-wise difference
-func MaxDiff(a, b *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) []float32 {
+func MaxDiff(a, b *data.Slice, q []*cl.CommandQueue, ewl []*cl.Event) []float32 {
 	util.Argument(a.NComp() == b.NComp())
 	util.Argument(a.Len() == b.Len())
 	numComp := a.NComp()
@@ -202,7 +202,7 @@ func MaxDiff(a, b *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) []float32 {
 	for c := 0; c < numComp; c++ {
 		// Launch kernel
 		event := k_reducemaxdiff_async(a.DevPtr(c), b.DevPtr(c), out[c], 0,
-			a.Len(), reducecfg, ewl, q)
+			a.Len(), reducecfg, ewl, q[c])
 
 		// Copy back to host in goroutine
 		reduceWaitGroup.Add(1)
@@ -212,7 +212,7 @@ func MaxDiff(a, b *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) []float32 {
 	// Must synchronize since returnVal is copied from device back to host
 	reduceWaitGroup.Wait()
 	for c := 0; c < numComp; c++ {
-		tmp := <-reduceOutput
+		tmp := <-reduceRes
 		returnVal[tmp.idx] = tmp.res
 	}
 
@@ -239,7 +239,7 @@ func MaxVecNorm(v *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) float64 {
 
 	// Ensure all reduction kernel has completed
 	reduceWaitGroup.Wait()
-	tmp := <-reduceOutput
+	tmp := <-reduceRes
 
 	return math.Sqrt(float64(tmp.res))
 }
@@ -268,7 +268,7 @@ func MaxVecDiff(x, y *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) float64 {
 
 	// Ensure all reduction kernel has completed
 	reduceWaitGroup.Wait()
-	tmp := <-reduceOutput
+	tmp := <-reduceRes
 
 	return math.Sqrt(float64(tmp.res))
 }

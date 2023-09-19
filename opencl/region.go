@@ -82,7 +82,7 @@ func RegionSelect(dst, src *data.Slice, regions *Bytes, region byte, q []*cl.Com
 			ewl, q[c])
 
 		if Debug {
-			if err := cl.WaitForEvents(event); err != nil {
+			if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
 				fmt.Printf("WaitForEvents in regionselect failed: %+v \n", err)
 			}
 		}

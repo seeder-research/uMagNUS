@@ -13,9 +13,9 @@ import (
 )
 
 type Prng_ interface {
-	Init(uint64, []*cl.Event)
-	GenerateUniform(unsafe.Pointer, int, []*cl.Event) *cl.Event
-	GenerateNormal(unsafe.Pointer, int, []*cl.Event) *cl.Event
+	Init(uint64, []*cl.Event, *cl.CommandQueue)
+	GenerateUniform(unsafe.Pointer, int, []*cl.Event, *cl.CommandQueue) *cl.Event
+	GenerateNormal(unsafe.Pointer, int, []*cl.Event, *cl.CommandQueue) *cl.Event
 	GetGroupSize() int
 	GetGroupCount() int
 	RecommendSize() int
@@ -29,20 +29,25 @@ type Generator struct {
 	buf        *data.Slice
 	supply     int
 	sup_offset int
+	CmdQ       *cl.CommandQueue
 }
 
 func NewGenerator(name string) *Generator {
+	queue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Println("ERROR (RNG) unable to create command queue: %+v", err)
+	}
 	switch name {
 	case "threefry":
-		oclRAND.Init(ClCmdQueue, Synchronous, KernList)
+		oclRAND.Init(queue, Synchronous, KernList)
 		var prng_ptr Prng_
 		prng_ptr = NewTHREEFRYRNGParams()
-		return &Generator{Name: "threefry", PRNG: prng_ptr}
+		return &Generator{Name: "threefry", PRNG: prng_ptr, CmdQ: queue}
 	case "xorwow":
-		oclRAND.Init(ClCmdQueue, Synchronous, KernList)
+		oclRAND.Init(queue, Synchronous, KernList)
 		var prng_ptr Prng_
 		prng_ptr = NewXORWOWRNGParams()
-		return &Generator{Name: "xorwow", PRNG: prng_ptr}
+		return &Generator{Name: "xorwow", PRNG: prng_ptr, CmdQ: queue}
 	default:
 		fmt.Println("RNG not implemented: ", name)
 		return nil
@@ -52,12 +57,12 @@ func NewGenerator(name string) *Generator {
 func (g *Generator) CreatePNG() {
 	switch g.Name {
 	case "threefry":
-		oclRAND.Init(ClCmdQueue, Synchronous, KernList)
+		oclRAND.Init(g.CmdQ, Synchronous, KernList)
 		var prng_ptr Prng_
 		prng_ptr = NewTHREEFRYRNGParams()
 		g.PRNG = prng_ptr
 	case "xorwow":
-		oclRAND.Init(ClCmdQueue, Synchronous, KernList)
+		oclRAND.Init(g.CmdQ, Synchronous, KernList)
 		var prng_ptr Prng_
 		prng_ptr = NewXORWOWRNGParams()
 		g.PRNG = prng_ptr
@@ -69,9 +74,9 @@ func (g *Generator) CreatePNG() {
 func (g *Generator) Init(seed *uint64, events []*cl.Event) {
 	g.buf_size = g.PRNG.RecommendSize()
 	if seed == nil {
-		g.PRNG.Init(initRNG(), events)
+		g.PRNG.Init(initRNG(), events, g.CmdQ)
 	} else {
-		g.PRNG.Init(*seed, events)
+		g.PRNG.Init(*seed, events, g.CmdQ)
 	}
 	if g.buf == nil {
 		g.buf = Buffer(1, [3]int{g.buf_size, 1, 1})
@@ -97,13 +102,13 @@ func (g *Generator) Uniform(data unsafe.Pointer, d_size int, events []*cl.Event)
 	if err != nil {
 		fmt.Printf("WaitForEvents prior to generating random numbers failed: %+v \n", err)
 	}
-	err = ClCmdQueue.Finish()
+	err = g.CmdQ.Finish()
 	if err != nil {
 		fmt.Printf("Waiting for Command Queue to empty prior to generating random numbers failed: %+v \n", err)
 	}
 	for demand > 0 {
 		if g.supply <= 0 {
-			event = g.PRNG.GenerateUniform(g.buf.DevPtr(0), g.buf_size, events)
+			event = g.PRNG.GenerateUniform(g.buf.DevPtr(0), g.buf_size, events, g.CmdQ)
 			err = cl.WaitForEvents([]*cl.Event{event})
 			if err != nil {
 				fmt.Printf("WaitForEvents in generating uniform random numbers failed: %+v \n", err)
@@ -155,7 +160,7 @@ func (g *Generator) Normal(data unsafe.Pointer, d_size int, events []*cl.Event) 
 	}
 	for demand > 0 {
 		if g.supply <= 0 {
-			event = g.PRNG.GenerateNormal(g.buf.DevPtr(0), g.buf_size, events)
+			event = g.PRNG.GenerateNormal(g.buf.DevPtr(0), g.buf_size, events, g.CmdQ)
 			err = cl.WaitForEvents([]*cl.Event{event})
 			if err != nil {
 				fmt.Printf("WaitForEvents in generating normally distributed random numbers failed: %+v \n", err)

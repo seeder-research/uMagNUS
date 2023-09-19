@@ -9,7 +9,7 @@ import (
 	"github.com/seeder-research/uMagNUS/timer"
 )
 
-func (p *XORWOW_status_array_ptr) Init(seed uint64, events []*cl.Event) {
+func (p *XORWOW_status_array_ptr) Init(seed uint64, events []*cl.Event, queue *cl.CommandQueue) {
 	context := p.GetContext()
 	totalCount := p.GetStatusSize()
 
@@ -23,7 +23,7 @@ func (p *XORWOW_status_array_ptr) Init(seed uint64, events []*cl.Event) {
 	//    ....Copying jump matrices from host side to device side
 	var jump_event *cl.Event
 	for idx := 0; idx < int(XORWOW_JUMP_MATRICES); idx++ {
-		jump_event, err = ClCmdQueue.EnqueueWriteBuffer(jump_mat, false, idx*int(XORWOW_SIZE)*int(unsafe.Sizeof(h_xorwow_sequence_jump_matrices[0][0])), int(unsafe.Sizeof(h_xorwow_sequence_jump_matrices[0][0]))*int(XORWOW_SIZE), unsafe.Pointer(&h_xorwow_sequence_jump_matrices[idx][0]), nil)
+		jump_event, err = queue.EnqueueWriteBuffer(jump_mat, false, idx*int(XORWOW_SIZE)*int(unsafe.Sizeof(h_xorwow_sequence_jump_matrices[0][0])), int(unsafe.Sizeof(h_xorwow_sequence_jump_matrices[0][0]))*int(XORWOW_SIZE), unsafe.Pointer(&h_xorwow_sequence_jump_matrices[idx][0]), nil)
 		if err != nil {
 			log.Fatalln("Unable to write jump matrices to device: ", err)
 		}
@@ -39,7 +39,9 @@ func (p *XORWOW_status_array_ptr) Init(seed uint64, events []*cl.Event) {
 	if events != nil {
 		seed_events = events
 	}
-	event := k_xorwow_seed_async(unsafe.Pointer(p.Status_buf), unsafe.Pointer(jump_mat), seed, &config{[]int{totalCount}, []int{p.GetGroupSize()}}, seed_events)
+	event := k_xorwow_seed_async(unsafe.Pointer(p.Status_buf), unsafe.Pointer(jump_mat), seed,
+		&config{[]int{totalCount}, []int{p.GetGroupSize()}},
+		seed_events, queue)
 
 	p.Ini = true
 	err = cl.WaitForEvents([]*cl.Event{event})
@@ -49,44 +51,44 @@ func (p *XORWOW_status_array_ptr) Init(seed uint64, events []*cl.Event) {
 
 }
 
-func (p *XORWOW_status_array_ptr) GenerateUniform(d_data unsafe.Pointer, data_size int, events []*cl.Event) *cl.Event {
+func (p *XORWOW_status_array_ptr) GenerateUniform(d_data unsafe.Pointer, data_size int, events []*cl.Event, queue *cl.CommandQueue) *cl.Event {
 
 	if p.Ini == false {
 		log.Fatalln("Generator has not been initialized!")
 	}
 
 	if Synchronous { // debug
-		ClCmdQueue.Finish()
+		queue.Finish()
 		timer.Start("xorwow_uniform")
 	}
 
 	event := k_xorwow_uniform_async(unsafe.Pointer(p.Status_buf), d_data, data_size,
-		&config{[]int{p.GetStatusSize()}, []int{p.GetGroupSize()}}, events)
+		&config{[]int{p.GetStatusSize()}, []int{p.GetGroupSize()}}, events, queue)
 
 	if Synchronous { // debug
-		ClCmdQueue.Finish()
+		queue.Finish()
 		timer.Stop("xorwow_uniform")
 	}
 
 	return event
 }
 
-func (p *XORWOW_status_array_ptr) GenerateNormal(d_data unsafe.Pointer, data_size int, events []*cl.Event) *cl.Event {
+func (p *XORWOW_status_array_ptr) GenerateNormal(d_data unsafe.Pointer, data_size int, events []*cl.Event, queue *cl.CommandQueue) *cl.Event {
 
 	if p.Ini == false {
 		log.Fatalln("Generator has not been initialized!")
 	}
 
 	if Synchronous { // debug
-		ClCmdQueue.Finish()
+		queue.Finish()
 		timer.Start("xorwow_normal")
 	}
 
 	event := k_xorwow_normal_async(unsafe.Pointer(p.Status_buf), d_data, data_size,
-		&config{[]int{p.GetStatusSize()}, []int{p.GetGroupSize()}}, events)
+		&config{[]int{p.GetStatusSize()}, []int{p.GetGroupSize()}}, events, queue)
 
 	if Synchronous { // debug
-		ClCmdQueue.Finish()
+		queue.Finish()
 		timer.Stop("xorwow_normal")
 	}
 

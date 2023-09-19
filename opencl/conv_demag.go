@@ -86,7 +86,9 @@ func (c *DemagConvolution) exec3D(outp, inp, vol *data.Slice, Msat MSlice) {
 		tmpQueue)
 
 	// Get event marker for synchronizing bwPlan queues
-	event := []*cl.Event{tmpQueue.EnqueueMarkerWithWaitList([]*cl.Event{})}
+	var ev *cl.Event
+	ev, err = tmpQueue.EnqueueMarkerWithWaitList([]*cl.Event{})
+	event := []*cl.Event{ev}
 
 	// Check in queue after kernel launch
 	qwg := qm.NewQueueWaitGroup(tmpQueue, nil)
@@ -144,7 +146,7 @@ func (c *DemagConvolution) exec2D(outp, inp, vol *data.Slice, Msat MSlice) {
 	}
 
 	// Check in queue post kernel execution
-	qwg1 := qm.NewQueueWaitGroup(tmpQueue1, nil)
+	qwg1 := qm.NewQueueWaitGroup(tmpQueue, nil)
 	ReturnQueuePool <- qwg1
 
 	// Insert synchronization event into bwPlan (Z) queue
@@ -306,7 +308,7 @@ func (c *DemagConvolution) init(realKern [3][3]*data.Slice) {
 			if realKern[i][j] != nil { // ignore 0's
 				// FW FFT
 				data.Copy(input, realKern[i][j])
-				err := c.fwPlan.ExecAsync(input, output)
+				err := c.fwPlan[j].ExecAsync(input, output)
 				if err != nil {
 					fmt.Printf("error enqueuing forward fft in init: %+v \n ", err)
 				}
@@ -322,7 +324,7 @@ func (c *DemagConvolution) init(realKern [3][3]*data.Slice) {
 				}
 
 				// extract real parts (X symmetry)
-				scaleRealParts(fftKern, kCmplx, 1/float32(c.fwPlan.InputLen()))
+				scaleRealParts(fftKern, kCmplx, 1/float32(c.fwPlan[j].InputLen()))
 				c.kern[i][j] = GPUCopy(fftKern)
 			}
 		}

@@ -45,7 +45,7 @@ func (p *fft3DR2CPlan) ExecAsync(src, dst *data.Slice) error {
 
 	err := p.handle.EnqueueForwardTransform([]*cl.MemObject{&srcMemObj}, []*cl.MemObject{&dstMemObj})
 	if Synchronous {
-		p.handle.Finish()
+		p.handle.GetCommandQueue().Finish()
 		timer.Stop("fft")
 	}
 
@@ -70,4 +70,8 @@ func (p *fft3DR2CPlan) InputLen() int {
 // Required length of the (1D) output array.
 func (p *fft3DR2CPlan) OutputLen() int {
 	return prod3(p.OutputSizeFloats())
+}
+
+func (p *fft3DR2CPlan) GetCommandQueue() *cl.CommandQueue {
+	return p.handle.GetCommandQueue()
 }

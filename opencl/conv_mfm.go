@@ -5,8 +5,10 @@ package opencl
 import (
 	"fmt"
 
+	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
 	mag "github.com/seeder-research/uMagNUS/mag"
+	qm "github.com/seeder-research/uMagNUS/queuemanager"
 )
 
 // Stores the necessary state to perform FFT-accelerated convolution
@@ -36,9 +38,9 @@ func (c *MFMConvolution) Free() {
 		c.kern[j] = nil
 		c.fwPlan[j].Free()
 		c.bwPlan[j].Free()
-		c.fftCBuf[i].Free() // shared with fftRbuf
-		c.fftCBuf[i] = nil
-		c.fftRBuf[i] = nil
+		c.fftCBuf[j].Free() // shared with fftRbuf
+		c.fftCBuf[j] = nil
+		c.fftRBuf[j] = nil
 	}
 }
 
@@ -143,12 +145,12 @@ func (c *MFMConvolution) Exec(outp, inp, vol *data.Slice, Msat MSlice) {
 		}
 
 		Nx, Ny := c.fftKernSize[X]/2, c.fftKernSize[Y] //   ??
-		kernMulC_async(c.fftCBuf[i], c.gpuFFTKern[i], Nx, Ny, tmpQueue, []*cl.Event{})
+		kernMulC_async(c.fftCBuf[i], c.gpuFFTKern[i], Nx, Ny, []*cl.Event{}, tmpQueue)
 
 		// Now we need to insert marker in queue for bwFFT to sync
 		var ev1 *cl.Event
 		ev1, err = tmpQueue.EnqueueMarkerWithWaitList([]*cl.Event{})
-		tmpQueue = bwPlan[i].GetCommandQueue()
+		tmpQueue = c.bwPlan[i].GetCommandQueue()
 		_, err = tmpQueue.EnqueueMarkerWithWaitList([]*cl.Event{ev1})
 
 		// Launch bwFFT

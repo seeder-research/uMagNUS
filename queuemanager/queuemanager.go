@@ -12,6 +12,7 @@ var (
 	queueManagerContext  context.Context
 	queueManagerKillFunc context.CancelFunc
 	routineCount         = int(-1)
+	ThreadSignals        sync.WaitGroup
 )
 
 type QueueEvent struct {
@@ -63,7 +64,7 @@ func (qw *QueueWaitGroup) GetWaitGroup() *sync.WaitGroup {
 	return qw.wg_
 }
 
-func Init(numRoutines int, in chan QueueWaitGroup, queuePool chan *cl.CommandQueue) {
+func Init(numRoutines int, in chan *QueueWaitGroup, queuePool chan *cl.CommandQueue) {
 	if numRoutines < 1 {
 		panic("queuemanager initialized with numRoutines < 1")
 	} else {
@@ -122,7 +123,7 @@ func signalWorkgroupOnQueueFinish(in <-chan *QueueWaitGroup, queuePool chan<- *c
 	for {
 		select {
 		case item := <-in:
-			q := item.GetQueue()
+			q := item.GetCommandQueue()
 			err := q.Finish()
 			if err != nil {
 				log.Printf("ERROR: unable to wait for command queue to finish...")

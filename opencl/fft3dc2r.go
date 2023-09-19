@@ -69,3 +69,7 @@ func (p *fft3DC2RPlan) InputLenFloats() int {
 func (p *fft3DC2RPlan) OutputLenFloats() int {
 	return prod3(p.OutputSizeFloats())
 }
+
+func (p *fft3DC2RPlan) GetCommandQueue() *cl.CommandQueue {
+	return p.handle.GetCommandQueue()
+}

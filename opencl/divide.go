@@ -14,7 +14,7 @@ func Divide(dst, a, b *data.Slice, q []*cl.CommandQueue, ewl []*cl.Event) {
 	N := dst.Len()
 	nComp := dst.NComp()
 	util.Assert(a.Len() == N && a.NComp() == nComp && b.Len() == N && b.NComp() == nComp)
-	util.Assert(NComp == len(q))
+	util.Assert(nComp == len(q))
 	cfg := make1DConf(N)
 
 	for c := 0; c < nComp; c++ {

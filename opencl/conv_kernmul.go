@@ -12,7 +12,7 @@ import (
 )
 
 // kernel multiplication for 3D demag convolution, exploiting full kernel symmetry.
-func kernMulRSymm3D_async(fftM [3]*data.Slice, Kxx, Kyy, Kzz, Kyz, Kxz, Kxy *data.Slice, Nx, Ny, Nz int, q *cl.CommandQueue, ewl []*cl.Event) {
+func kernMulRSymm3D_async(fftM [3]*data.Slice, Kxx, Kyy, Kzz, Kyz, Kxz, Kxy *data.Slice, Nx, Ny, Nz int, ewl []*cl.Event, q *cl.CommandQueue) {
 	util.Argument(fftM[X].NComp() == 1 && Kxx.NComp() == 1)
 	cfg := make3DConf([3]int{Nx, Ny, Nz})
 
@@ -31,7 +31,7 @@ func kernMulRSymm3D_async(fftM [3]*data.Slice, Kxx, Kyy, Kzz, Kyz, Kxz, Kxy *dat
 }
 
 // kernel multiplication for 2D demag convolution on X and Y, exploiting full kernel symmetry.
-func kernMulRSymm2Dxy_async(fftMx, fftMy, Kxx, Kyy, Kxy *data.Slice, Nx, Ny int, q *cl.CommandQueue, ewl []*cl.Event) {
+func kernMulRSymm2Dxy_async(fftMx, fftMy, Kxx, Kyy, Kxy *data.Slice, Nx, Ny int, ewl []*cl.Event, q *cl.CommandQueue) {
 	util.Argument(fftMy.NComp() == 1 && Kxx.NComp() == 1)
 	cfg := make3DConf([3]int{Nx, Ny, 1})
 
@@ -51,7 +51,7 @@ func kernMulRSymm2Dxy_async(fftMx, fftMy, Kxx, Kyy, Kxy *data.Slice, Nx, Ny int,
 }
 
 // kernel multiplication for 2D demag convolution on Z, exploiting full kernel symmetry.
-func kernMulRSymm2Dz_async(fftMz, Kzz *data.Slice, Nx, Ny int, q *cl.CommandQueue, ewl []*cl.Event) {
+func kernMulRSymm2Dz_async(fftMz, Kzz *data.Slice, Nx, Ny int, ewl []*cl.Event, q *cl.CommandQueue) {
 	util.Argument(fftMz.NComp() == 1 && Kzz.NComp() == 1)
 	cfg := make3DConf([3]int{Nx, Ny, 1})
 
@@ -69,7 +69,7 @@ func kernMulRSymm2Dz_async(fftMz, Kzz *data.Slice, Nx, Ny int, q *cl.CommandQueu
 
 // kernel multiplication for general 1D convolution. Does not assume any symmetry.
 // Used for MFM images.
-func kernMulC_async(fftM, K *data.Slice, Nx, Ny int, q *cl.CommandQueue, ewl []*cl.Event) {
+func kernMulC_async(fftM, K *data.Slice, Nx, Ny int, ewl []*cl.Event, q *cl.CommandQueue) {
 	util.Argument(fftM.NComp() == 1 && K.NComp() == 1)
 	cfg := make3DConf([3]int{Nx, Ny, 1})
 

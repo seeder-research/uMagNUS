@@ -16,6 +16,11 @@ func Normalize(vec, vol *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) {
 	cfg := make1DConf(N)
 
 	// Launch kernel
+	volPtr := (unsafe.Pointer)(nil)
+	if vol != nil {
+		volPtr = vol.DevPtr(0)
+	}
+
 	event := k_normalize2_async(vec.DevPtr(X), vec.DevPtr(Y), vec.DevPtr(Z), volPtr, N, cfg, ewl, q)
 
 	if Debug {

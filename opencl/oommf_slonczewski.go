@@ -30,7 +30,7 @@ func AddOommfSlonczewskiTorque(torque, m *data.Slice, Msat, J, fixedP, alpha, pf
 		λfree.DevPtr(0), λfree.Mul(0),
 		ε_prime.DevPtr(0), ε_prime.Mul(0),
 		unsafe.Pointer(uintptr(0)), flt,
-		N, cfg, eventList)
+		N, cfg, ewl, q)
 
 	if Debug {
 		if err := cl.WaitForEvents([]*cl.Event{event}); err != nil {
