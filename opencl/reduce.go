@@ -113,8 +113,8 @@ func Sum(in *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) float32 {
 	reduceWaitGroup.Wait()
 
 	// Launch kernel
-	event := k_reducesum_async(in.DevPtr(0), out, 0,
-		in.Len(), reducecfg, ewl, q)
+	event := k_reducesum_async(in.DevPtr(0), out, float32(0.0), 0,
+		in.Len(), reducesumcfg, ewl, q)
 
 	// Copy back to host in goroutine
 	reduceWaitGroup.Add(1)
@@ -145,7 +145,7 @@ func Dot(a, b *data.Slice, q []*cl.CommandQueue, ewl []*cl.Event) float32 {
 	for c := 0; c < numComp; c++ {
 		// Launch kernel
 		event := k_reducedot_async(a.DevPtr(c), b.DevPtr(c), out[c], float32(0.0), int(0),
-			a.Len(), int(64), reducecfg, ewl, q[c]) // all components add to out
+			a.Len(), reducesumcfg, ewl, q[c]) // all components add to out
 
 		// Copy back to host in goroutine
 		reduceWaitGroup.Add(1)
@@ -342,3 +342,6 @@ func initReduceBuf() {
 var reducecfg = &config{Grid: []int{1, 1, 1}, Block: []int{1, 1, 1}}
 var ReduceWorkitems int
 var ReduceWorkgroups int
+var reducesumcfg = &config{Grid: []int{1, 1, 1}, Block: []int{1, 1, 1}}
+var ReduceSumWorkitems int
+var ReduceSumWorkgroups int

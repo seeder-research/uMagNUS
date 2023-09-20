@@ -1,10 +1,19 @@
 // Uses 16 registers (if single-precision, then 64B per
 // workitem. Twice if double-precision, i.e., 128B per
 // workitem) to produce reduction sum in one thread. Allow
-// maximum of 64 workitems per workgroup to run.
-// 8 nested for loops
+// running workgroup to have 32 or 64 workitems
+// Single while loop emulating 8 nested for loops
 // Single workgroup of 64 workitems can handle up to
-// 1024x1024x1024 items
+// 1024x64x64 = 1024x1024x4 = 128x128x128x2 = 4194304 items
+//
+// Inputs:
+//   src:      pointer to buffer with data to reduce
+//   dst:      pointer to buffer where result is stored
+//   initVal:  result of reduction will be offset by initVal
+//   fac:      signal to tell scheme to write result to dst
+//   group_n:  number of items to reduce in buffer
+//   n:        total length of src buffer
+//   scratch:  local memory for reduction
 #ifdef(REDUCE_SUM_THREADS_PER_GROUP)
 #define REDUCE_SUM_THREADS_PER_GROUP_OLD REDUCE_SUM_THREADS_PER_GROUP
 #endif
@@ -14,20 +23,20 @@ __kernel void
 reducesum(         __global real_t*    __restrict     src,
           volatile __global real_t*    __restrict     dst,
                             real_t                initVal,
-                               int                      n,
+                              uint                    fac,
+                              uint                group_n,
+                              uint                      n,
           volatile __local  real_t*               scratch) {
 
-    ulong const block_size = get_local_size(0);
-    ulong const idx_in_block = get_local_id(0);
-
-    if (idx_in_block < REDUCE_SUM_THREADS_PER_GROUP) {
+    if (get_local_id(0) < REDUCE_SUM_THREADS_PER_GROUP) {
         // Calculate index for workitem
-        ulong idx_global = get_group_id(0) * REDUCE_SUM_THREADS_PER_GROUP + idx_in_block;
-        ulong const stride =  REDUCE_SUM_THREADS_PER_GROUP * get_num_groups(0);
+        ulong offset = get_group_id(0) * group_n;
+        ulong idx_local = offset + get_local_id(0);
+        ulong const stride =  (get_local_size(0) < REDUCE_SUM_THREADS_PER_GROUP) ? get_local_size(0) : REDUCE_SUM_THREADS_PER_GROUP;
 
         // Initialize registers for reduction
         real_t v0[2];
-        v0[0] = (idx_global == 0) ? initVal : real_t(0.0); v0[1] = real_t(0.0);
+        v0[0] = (offset + idx_local == 0) ? initVal : real_t(0.0); v0[1] = real_t(0.0);
         real_t v1[2] = {(real_t)(0.0), (real_t)(0.0)};
         real_t v2[2] = {(real_t)(0.0), (real_t)(0.0)};
         real_t v3[2] = {(real_t)(0.0), (real_t)(0.0)};
@@ -37,92 +46,127 @@ reducesum(         __global real_t*    __restrict     src,
         real_t v7[2] = {(real_t)(0.0), (real_t)(0.0)};
 
         // Initialize scratch spaces
-        scratch[idx_in_block] = (real_t)(0.0);
-        scratch[idx_in_block + REDUCE_SUM_THREADS_PER_GROUP] = (real_t)(0.0);
+        scratch[get_local_id(0)] = (real_t)(0.0);
+        scratch[get_local_id(0) + REDUCE_SUM_THREADS_PER_GROUP] = (real_t)(0.0);
 
         // Begin loop
-        for (uint i0 = 0; i0 < REDUCE_SUM_NUM_PER_STAGE; i0++) {
-            for (uint i1 = 0; i1 < REDUCE_SUM_NUM_PER_STAGE; i1++) {
-                for (uint i2 = 0; i2 < REDUCE_SUM_NUM_PER_STAGE; i2++) {
-                    for (uint i3 = 0; i3 < REDUCE_SUM_NUM_PER_STAGE; i3++) {
-                        for (uint i4 = 0; i4 < REDUCE_SUM_NUM_PER_STAGE; i4++) {
-                            for (uint i5 = 0; i5 < REDUCE_SUM_NUM_PER_STAGE; i5++) {
-                                for (uint i6 = 0; i6 < REDUCE_SUM_NUM_PER_STAGE; i6++) {
-                                    for (uint i7 = 0; i7 < REDUCE_SUM_NUM_PER_STAGE; i7++) {
-                                        v0[i7 & 0x00000001] += (idx_global < n) ? src[idx_global] : real_t(0.0);
-                                        idx_global += stride;
-                                        if (idx_global >= n) {
-                                            break;
-                                        }
-                                    }
-                                    v1[i6 & 0x00000001] += (v0[0] + v0[1]);
-                                    if (idx_global >= n) {
-                                        break;
-                                    }
-                                    v0[0] = real_t(0.0);
-                                    v0[1] = real_t(0.0);
-                                }
-                                v2[i5 & 0x00000001] += (v1[0] + v1[1]);
-                                if (idx_global >= n) {
-                                    break;
-                                }
-                                v1[0] = real_t(0.0);
-                                v1[1] = real_t(0.0);
-                            }
-                            v3[i4 & 0x00000001] += (v2[0] + v2[1]);
-                            if (idx_global >= n) {
-                                break;
-                            }
-                            v2[0] = real_t(0.0);
-                            v2[1] = real_t(0.0);
-                        }
-                        v4[i3 & 0x00000001] += (v3[0] + v3[1]);
-                        if (idx_global >= n) {
-                            break;
-                        }
-                        v3[0] = real_t(0.0);
-                        v3[1] = real_t(0.0);
-                    }
-                    v5[i2 & 0x00000001] += (v4[0] + v4[1]);
-                    if (idx_global >= n) {
-                        break;
-                    }
-                    v4[0] = real_t(0.0);
-                    v4[1] = real_t(0.0);
-                }
-                v6[i1 & 0x00000001] += (v5[0] + v5[1]);
-                if (idx_global >= n) {
-                    break;
-                }
-                v5[0] = real_t(0.0);
-                v5[1] = real_t(0.0);
-            }
-            v7[i0 & 0x00000001] += (v6[0] + v6[1]);
-            if (idx_global >= n) {
+        uint counterval = 0;
+        while ((offset + idx_local < n) && (idx_local < group_n)) {
+            // Get inputs from buffer and accumulate into v0 registers
+            v0[0] += ((offset + idx_local < n) && (idx_local < group_n)) ? src[idx_global] : real_t(0.0); idx_global += stride;
+            v0[1] += ((offset + idx_local < n) && (idx_local < group_n)) ? src[idx_global] : real_t(0.0); idx_global += stride;
+            v0[0] += ((offset + idx_local < n) && (idx_local < group_n)) ? src[idx_global] : real_t(0.0); idx_global += stride;
+            v0[1] += ((offset + idx_local < n) && (idx_local < group_n)) ? src[idx_global] : real_t(0.0); idx_global += stride;
+
+            if (!(offset + idx_local < n) || !(idx_local < group_n)) {
                 break;
             }
-            v6[0] = real_t(0.0);
-            v6[1] = real_t(0.0);
+
+            // Merge results in v0 into v1 registers and clear v0 registers,
+            // increment counter after
+            v1[(counterval & 0x00000001)] = v0[0] + v0[1];
+            v0[0] = real_t(0.0); v0[1] = real_t(0.0); counter++;
+            // Determine if v1 counters should be accumulated into v2 counters.
+            // If so, accumulate and clear v1 counters.
+            if ((counterval ^ 0x00000003) == 0) {
+                v2[((counterval >> 3) & 0x00000001)] = v1[0] + v1[1];
+                v1[0] = real_t(0.0); v1[1] = real_t(0.0);
+            }
+
+            // Determine if v2 counters should be accumulated into v3 counters.
+            // If so, accumulate and clear v2 counters.
+            if ((counterval ^ 0x0000000f) == 0) {
+                v3[((counterval >> 5) & 0x00000001)] = v2[0] + v2[1];
+                v2[0] = real_t(0.0); v2[1] = real_t(0.0);
+            }
+
+            // Determine if v3 counters should be accumulated into v4 counters.
+            // If so, accumulate and clear v3 counters.
+            if ((counterval ^ 0x0000003f) == 0) {
+                v4[((counterval >> 7) & 0x00000001)] = v3[0] + v3[1];
+                v3[0] = real_t(0.0); v3[1] = real_t(0.0);
+            }
+
+            // Determine if v4 counters should be accumulated into v5 counters.
+            // If so, accumulate and clear v4 counters.
+            if ((counterval ^ 0x000000ff) == 0) {
+                v5[((counterval >> 9) & 0x00000001)] = v4[0] + v4[1];
+                v4[0] = real_t(0.0); v4[1] = real_t(0.0);
+            }
+
+            // Determine if v5 counters should be accumulated into v6 counters.
+            // If so, accumulate and clear v5 counters.
+            if ((counterval ^ 0x000003ff) == 0) {
+                v6[((counterval >> 11) & 0x00000001)] = v5[0] + v5[1];
+                v5[0] = real_t(0.0); v5[1] = real_t(0.0);
+            }
+
+            // Determine if v6 counters should be accumulated into v7 counters.
+            // If so, accumulate and clear v6 counters.
+            if ((counterval ^ 0x00000fff) == 0) {
+                v7[((counterval >> 13) & 0x00000001)] = v6[0] + v6[1];
+                v6[0] = real_t(0.0); v6[1] = real_t(0.0);
+            }
         }
 
-        // Accumulate in scratch
-        scratch[idx_in_block] += (v7[0] + v7[1]);
-        barrier(CLK_LOCAL_MEM_FENCE);
-
-        // Reduce in scratch
-        if (idx_in_block < 32) {
-            scratch[idx_in_block] += scratch[idx_in_block + 32];
-            scratch[idx_in_block] += scratch[idx_in_block + 16];
-            scratch[idx_in_block] += scratch[idx_in_block + 8];
-            scratch[idx_in_block] += scratch[idx_in_block + 4];
-            scratch[idx_in_block] += scratch[idx_in_block + 2];
-            scratch[idx_in_block] += scratch[idx_in_block + 1];
-        }
-
-        // Add atomically to global buffer
-        if (idx_in_block == 0) {
-            atomicAdd_r(dst, scratch[0]);
-        }
+        // Main while loop over
+        // Accumulate registers in scratch
+        v1[1] += v0[0] + v0[1];
+        v2[1] += v1[0] + v1[1];
+        v3[1] += v2[0] + v2[1];
+        v4[1] += v3[0] + v3[1];
+        v5[1] += v4[0] + v4[1];
+        v6[1] += v5[0] + v5[1];
+        v7[1] += v6[0] + v6[1];
+        scratch[get_local_id(0)] += (v7[0] + v7[1]);
         
     }
+
+    // Force all workitems to execute here for synchronization
+    scratch[get_local_id(0)] += real_t(0.0);
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    // Reduce in scratch
+    if ((get_local_size(0) > 32) && (get_local_id(0) < 32)) {
+        scratch[get_local_id(0)] += scratch[get_local_id(0) + 32];
+    }
+    if (get_local_id(0) < 16) {
+        scratch[get_local_id(0)] += scratch[get_local_id(0) + 16];
+        scratch[get_local_id(0)] += scratch[get_local_id(0) + 8];
+        scratch[get_local_id(0)] += scratch[get_local_id(0) + 4];
+        scratch[get_local_id(0)] += scratch[get_local_id(0) + 2];
+        scratch[get_local_id(0)] += scratch[get_local_id(0) + 1];
+    }
+
+    // Add atomically to global buffer
+    if (get_local_id(0) == 0) {
+        switch (fac)
+        {
+            // if every workgroup has its dedicated atomic buffer
+            case 1:
+                atomicAdd_r(dst[get_group_id(0)], scratch[0]);
+                break;
+
+            // every two workgroups shares one atomic buffer
+            case 2:
+                atomicAdd_r(dst[get_group_id(0) << 1], scratch[0]);
+                break;
+
+            // only one global atomic buffer available
+            default:
+                atomicAdd_r(dst, scratch[0]);
+        }
+    }
 }
+
+//////////////////////////////////////////////////////////////////
+//
+// For reducesum and reducedot, the input data buffer is
+// partitioned as evenly as possible for each workgroup to
+// process. Depending on the number of elements to reduce, the
+// number of workgroups used will be different. Each workgroup
+// will have either 64 workitems (32 allowed but avoided).
+// Each workitem can process up to 4^8 = 65,536 items with optimum
+// truncation errors.
+//
+//////////////////////////////////////////////////////////////////
