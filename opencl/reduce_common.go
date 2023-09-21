@@ -1,5 +1,9 @@
 package opencl
 
+// TODO: update call to reducesum and reducedot to
+// launch kernels with number of workgroups and workitems
+// optimized to size of input buffer
+
 import (
 	"context"
 	"fmt"
@@ -21,6 +25,7 @@ type reduceEventAndPointer struct {
 	cmdQ  *cl.CommandQueue
 	ptr   unsafe.Pointer
 	idx   int
+	bufr  *cl.MemObject
 }
 
 type reduceOutput struct {
@@ -39,7 +44,7 @@ var (
 )
 
 // function executed by goroutines
-func threadedCopyBack(in <-chan reduceEventAndPointer, out chan<- reduceOutput, bufPool chan<- (*cl.MemObject), wg_ *sync.WaitGroup) {
+func threadedCopyBack(in <-chan reduceEventAndPointer, out chan<- reduceOutput, bufPool chan<- (*cl.MemObject), interBufPool chan<- (*cl.MemObject), wg_ *sync.WaitGroup) {
 	tmpQueue, err := ClCtx.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
 		fmt.Printf("Failed to create command queue in goroutine: %+v \n", err)
@@ -60,6 +65,9 @@ func threadedCopyBack(in <-chan reduceEventAndPointer, out chan<- reduceOutput, 
 			}
 			out <- reduceOutput{val, item.idx}
 			bufPool <- (*cl.MemObject)(item.ptr)
+			if item.bufr != nil {
+				interBufPool <- item.bufr
+			}
 			wg_.Done()
 		case <-reduceManagerContext.Done():
 			err = tmpQueue.Finish()
@@ -81,7 +89,7 @@ func reduceInit(n int) {
 	reduceRes = make(chan reduceOutput, reduceThreadCount)
 
 	for j := 0; j < reduceThreadCount; j++ {
-		go threadedCopyBack(reduceItem, reduceRes, reduceBuffers, &reduceWaitGroup)
+		go threadedCopyBack(reduceItem, reduceRes, reduceBuffers, reduceInterBuffers, &reduceWaitGroup)
 	}
 }
 
@@ -91,75 +99,6 @@ func reduceTeardown() {
 		reduceManagerKillFunc()
 	}
 	reduceThreadCount = -1
-}
-
-/*
-Need to update the reduction sum and dot algorithms to balance the distribution of inputs to the work-groups
-Less of a problem for max and min because they are direct comparisons
-
-for sum and dot, the magnitude of intermediate values depend on how many input values were summed to obtain
-them. Thus, the entire input data should be distributed in a binary tree for the summation, and the work-
-groups should "synchronize" at a fixed level of the tree. Small input sizes will need fewer work-groups
-that can efficiently calculate for trees having short depths. Larger input sizes will need larger number of
-possibly small work-groups.
-*/
-
-// Sum of all elements.
-func Sum(in *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) float32 {
-	util.Argument(in.NComp() == 1)
-	out := reduceBuf(0)
-
-	// Ensure no other reduction kernel is running
-	reduceWaitGroup.Wait()
-
-	// Launch kernel
-	event := k_reducesum_async(in.DevPtr(0), out, float32(0.0), 0,
-		in.Len(), reducesumcfg, ewl, q)
-
-	// Copy back to host in goroutine
-	reduceWaitGroup.Add(1)
-	reduceItem <- reduceEventAndPointer{[]*cl.Event{event}, q, out, 0}
-
-	// Ensure all reduction kernel has completed
-	reduceWaitGroup.Wait()
-	tmp := <-reduceRes
-
-	return tmp.res
-}
-
-// Dot product
-func Dot(a, b *data.Slice, q []*cl.CommandQueue, ewl []*cl.Event) float32 {
-	util.Argument(a.NComp() == b.NComp())
-	util.Argument(a.Len() == b.Len())
-	util.Argument(a.NComp() == len(q))
-	result := float32(0)
-	numComp := a.NComp()
-	out := make([]unsafe.Pointer, numComp)
-	for c := 0; c < numComp; c++ {
-		out[c] = reduceBuf(0)
-	}
-	//hostResult := make([]float32, numComp)
-
-	// Ensure no other reduction kernel is running
-	reduceWaitGroup.Wait()
-	for c := 0; c < numComp; c++ {
-		// Launch kernel
-		event := k_reducedot_async(a.DevPtr(c), b.DevPtr(c), out[c], float32(0.0), int(0),
-			a.Len(), reducesumcfg, ewl, q[c]) // all components add to out
-
-		// Copy back to host in goroutine
-		reduceWaitGroup.Add(1)
-		reduceItem <- reduceEventAndPointer{[]*cl.Event{event}, q[c], out[c], c}
-	}
-
-	// Ensure all reduction kernel has completed
-	reduceWaitGroup.Wait()
-	for c := 0; c < numComp; c++ {
-		tmp := <-reduceRes
-		result += tmp.res
-	}
-
-	return result
 }
 
 // Maximum of absolute values of all elements.
@@ -176,7 +115,7 @@ func MaxAbs(in *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) float32 {
 
 	// Copy back to host in goroutine
 	reduceWaitGroup.Add(1)
-	reduceItem <- reduceEventAndPointer{[]*cl.Event{event}, q, out, 0}
+	reduceItem <- reduceEventAndPointer{event: []*cl.Event{event}, cmdQ: q, ptr: out, idx: 0, bufr: nil}
 
 	// Ensure all reduction kernel has completed
 	reduceWaitGroup.Wait()
@@ -206,7 +145,7 @@ func MaxDiff(a, b *data.Slice, q []*cl.CommandQueue, ewl []*cl.Event) []float32 
 
 		// Copy back to host in goroutine
 		reduceWaitGroup.Add(1)
-		reduceItem <- reduceEventAndPointer{[]*cl.Event{event}, q[c], out[c], c}
+		reduceItem <- reduceEventAndPointer{event: []*cl.Event{event}, cmdQ: q[c], ptr: out[c], idx: c, bufr: nil}
 	}
 
 	// Must synchronize since returnVal is copied from device back to host
@@ -235,7 +174,7 @@ func MaxVecNorm(v *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) float64 {
 
 	// Copy back to host in goroutine
 	reduceWaitGroup.Add(1)
-	reduceItem <- reduceEventAndPointer{[]*cl.Event{event}, q, out, 0}
+	reduceItem <- reduceEventAndPointer{event: []*cl.Event{event}, cmdQ: q, ptr: out, idx: 0, bufr: nil}
 
 	// Ensure all reduction kernel has completed
 	reduceWaitGroup.Wait()
@@ -264,7 +203,7 @@ func MaxVecDiff(x, y *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) float64 {
 
 	// Copy back to host in goroutine
 	reduceWaitGroup.Add(1)
-	reduceItem <- reduceEventAndPointer{[]*cl.Event{event}, q, out, 0}
+	reduceItem <- reduceEventAndPointer{event: []*cl.Event{event}, cmdQ: q, ptr: out, idx: 0, bufr: nil}
 
 	// Ensure all reduction kernel has completed
 	reduceWaitGroup.Wait()
@@ -275,7 +214,7 @@ func MaxVecDiff(x, y *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) float64 {
 
 var reduceBuffers chan (*cl.MemObject) // pool of 1-float OpenCL buffers for reduce
 
-// return a 1-float and an N-float OPENCL reduction buffer from a pool
+// return a 1-float OPENCL reduction buffer from a pool
 // initialized to initVal
 func reduceBuf(initVal float32) unsafe.Pointer {
 	if reduceBuffers == nil {
@@ -326,7 +265,7 @@ func copybackSlice(buf unsafe.Pointer) []float32 {
 	return result
 }
 
-// initialize pool of 1-float and N-float OPENCL reduction buffers
+// initialize pool of 1-float OPENCL reduction buffers
 func initReduceBuf() {
 	const N = 128
 	reduceBuffers = make(chan *cl.MemObject, N)
@@ -342,6 +281,3 @@ func initReduceBuf() {
 var reducecfg = &config{Grid: []int{1, 1, 1}, Block: []int{1, 1, 1}}
 var ReduceWorkitems int
 var ReduceWorkgroups int
-var reducesumcfg = &config{Grid: []int{1, 1, 1}, Block: []int{1, 1, 1}}
-var ReduceSumWorkitems int
-var ReduceSumWorkgroups int

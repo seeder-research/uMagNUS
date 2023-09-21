@@ -24,9 +24,9 @@ reducedot(         __global real_t*    __restrict    src1,
                    __global real_t*    __restrict    src2,
           volatile __global real_t*    __restrict     dst,
                             real_t                initVal,
-                              uint                    fac,
-                              uint                group_n,
-                              uint                      n,
+                               int                    fac,
+                               int                group_n,
+                               int                      n,
           volatile __local  real_t*               scratch) {
 
     if (get_local_id(0) < REDUCE_SUM_THREADS_PER_GROUP) {
@@ -140,7 +140,7 @@ reducedot(         __global real_t*    __restrict    src1,
     }
 
     // Add atomically to global buffer
-    if (get_local_id(0) == 0) {
+    if ((get_local_id(0) == 0) && (scratch[0] != 0)){
         switch (fac)
         {
             // if every workgroup has its dedicated atomic buffer
