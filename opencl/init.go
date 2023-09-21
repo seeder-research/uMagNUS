@@ -309,9 +309,6 @@ func Init(gpu int) {
 		reducecfg.Grid[0] = ReduceWorkgroups * reducecfg.Block[0]
 	}
 
-	reducesumcfg.Block[0] = 64
-	reducesumcfg.Grid[0] = reducesumcfg.Block[0] * ClCUnits // Need to optimize this according to reduction strategy
-
 	reduceInit(3)
 
 	if Debug {

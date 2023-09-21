@@ -5,10 +5,8 @@ package opencl
 // optimized to size of input buffer
 
 import (
-	"context"
 	"fmt"
 	"math"
-	"sync"
 	"unsafe"
 
 	cl "github.com/seeder-research/uMagNUS/cl"
@@ -89,14 +87,14 @@ func (r *reduceFunc) reduceSumKernel(inPtr, outPtr unsafe.Pointer, initVal float
 
 	// Launch kernel
 	return k_reducesum_async(inPtr, outPtr, initVal, r.fac, r.grp_n,
-		r.nElem, r.cfg, ewl, q)
+		r.nElem, &r.cfg, ewl, q)
 }
 
 func (r *reduceFunc) reduceDotKernel(inPtr0, inPtr1, outPtr unsafe.Pointer, initVal float32, q *cl.CommandQueue, ewl []*cl.Event) *cl.Event {
 
 	// Launch kernel
 	return k_reducedot_async(inPtr0, inPtr1, outPtr, initVal, r.fac, r.grp_n,
-		r.nElem, r.cfg, ewl, q)
+		r.nElem, &r.cfg, ewl, q)
 }
 
 type reduceDotSumPlans struct {
@@ -106,17 +104,7 @@ type reduceDotSumPlans struct {
 	nStage int
 }
 
-var globalReduceDotSumPlan reduceDotSumPlans
-
-func (r *reduceDotSumPlans) ZeroBuffer(q *cl.CommandQueue) *cl.Event {
-	zero := uint8(0)
-	ev, err := q.EnqueueFillBuffer(r.buf, (unsafe.Pointer)(&zero), 1, 0, r.bufSz)
-	if err != nil {
-		fmt.Println("failed to zero buffer in reduceSumPlans: %+v ", err)
-		return nil
-	}
-	return ev
-}
+var globalReduceDotSumPlan *reduceDotSumPlans
 
 func CreateTwoStageDotSum(bufSize int) *reduceDotSumPlans {
 	plans := make([]reduceDotSumStage, 2)
@@ -140,16 +128,20 @@ func (p *reduceDotSumPlans) GetStageCount() int {
 	return p.nStage
 }
 
-func newReducePlan(i int) reduceDotSumPlans {
-	defaultBlockSize := 64
-	var outPlan reduceDotSumPlans
+func (p *reduceDotSumPlans) GetBufSize() int {
+	return p.bufSz
+}
+
+func newReducePlan(i int) *reduceDotSumPlans {
+	defaultBlockSize := int(64)
+	var outPlan *reduceDotSumPlans
 	if i < 65536 {
 		// Configuration for reducesum and reducedot
 		outPlan = CreateOneStageDotSum()
 		outPlan.Plans[0].SetFac(0)
 		outPlan.Plans[0].SetGrpN(i)
 		outPlan.Plans[0].SetNElem(i)
-		outPlan.Plans[0].SetConfig(config{Grid: {defaultBlockSize, 1, 1}, Block: {defaultBlockSize, 1, 1}})
+		outPlan.Plans[0].SetConfig(config{Grid: []int{defaultBlockSize, 1, 1}, Block: []int{defaultBlockSize, 1, 1}})
 
 		initReduceInterBuffers(-1)
 		sumImpl = sumOneStageImpl
@@ -160,7 +152,7 @@ func newReducePlan(i int) reduceDotSumPlans {
 		outPlan.Plans[0].SetFac(0)
 		outPlan.Plans[0].SetGrpN(int(math.Ceil((float64)(i) * float64(0.5))))
 		outPlan.Plans[0].SetNElem(i)
-		outPlan.Plans[0].SetConfig(config{Grid: {2 * defaultBlockSize, 1, 1}, Block: {defaultBlockSize, 1, 1}})
+		outPlan.Plans[0].SetConfig(config{Grid: []int{2 * defaultBlockSize, 1, 1}, Block: []int{defaultBlockSize, 1, 1}})
 
 		initReduceInterBuffers(-1)
 		sumImpl = sumOneStageImpl
@@ -181,13 +173,13 @@ func newReducePlan(i int) reduceDotSumPlans {
 		}
 		outPlan.Plans[0].SetGrpN(grpN)
 		outPlan.Plans[0].SetNElem(i)
-		outPlan.Plans[0].SetConfig(config{Grid: {groupCount * defaultBlockSize, 1, 1}, Block: {defaultBlockSize, 1, 1}})
+		outPlan.Plans[0].SetConfig(config{Grid: []int{groupCount * defaultBlockSize, 1, 1}, Block: []int{defaultBlockSize, 1, 1}})
 
 		// Second stage
 		outPlan.Plans[1].SetFac(0)
 		outPlan.Plans[1].SetGrpN(groupCount)
 		outPlan.Plans[1].SetNElem(groupCount)
-		outPlan.Plans[1].SetConfig(config{Grid: {defaultBlockSize, 1, 1}, Block: {defaultBlockSize, 1, 1}})
+		outPlan.Plans[1].SetConfig(config{Grid: []int{defaultBlockSize, 1, 1}, Block: []int{defaultBlockSize, 1, 1}})
 
 		initReduceInterBuffers(groupCount)
 		sumImpl = sumTwoStageImpl
@@ -208,13 +200,13 @@ func newReducePlan(i int) reduceDotSumPlans {
 		}
 		outPlan.Plans[0].SetGrpN(grpN)
 		outPlan.Plans[0].SetNElem(i)
-		outPlan.Plans[0].SetConfig(config{Grid: {groupCount * defaultBlockSize, 1, 1}, Block: {defaultBlockSize, 1, 1}})
+		outPlan.Plans[0].SetConfig(config{Grid: []int{groupCount * defaultBlockSize, 1, 1}, Block: []int{defaultBlockSize, 1, 1}})
 
 		// Second stage
 		outPlan.Plans[1].SetFac(0)
 		outPlan.Plans[1].SetGrpN(groupCount)
 		outPlan.Plans[1].SetNElem(groupCount)
-		outPlan.Plans[1].SetConfig(config{Grid: {defaultBlockSize, 1, 1}, Block: {defaultBlockSize, 1, 1}})
+		outPlan.Plans[1].SetConfig(config{Grid: []int{defaultBlockSize, 1, 1}, Block: []int{defaultBlockSize, 1, 1}})
 
 		initReduceInterBuffers(groupCount)
 		sumImpl = sumTwoStageImpl
@@ -234,13 +226,13 @@ func newReducePlan(i int) reduceDotSumPlans {
 		outPlan.Plans[0].SetGrpN(grpN)
 		outPlan.Plans[0].SetFac(1)
 		outPlan.Plans[0].SetNElem(i)
-		outPlan.Plans[0].SetConfig(config{Grid: {groupCount * defaultBlockSize, 1, 1}, Block: {defaultBlockSize, 1, 1}})
+		outPlan.Plans[0].SetConfig(config{Grid: []int{groupCount * defaultBlockSize, 1, 1}, Block: []int{defaultBlockSize, 1, 1}})
 
 		// Second stage
 		outPlan.Plans[1].SetFac(0)
 		outPlan.Plans[1].SetGrpN(groupCount)
 		outPlan.Plans[1].SetNElem(groupCount)
-		outPlan.Plans[1].SetConfig(config{Grid: {defaultBlockSize, 1, 1}, Block: {defaultBlockSize, 1, 1}})
+		outPlan.Plans[1].SetConfig(config{Grid: []int{defaultBlockSize, 1, 1}, Block: []int{defaultBlockSize, 1, 1}})
 
 		initReduceInterBuffers(groupCount)
 		sumImpl = sumTwoStageImpl
@@ -254,7 +246,7 @@ func newReducePlan(i int) reduceDotSumPlans {
 
 // TODO: Need to call this everything the mesh is updated
 func UpdateReduceSumLen(i int) {
-	globalReducePlan = newReducePlan(i)
+	globalReduceDotSumPlan = newReducePlan(i)
 }
 
 func (p *reduceDotSumPlans) sumOneStageImpl_(in *data.Slice, outPtr unsafe.Pointer, initVal float32, q *cl.CommandQueue, ewl []*cl.Event) *cl.Event {
@@ -266,7 +258,7 @@ func (p *reduceDotSumPlans) sumOneStageImpl_(in *data.Slice, outPtr unsafe.Point
 			return nil
 		}
 	}
-	return p.Plan[0].reduceSumKernel(in.DevPtr(0), outPtr, initVal, q, nil)
+	return p.Plans[0].reduceSumKernel(in.DevPtr(0), outPtr, initVal, q, nil)
 }
 
 func (p *reduceDotSumPlans) dotOneStageImpl_(in0, in1 *data.Slice, outPtr unsafe.Pointer, initVal float32, q *cl.CommandQueue, ewl []*cl.Event) *cl.Event {
@@ -279,7 +271,7 @@ func (p *reduceDotSumPlans) dotOneStageImpl_(in0, in1 *data.Slice, outPtr unsafe
 			return nil
 		}
 	}
-	return p.Plan[0].reduceDotKernel(in0.DevPtr(0), in1.DevPtr(0), outPtr, initVal, q, nil)
+	return p.Plans[0].reduceDotKernel(in0.DevPtr(0), in1.DevPtr(0), outPtr, initVal, q, nil)
 }
 
 func (p *reduceDotSumPlans) sumTwoStageImpl_(in *data.Slice, outPtr unsafe.Pointer, initVal float32, q *cl.CommandQueue, ewl []*cl.Event) *cl.Event {
@@ -292,13 +284,13 @@ func (p *reduceDotSumPlans) sumTwoStageImpl_(in *data.Slice, outPtr unsafe.Point
 			return nil
 		}
 	}
-	buf_ := <-reduceInterBuffers // Needs to be checked in after reduction ends
+	buf_ := getReduceInterBuffer() // Needs to be checked in after reduction ends
 	ev := p.Plans[0].reduceSumKernel(in.DevPtr(0), buf_, initVal, q, nil)
 	ev = p.Plans[1].reduceSumKernel(buf_, outPtr, float32(0.0), q, nil)
 
 	// Copy back to host in goroutine
 	reduceWaitGroup.Add(1)
-	reduceItem <- reduceEventAndPointer{event: []*cl.Event{event}, cmdQ: q, ptr: out, idx: 0, bufr: buf_}
+	reduceItem <- reduceEventAndPointer{event: []*cl.Event{ev}, cmdQ: q, ptr: outPtr, idx: 0, bufr: (*cl.MemObject)(buf_)}
 
 	return ev
 }
@@ -314,32 +306,32 @@ func (p *reduceDotSumPlans) dotTwoStageImpl_(in0, in1 *data.Slice, outPtr unsafe
 			return nil
 		}
 	}
-	buf_ := <-reduceInterBuffers // Needs to be checked in after reduction ends
+	buf_ := getReduceInterBuffer() // Needs to be checked in after reduction ends
 	ev := p.Plans[0].reduceDotKernel(in0.DevPtr(0), in1.DevPtr(0), (unsafe.Pointer)(buf_), initVal, q, nil)
 	ev = p.Plans[1].reduceSumKernel((unsafe.Pointer)(buf_), outPtr, float32(0.0), q, nil)
 
 	// Copy back to host in goroutine
 	reduceWaitGroup.Add(1)
-	reduceItem <- reduceEventAndPointer{event: []*cl.Event{event}, cmdQ: q, ptr: out, idx: 0, bufr: buf_}
+	reduceItem <- reduceEventAndPointer{event: []*cl.Event{ev}, cmdQ: q, ptr: outPtr, idx: 0, bufr: (*cl.MemObject)(buf_)}
 
 	return ev
 }
 
 // When mesh is updated, need to setup the correct function as the sumImpl function
 func sumOneStageImpl(in *data.Slice, outPtr unsafe.Pointer, initVal float32, q *cl.CommandQueue, ewl []*cl.Event) *cl.Event {
-	return globalReducePlan.sumOneStageImpl_(in, outPtr, initVal, q, ewl)
+	return globalReduceDotSumPlan.sumOneStageImpl_(in, outPtr, initVal, q, ewl)
 }
 
 func sumTwoStageImpl(in *data.Slice, outPtr unsafe.Pointer, initVal float32, q *cl.CommandQueue, ewl []*cl.Event) *cl.Event {
-	return globalReducePlan.sumTwoStageImpl_(in, outPtr, initVal, q, ewl)
+	return globalReduceDotSumPlan.sumTwoStageImpl_(in, outPtr, initVal, q, ewl)
 }
 
 func dotOneStageImpl(in0, in1 *data.Slice, outPtr unsafe.Pointer, initVal float32, q *cl.CommandQueue, ewl []*cl.Event) *cl.Event {
-	return globalReducePlan.dotOneStageImpl_(in0, in1, outPtr, initVal, q, ewl)
+	return globalReduceDotSumPlan.dotOneStageImpl_(in0, in1, outPtr, initVal, q, ewl)
 }
 
 func dotTwoStageImpl(in0, in1 *data.Slice, outPtr unsafe.Pointer, initVal float32, q *cl.CommandQueue, ewl []*cl.Event) *cl.Event {
-	return globalReducePlan.dotTwoStageImpl_(in0, in1, outPtr, initVal, q, ewl)
+	return globalReduceDotSumPlan.dotTwoStageImpl_(in0, in1, outPtr, initVal, q, ewl)
 }
 
 // Sum of all elements.
@@ -351,7 +343,7 @@ func Sum(in *data.Slice, q *cl.CommandQueue, ewl []*cl.Event) float32 {
 	reduceWaitGroup.Wait()
 
 	// Launch kernel
-	event := sumImpl(in.DevPtr(0), out, float32(0), q, ewl)
+	sumImpl(in, out, float32(0), q, ewl)
 
 	// Ensure all reduction kernel has completed
 	reduceWaitGroup.Wait()
@@ -377,7 +369,7 @@ func Dot(a, b *data.Slice, q []*cl.CommandQueue, ewl []*cl.Event) float32 {
 	reduceWaitGroup.Wait()
 	for c := 0; c < numComp; c++ {
 		// Launch kernel
-		event := dotImpl(a.DevPtr(c), b.DevPtr(c), out[c], float32(0.0), q[c], ewl) // all components add to out
+		dotImpl(a.Comp(c), b.Comp(c), out[c], float32(0.0), q[c], ewl) // all components add to out
 	}
 
 	// Ensure all reduction kernel has completed
@@ -391,21 +383,56 @@ func Dot(a, b *data.Slice, q []*cl.CommandQueue, ewl []*cl.Event) float32 {
 }
 
 // initialize pool of N-float OPENCL reduction buffers
-func initReduceInterBuffer(num int) {
+func initReduceInterBuffers(num int) {
 	const N = 32
-	if num < 0 {
-		// Clear intermediate buffers
+	// Clear intermediate buffers
+	if reduceInterBuffers != nil {
 		for i := 0; i < N; i++ {
 			buf_ := <-reduceInterBuffers
 			buf_.Release()
 			reduceInterBuffers <- nil
 		}
-	} else {
-		reduceInterBuffer = make(chan *cl.MemObject, N)
+	}
+	if num > 0 {
+		reduceInterBuffers = make(chan *cl.MemObject, N)
 		for i := 0; i < N; i++ {
-			buf_ := <-reduceInterBuffers
-			buf_.Release()
 			reduceInterBuffers <- MemAlloc(num * SIZEOF_FLOAT32)
 		}
 	}
+}
+
+// return a N-float OPENCL reduction buffer from a pool
+// initialized to all zeros
+func getReduceInterBuffer() unsafe.Pointer {
+	if reduceInterBuffers == nil {
+		fmt.Println("ERROR reduceInterBuffers not initialized!")
+	}
+	buf := <-reduceInterBuffers
+
+	// Checkout queue
+	tmpQueue := qm.CheckoutQueue(CmdQueuePool, nil)
+
+	// Launch kernel
+	//	waitEvent, err := ClCmdQueue.EnqueueFillBuffer(buf, unsafe.Pointer(&initVal), SIZEOF_FLOAT32, 0, ReduceWorkgroups*SIZEOF_FLOAT32, nil)
+	initVal := float32(0)
+	waitEvent, err := tmpQueue.EnqueueFillBuffer(buf, unsafe.Pointer(&initVal), SIZEOF_FLOAT32, 0, globalReduceDotSumPlan.GetBufSize()*SIZEOF_FLOAT32, nil)
+	if err != nil {
+		fmt.Printf("reduceBuf failed: %+v \n", err)
+		return nil
+	}
+
+	// always synchronize reduceBuf()
+	err = cl.WaitForEvents([]*cl.Event{waitEvent})
+
+	// Check in queue post execution
+	qwg := qm.NewQueueWaitGroup(tmpQueue, nil)
+	ReturnQueuePool <- qwg
+
+	if err != nil {
+		fmt.Printf("First WaitForEvents in reduceBuf failed: %+v \n", err)
+		reduceInterBuffers <- buf
+		return nil
+	}
+
+	return (unsafe.Pointer)(buf)
 }
