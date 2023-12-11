@@ -31,7 +31,10 @@ var (
 	ClDevices    []*cl.Device              // list of devices global OpenCL context may be associated with
 	ClDevice     *cl.Device                // device associated with global OpenCL context
 	ClCtx        *cl.Context               // global OpenCL context
-	ClCmdQueue   *cl.CommandQueue          // command queue attached to global OpenCL context
+	ClCmdQueue   []*cl.CommandQueue        // command queues attached to global OpenCL context (0: main sequential queue)
+	NumQueues    = 10                      // number of command queues for concurrent kernel execution
+	D2HQueue     *cl.CommandQueue          // command queue for device to host transfers
+	H2DQueue     *cl.CommandQueue          // command queue for host to device transfers
 	ClProgram    *cl.Program               // handle to program in the global OpenCL context
 	KernList     = map[string]*cl.Kernel{} // Store pointers to all compiled kernels
 	initialized  = false                   // Initial state defaults to false
@@ -140,11 +143,22 @@ func Init(gpu int) {
 		return
 	}
 
-	// Create opencl command queue on selected device
-	var queue *cl.CommandQueue
-	queue, err = context.CreateCommandQueue(ClDevice, 0)
+	// Create opencl command queues on selected device
+	for idx := 0; idx < NumQueues; idx++ {
+		ClCmdQueue[idx], err = context.CreateCommandQueue(ClDevice, 0)
+		if err != nil {
+			fmt.Printf("CreateCommandQueue failed: %+v \n", err)
+			return
+		}
+	}
+	H2DQueue, err = context.CreateCommandQueue(ClDevice, 0)
 	if err != nil {
-		fmt.Printf("CreateCommandQueue failed: %+v \n", err)
+		fmt.Printf("CreateCommandQueue for H2D failed: %+v \n", err)
+		return
+	}
+	D2HQueue, err = context.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("CreateCommandQueue for D2H failed: %+v \n", err)
 		return
 	}
 
@@ -172,7 +186,21 @@ func Init(gpu int) {
 		}
 
 		// Attempt to build binary from opencl program
-		if err = program.BuildProgram([]*cl.Device{ClDevice}, "-cl-std=CL1.2 -cl-fp32-correctly-rounded-divide-sqrt -cl-kernel-arg-info"); err != nil {
+		argString := "-cl-std=CL1.2 -cl-fp32-correctly-rounded-divide-sqrt -cl-kernel-arg-info"
+		if strings.Contains(strings.ToUpper(PlatformInfo), "NVIDIA") {
+			argString = fmt.Sprint(argString, " -D__NVCODE__ ")
+		} else {
+			if strings.EqualFold(DevName, "gfx908") {
+				argString += fmt.Sprint(argString, " -D__AMDGPU_FP32ATOMICS_1__ ")
+			}
+			if strings.EqualFold(DevName, "gfx90a") {
+				argString += fmt.Sprint(argString, " -D__AMDGPU_FP32ATOMICS_1__ -D__AMDGPU_FP64ATOMICS_0__ ")
+			}
+			if strings.EqualFold(DevName, "gfx940") {
+				argString += fmt.Sprint(argString, " -D__AMDGPU_FP32ATOMICS_0__ -D__AMDGPU_FP64ATOMICS_0__ ")
+			}
+		}
+		if err = program.BuildProgram([]*cl.Device{ClDevice}, argString); err != nil {
 			fmt.Printf("BuildProgram failed: %+v \n", err)
 			return
 		}
@@ -199,7 +227,6 @@ func Init(gpu int) {
 	}
 
 	ClCtx = context
-	ClCmdQueue = queue
 	ClProgram = program
 
 	// Set basic configuration for distributing
@@ -285,7 +312,11 @@ func (s *GPU) getGpuPlatform() *cl.Platform {
 }
 
 func ReleaseAndClean() {
-	ClCmdQueue.Release()
+	for _, q := range ClCmdQueue {
+		q.Release()
+	}
+	H2DQueue.Release()
+	D2HQueue.Release()
 	ClProgram.Release()
 	ClCtx.Release()
 }

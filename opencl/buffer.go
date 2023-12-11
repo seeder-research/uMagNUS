@@ -24,7 +24,9 @@ const buf_max = 100 // maximum number of buffers to allocate (detect memory leak
 // Returns a GPU slice for temporary use. To be returned to the pool with Recycle
 func Buffer(nComp int, size [3]int) *data.Slice {
 	if Synchronous {
-		ClCmdQueue.Finish()
+		if err := WaitAllQueuesToFinish(); err != nil {
+			log.Printf("failed to wait for queue to finish in buffer: %+v \n", err)
+		}
 	}
 
 	ptrs := make([]unsafe.Pointer, nComp)
@@ -35,7 +37,6 @@ func Buffer(nComp int, size [3]int) *data.Slice {
 	initVal := float32(0.0)
 	pool := buf_pool[N]
 	nFromPool := iMin(nComp, len(pool))
-	fillWait := make([]*cl.Event, nComp)
 	for i := 0; i < nFromPool; i++ {
 		ptrs[i] = pool[len(pool)-i-1]
 	}
@@ -51,26 +52,30 @@ func Buffer(nComp int, size [3]int) *data.Slice {
 			panic(err)
 		}
 		ptrs[i] = unsafe.Pointer(tmpPtr)
-		fillWait[i], err = ClCmdQueue.EnqueueFillBuffer(tmpPtr, unsafe.Pointer(&initVal), SIZEOF_FLOAT32, 0, bytes, nil)
+		event, err := ClCmdQueue[0].EnqueueFillBuffer(tmpPtr, unsafe.Pointer(&initVal), SIZEOF_FLOAT32, 0, bytes, nil)
 		if err != nil {
 			log.Printf("CreateEmptyBuffer failed: %+v \n", err)
 		}
-		err = cl.WaitForEvents([]*cl.Event{fillWait[i]})
-		if err != nil {
-			log.Printf("Wait for EnqueueFillBuffer failed: %+v \n", err)
-		}
 		buf_check[ptrs[i]] = struct{}{} // mark this pointer as mine
+
+		// Synchronize
+		if Synchronous {
+			if err = cl.WaitForEvents([]*cl.Event{event}); err != nil {
+				log.Printf("Wait for EnqueueFillBuffer failed: %+v \n", err)
+			}
+		}
 	}
 
 	outBuffer := data.SliceFromPtrs(size, data.GPUMemory, ptrs)
-	outBuffer.SetEvents(fillWait)
 	return outBuffer
 }
 
 // Returns a buffer obtained from GetBuffer to the pool.
 func Recycle(s *data.Slice) {
-	if Synchronous {
-		ClCmdQueue.Finish()
+	// ensure all commands in sequential command queue are completed
+	// oherwise, the buffer might be corrupted
+	if err := WaitAllQueuesToFinish(); err != nil {
+		log.Printf("failed to wait for queue to finish in recycle: %+v \n", err)
 	}
 
 	N := s.Len()
@@ -92,7 +97,9 @@ func Recycle(s *data.Slice) {
 
 // Frees all buffers. Called after mesh resize.
 func FreeBuffers() {
-	ClCmdQueue.Finish()
+	if err := WaitAllQueuesToFinish(); err != nil {
+		log.Printf("failed to wait for queues to clear in freebuffers: %+v \n", err)
+	}
 	for _, size := range buf_pool {
 		for i := range size {
 			tmpObj := (*cl.MemObject)(size[i])
@@ -100,7 +107,6 @@ func FreeBuffers() {
 			size[i] = nil
 		}
 	}
-	ClCmdQueue.Finish()
 	buf_pool = make(map[int][]unsafe.Pointer)
 	buf_check = make(map[unsafe.Pointer]struct{})
 }

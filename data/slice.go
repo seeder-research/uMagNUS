@@ -27,8 +27,6 @@ type Slice struct {
 	ptrs    []unsafe.Pointer
 	size    [3]int
 	memType int8
-	event   []*cl.Event
-	rdEvent []*SliceEventMap
 }
 
 // this package must not depend on OpenCL.
@@ -36,12 +34,12 @@ type Slice struct {
 // otherwise, it could be removed in favor of memCpy only.
 var (
 	memFree, memFreeHost           func(unsafe.Pointer)
-	memCpy, memCpyDtoH, memCpyHtoD func(dst, src unsafe.Pointer, bytes int) []*cl.Event
+	memCpy, memCpyDtoH, memCpyHtoD func(dst, src unsafe.Pointer, bytes int)
 )
 
 // Internal: enables slices on GPU. Called upon opencl init.
 func EnableGPU(free, freeHost func(unsafe.Pointer),
-	cpy, cpyDtoH, cpyHtoD func(dst, src unsafe.Pointer, bytes int) []*cl.Event) {
+	cpy, cpyDtoH, cpyHtoD func(dst, src unsafe.Pointer, bytes int)) {
 	memFree = free
 	memFreeHost = freeHost
 	memCpy = cpy
@@ -85,13 +83,8 @@ func SliceFromPtrs(size [3]int, memType int8, ptrs []unsafe.Pointer) *Slice {
 	s := new(Slice)
 	s.ptrs = make([]unsafe.Pointer, nComp)
 	s.size = size
-	s.event = make([]*cl.Event, nComp)
-	s.rdEvent = make([]*SliceEventMap, nComp)
 	for c := range ptrs {
 		s.ptrs[c] = ptrs[c]
-		s.event[c] = nil
-		s.rdEvent[c] = new(SliceEventMap)
-		s.rdEvent[c].Init()
 	}
 	s.memType = memType
 	return s
@@ -180,9 +173,6 @@ func (s *Slice) Comp(i int) *Slice {
 	sl.ptrs[0] = s.ptrs[i]
 	sl.size = s.size
 	sl.memType = s.memType
-	sl.event = []*cl.Event{s.event[i]}
-	sl.rdEvent = make([]*SliceEventMap, 1)
-	sl.rdEvent[0] = s.rdEvent[i]
 	return sl
 }
 
@@ -222,83 +212,6 @@ func (s *Slice) HostCopy() *Slice {
 	return cpy
 }
 
-//Associate a list of events to the slice
-func (s *Slice) SetEvents(events []*cl.Event) {
-	if s.NComp() != len(events) {
-		log.Panic("size of event list does not match number of components in slice")
-	}
-	s.event = make([]*cl.Event, len(events))
-	for idx, event := range events {
-		s.event[idx] = event
-		s.rdEvent[idx].Lock()
-		s.rdEvent[idx].ReadEvents = make(map[*cl.Event]int8)
-		s.rdEvent[idx].Unlock()
-	}
-}
-
-// Associate a cl.Event to the slice (for events that are writing into slice)
-func (s *Slice) SetEvent(index int, event *cl.Event) {
-	s.event[index] = event
-	s.rdEvent[index].Lock()
-	s.rdEvent[index].ReadEvents = make(map[*cl.Event]int8)
-	s.rdEvent[index].Unlock()
-}
-
-// Returns cl.Event associated with the slice (for events that are writing into slice)
-func (s *Slice) GetEvent(index int) *cl.Event {
-	return s.event[index]
-}
-
-// Sets the rdEvent of the slice
-func (s *Slice) SetReadEvents(index int, eventList []*cl.Event) {
-	s.rdEvent[index].Lock()
-	s.rdEvent[index].ReadEvents = make(map[*cl.Event]int8)
-	for _, e := range eventList {
-		s.rdEvent[index].ReadEvents[e] = 1
-	}
-	s.rdEvent[index].Unlock()
-}
-
-// Insert a cl.Event to rdEvent of the slice
-func (s *Slice) InsertReadEvent(index int, event *cl.Event) {
-	s.rdEvent[index].Lock()
-	if _, ok := s.rdEvent[index].ReadEvents[event]; ok == false {
-		s.rdEvent[index].ReadEvents[event] = 1
-	}
-	s.rdEvent[index].Unlock()
-}
-
-// Remove a cl.Event from rdEvent of the slice
-func (s *Slice) RemoveReadEvent(index int, event *cl.Event) {
-	s.rdEvent[index].Lock()
-	if _, ok := s.rdEvent[index].ReadEvents[event]; ok {
-		delete(s.rdEvent[index].ReadEvents, event)
-	}
-	s.rdEvent[index].Unlock()
-}
-
-// Returns rdEvent of the slice as a slice
-func (s *Slice) GetReadEvents(index int) []*cl.Event {
-	s.rdEvent[index].RLock()
-	evList := []*cl.Event{}
-	for k, _ := range s.rdEvent[index].ReadEvents {
-		if k != nil {
-			evList = append(evList, k)
-		}
-	}
-	s.rdEvent[index].RUnlock()
-	return evList
-}
-
-// Returns all events of the slice (for syncing kernels writing to the slice)
-func (s *Slice) GetAllEvents(index int) []*cl.Event {
-	eventList := s.GetReadEvents(index)
-	if s.event[index] != nil {
-		eventList = append(eventList, s.event[index])
-	}
-	return eventList
-}
-
 func Copy(dst, src *Slice) {
 	if dst.NComp() != src.NComp() || dst.Len() != src.Len() {
 		panic(fmt.Sprintf("slice copy: illegal sizes: dst: %vx%v, src: %vx%v", dst.NComp(), dst.Len(), src.NComp(), src.Len()))
@@ -310,19 +223,15 @@ func Copy(dst, src *Slice) {
 		panic("bug")
 	case d && s:
 		for c := 0; c < dst.NComp(); c++ {
-			eventsList := memCpy(dst.DevPtr(c), src.DevPtr(c), bytes)
-			dst.SetEvent(c, eventsList[0])
-			src.InsertReadEvent(c, eventsList[1])
+			memCpy(dst.DevPtr(c), src.DevPtr(c), bytes)
 		}
 	case s && !d:
 		for c := 0; c < dst.NComp(); c++ {
-			eventsList := memCpyDtoH(dst.ptrs[c], src.DevPtr(c), bytes)
-			src.InsertReadEvent(c, eventsList[0])
+			memCpyDtoH(dst.ptrs[c], src.DevPtr(c), bytes)
 		}
 	case !s && d:
 		for c := 0; c < dst.NComp(); c++ {
-			eventsList := memCpyHtoD(dst.DevPtr(c), src.ptrs[c], bytes)
-			dst.SetEvent(c, eventsList[0])
+			memCpyHtoD(dst.DevPtr(c), src.ptrs[c], bytes)
 		}
 	case !d && !s:
 		dst, src := dst.Host(), src.Host()
@@ -412,10 +321,6 @@ func (s *Slice) checkComp(comp int) {
 
 func (s *Slice) Index(ix, iy, iz int) int {
 	return Index(s.Size(), ix, iy, iz)
-}
-
-func (sem *SliceEventMap) Init() {
-	sem.ReadEvents = make(map[*cl.Event]int8)
 }
 
 func Index(size [3]int, ix, iy, iz int) int {

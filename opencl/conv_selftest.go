@@ -5,13 +5,14 @@ package opencl
 import (
 	"math/rand"
 
+	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
 	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // Compares FFT-accelerated convolution against brute-force on sparse data.
 // This is not really needed but very quickly uncovers newly introduced bugs.
-func testConvolution(c *DemagConvolution, PBC [3]int, realKern [3][3]*data.Slice) {
+func testConvolution(c *DemagConvolution, PBC [3]int, realKern [3][3]*data.Slice, queue *cl.CommandQueue, events []*cl.Event) {
 	if PBC != [3]int{0, 0, 0} {
 		// the brute-force method does not work for pbc.
 		util.Log("skipping convolution self-test for PBC")
@@ -29,7 +30,7 @@ func testConvolution(c *DemagConvolution, PBC [3]int, realKern [3][3]*data.Slice
 	Memset(Msat, 1)
 
 	vol := data.NilSlice(1, c.inputSize)
-	c.Exec(gpu, gpu, vol, ToMSlice(Msat))
+	c.Exec(gpu, gpu, vol, ToMSlice(Msat), queue, events)
 
 	output := gpu.HostCopy()
 
@@ -58,9 +59,10 @@ const CONV_TOLERANCE = 1e-6
 // Input better be sparse.
 // A nil kernel element is interpreted as all 0s.
 // Kernel indices are destination index, source index.
-// 	(O0)   (K01 K02 K03)   (I0)
-// 	(O1) = (K11 K12 K13) * (I1)
-// 	(O2)   (K21 K22 K23)   (I2)
+//
+//	(O0)   (K01 K02 K03)   (I0)
+//	(O1) = (K11 K12 K13) * (I1)
+//	(O2)   (K21 K22 K23)   (I2)
 func bruteConv(in, out [3][][][]float32, kernel [3][3]*data.Slice) {
 
 	var kern [3][3][][][]float32

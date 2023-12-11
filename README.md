@@ -37,6 +37,7 @@ Consider downloading a pre-compiled binary. If you want to compile nevertheless:
         - Ubuntu 22.04 with Nvidia RTX 2080 Super (nvidia-dkms-515 driver from nvidia repo)
         - Ubuntu 20.04 with Nvidia GTX 660 Ti (nvidia-dkms-418 driver from nvidia repo)
         - Ubuntu 20.04 with AMD RX 6500 XT (rocm-dkms driver from rocm repo)
+        - Ubuntu 22.04 with AMD RX 6500 XT (rocm-dkms driver from rocm repo)
         - Windows 11 using MSYS2 with Nvidia MX150 (Nvidia 416.xx to 512.xx drivers)
         - Windows 11 using MSYS2 with Intel UHD Graphics 620 (Intel 26.xx to 30.xx drivers)
   * install TDM GCC compiler is gcc from msys2 is not compatible
@@ -44,7 +45,6 @@ Consider downloading a pre-compiled binary. If you want to compile nevertheless:
   * install Go 
     - https://golang.org/dl/
     - Ensure the directory containing the go binary is in your $PATH
-    - set $GOPATH
   * if you have git installed:
     - get the source from GitHub.com by running:
         - `git clone https://github.com/seeder-research/uMagNUS`
@@ -59,8 +59,10 @@ Consider downloading a pre-compiled binary. If you want to compile nevertheless:
   * optional: install gnuplot if you want pretty graphs
     - Ubuntu: `sudo apt-get install gnuplot`
 
-Your binary is now at `$GOPATH/bin/uMagNUS`
-The binary supporting double-precision is now at `$GOPATH/bin/uMagNUS64`
+Your binary is now at `$GOPATH/bin/uMagNUS` (or `$./gopath/bin/uMagNUS` if
+GOPATH is not set)
+The binary supporting double-precision is now at `GOPATH/bin/uMagNUS64` (or
+`./gopath/bin/uMagNUS64` if GOPATH is not set)
 
 To do all at once on Ubuntu:
 ```
@@ -138,4 +140,5 @@ are additional dependencies that need to be built before uMagNUS can be run.
 Contributing
 ------------
 
-Contributions are gratefully accepted. To contribute code, fork the repo on github and send a pull request.
+Contributions are gratefully accepted. To contribute code, fork the repo on
+github and send a pull request.

@@ -130,6 +130,21 @@ func main() {
 		if buildOpts != "" {
 			buildOpts = buildOpts + " "
 		}
+		currPlatform := GPUList[gpuId].Device.Platform()
+		currPlatformInfo := fmt.Sprint(currPlatform.Name(), " ", currPlatform.Vendor(), " ", currPlatform.Profile(), " ", currPlatform.Version())
+		if strings.Contains(strings.ToUpper(currPlatformInfo), "NVIDIA") {
+			buildOpts += string(" -D__NVCODE__ ")
+		} else {
+			if strings.EqualFold(DevName, "gfx908") {
+				buildOpts += fmt.Sprint(buildOpts, " -D__AMDGPU_FP32ATOMICS_1__ ")
+			}
+			if strings.EqualFold(DevName, "gfx90a") {
+				buildOpts += fmt.Sprint(buildOpts, " -D__AMDGPU_FP32ATOMICS_1__ -D__AMDGPU_FP64ATOMICS_0__ ")
+			}
+			if strings.EqualFold(DevName, "gfx940") {
+				buildOpts += fmt.Sprint(buildOpts, " -D__AMDGPU_FP32ATOMICS_0__ -D__AMDGPU_FP64ATOMICS_0__ ")
+			}
+		}
 		buildOpts = buildOpts + generateLinkerOpts()
 		if *Flag_verbose > 1 {
 			fmt.Println("        using options: ", buildOpts)

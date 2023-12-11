@@ -2,9 +2,8 @@ package opencl
 
 import (
 	"fmt"
-
-	"github.com/seeder-research/uMagNUS/cl"
-	util "github.com/seeder-research/uMagNUS/util"
+	//	cl "github.com/seeder-research/uMagNUS/cl"
+	//	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // OpenCL Launch parameters.
@@ -60,6 +59,7 @@ func UpdateLaunchConfigs(c []int) {
 	}
 }
 
+/*
 // special type for data.Slice and MSlice
 type GSlice interface {
 	NComp() int
@@ -96,7 +96,7 @@ func InsertEventIntoGSlices(e *cl.Event, slist []GSlice) {
 		}
 	}
 }
-
+*/
 // integer minimum
 func iMin(a, b int) int {
 	if a < b {

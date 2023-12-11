@@ -219,9 +219,10 @@ const templText = `package opencl{{.TType}}
 
 import(
 	"unsafe"
-	"github.com/seeder-research/uMagNUS/cl"
-	"github.com/seeder-research/uMagNUS/timer"
+	cl "github.com/seeder-research/uMagNUS/cl"
+	timer "github.com/seeder-research/uMagNUS/timer"
 	"sync"
+	"fmt"
 )
 
 
@@ -241,9 +242,11 @@ func init(){
 	{{end}} }
 
 // Wrapper for {{.Name}} OpenCL kernel, asynchronous.
-func k_{{.Name}}_async ( {{range $i, $t := .ArgT}}{{index $.ArgN $i}} {{$t}}, {{end}} cfg *config, events []*cl.Event) *cl.Event {
+func k_{{.Name}}_async ( {{range $i, $t := .ArgT}}{{index $.ArgN $i}} {{$t}}, {{end}} cfg *config, queue *cl.CommandQueue, events []*cl.Event) *cl.Event {
 	if Synchronous{ // debug
-		ClCmdQueue.Finish()
+		if err := queue.Finish(); err != nil {
+			fmt.Printf("failed to wait for queue to finish in beginning of {{.Name}}: %+v", err)
+		}
 		timer.Start("{{.Name}}")
 	}
 
@@ -257,10 +260,12 @@ func k_{{.Name}}_async ( {{range $i, $t := .ArgT}}{{index $.ArgN $i}} {{$t}}, {{
 	{{end}}
 
 //	args := {{.Name}}_args.argptr[:]
-	event := LaunchKernel("{{.Name}}", cfg.Grid, cfg.Block, events)
+	event := LaunchKernel("{{.Name}}", cfg.Grid, cfg.Block, queue, events)
 
 	if Synchronous{ // debug
-		ClCmdQueue.Finish()
+		if err := queue.Finish(); err != nil {
+			fmt.Printf("failed to wait for queue to finish at end of {{.Name}}: %+v", err)
+		}
 		timer.Stop("{{.Name}}")
 	}
 

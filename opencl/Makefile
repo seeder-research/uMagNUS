@@ -12,7 +12,7 @@ BUILD_TARGETS = all ocl2go wrappers clean realclean
 .PHONY: $(BUILD_TARGETS)
 
 
-all: ocl2go wrappers opencl2go
+all: opencl2go wrappers
 	mv RNGthreefry*_wrapper.go oclRAND/.
 	mv RNGxorwow*_wrapper.go oclRAND/.
 	sed -i "s/package opencl/package oclRAND/g" oclRAND/RNGthreefry*wrapper.go
@@ -33,7 +33,7 @@ opencl2go: ocl2go
 
 
 %_wrapper.go: ../kernels_src/cl/%.cl ocl2go
-	../ocl2go/ocl2go -outdir="$(GOPATH)/src/github.com/seeder-research/uMagNUS/opencl" $< > /dev/null
+	../ocl2go/ocl2go -outdir="." $< > /dev/null
 	gofmt -w -s -l ./$@ > /dev/null
 
 

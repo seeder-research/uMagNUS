@@ -4,6 +4,12 @@
 #if defined(__REAL_IS_DOUBLE__)
 
 static inline void atomicAdd_r(volatile __global double* addr, double val) {
+#if defined(__NVCODE__)
+    double prev;
+    asm volatile("atom.global.add.f64 %0, [%1], %2;" : "=d"(prev) : "l"(addr), "d"(val) : "memory");
+#elif defined(__AMDGPU_FP64ATOMICS_0__)
+    __asm__ volatile ("flat_atomic_add_fp64 %0, %1" : : "v"(addr), "v"(val));
+#else
     union{
         unsigned long u64;
         double f64;
@@ -14,6 +20,7 @@ static inline void atomicAdd_r(volatile __global double* addr, double val) {
         current.u64 = atom_cmpxchg( (volatile __global unsigned long *) addr,
             expected.u64, next.u64);
     } while (current.u64 != expected.u64);
+#endif
 }
 
 static inline void atomicMax_r(volatile __global double* addr, double val) {
@@ -23,6 +30,15 @@ static inline void atomicMax_r(volatile __global double* addr, double val) {
 #else
 
 static inline void atomicAdd_r(volatile __global float* addr, float val) {
+#if defined(__NVCODE__)
+    float prev;
+    asm volatile("atom.global.add.f32 %0, [%1], %2;" : "=f"(prev) : "l"(addr), "f"(val) : "memory");
+#elif defined(__AMDGPU_FP32ATOMICS_0__)
+    __asm__ volatile ("flat_atomic_add_fp32 %0, %1" : : "v"(addr), "v"(val));
+#elif defined(__AMDGPU_FP32ATOMICS_1__)
+    float prev;
+    __asm__ volatile ("global_atomic_add_fp32 %0, %1, %2" : "=v"(prev) : "v"(addr), "s"(val));
+#else
     union{
         unsigned int u32;
         float f32;
@@ -33,6 +49,7 @@ static inline void atomicAdd_r(volatile __global float* addr, float val) {
         current.u32 = atomic_cmpxchg( (volatile __global unsigned int *) addr,
             expected.u32, next.u32);
     } while (current.u32 != expected.u32);
+#endif
 }
 
 static inline void atomicMax_r(volatile __global float* addr, float val) {

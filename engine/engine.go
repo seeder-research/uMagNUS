@@ -7,7 +7,6 @@ param: region-dependent parameter (always input)
 field: fully space-dependent field
 
 TODO: godoc everything
-
 */
 package engine
 
@@ -21,7 +20,7 @@ import (
 	timer "github.com/seeder-research/uMagNUS/timer"
 )
 
-const VERSION = "uMagNUS 2.3.0"
+const VERSION = "uMagNUS 2.4.0"
 
 var UNAME = VERSION + " " + runtime.GOOS + "_" + runtime.GOARCH + " " + runtime.Version() + " (" + runtime.Compiler + ")"
 

@@ -23,5 +23,10 @@ func MemAlloc(bytes int) *cl.MemObject {
 func GPUCopy(in *data.Slice) *data.Slice {
 	s := NewSlice(in.NComp(), in.Size())
 	data.Copy(s, in)
+	if Synchronous {
+		if err := ClCmdQueue[0].Finish(); err != nil {
+			log.Printf("failed to wait for queue to finish in gpucopy: %+v \n", err)
+		}
+	}
 	return s
 }

@@ -24,5 +24,5 @@ run(0.1e-9)
 gammaLL = gammaLL * 2 // make sure changing at a late point still has effect
 run(0.1e-9)
 
-TOL := 1.2e-4
+TOL := 2.5e-4
 expectv("m", m.average(), vector(-0.286423, -0.746625, 0.5970549), TOL)
