@@ -64,16 +64,3 @@ func SetKernelArgWrapper(kernname string, index int, arg interface{}) {
 		}
 	}
 }
-
-func WaitAllQueuesToFinish() error {
-	var err error
-	var errOut error
-	errOut = nil
-	for _, q := range ClCmdQueue {
-		if err = q.Finish(); err != nil {
-			fmt.Printf("failed to wait for queue to finish: %+v \n", err)
-			errOut = err
-		}
-	}
-	return errOut
-}

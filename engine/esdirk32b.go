@@ -1,6 +1,9 @@
 package engine
 
 import (
+	"fmt"
+
+	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
 )
@@ -12,17 +15,31 @@ import (
 // with explicit first stage," BIT Numerical Mathematics vol. 44,
 // 489-502, 2004.
 // Advance using y{n+1}
-// 	k1 = f(tn, yn)
-// 	k2 = f(tn + 0.5857864376 h, yn + 0.2928932188 h k1 + 0.2928932188 h k2)
-// 	k3 = f(tn + h, yn + 0.353553390567523 h k1 + 0.353553390632477 h k2 + 0.2928932188 h k3)
-// 	y{n+1}  = yn + 0.353553390567523 h k1 + 0.353553390632477 h k2 + 0.2928932188 h k3 // 2nd order
-// 	k4 = f(tn + h, yn + 0.215482203122508 h k1 + 0.686886723913539 h k2 - 0.195262145836047 h k3 + 0.2928932188 h k4)
-// 	z{n+1} = yn + 0.215482203122508 h k1 + 0.686886723913539 h k2 - 0.195262145836047 h k3 + 0.2928932188 h k4 // 3rd order
+//
+//	k1 = f(tn, yn)
+//	k2 = f(tn + 0.5857864376 h, yn + 0.2928932188 h k1 + 0.2928932188 h k2)
+//	k3 = f(tn + h, yn + 0.353553390567523 h k1 + 0.353553390632477 h k2 + 0.2928932188 h k3)
+//	y{n+1}  = yn + 0.353553390567523 h k1 + 0.353553390632477 h k2 + 0.2928932188 h k3 // 2nd order
+//	k4 = f(tn + h, yn + 0.215482203122508 h k1 + 0.686886723913539 h k2 - 0.195262145836047 h k3 + 0.2928932188 h k4)
+//	z{n+1} = yn + 0.215482203122508 h k1 + 0.686886723913539 h k2 - 0.195262145836047 h k3 + 0.2928932188 h k4 // 3rd order
 type ESDIRK32B struct {
 	k1 *data.Slice // torque at end of step is kept for beginning of next step
 }
 
 func (esdirk *ESDIRK32B) Step() {
+	// sync in the beginning
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting for all queues at start of esdirk32a.step(): %+v \n", err)
+	}
+
+	// Get queues
+	seqQueue := opencl.ClCmdQueue[0]
+	q1idx, q2idx, q3idx := opencl.CheckoutQueue(), opencl.CheckoutQueue(), opencl.CheckoutQueue()
+	defer opencl.CheckinQueue(q1idx)
+	defer opencl.CheckinQueue(q2idx)
+	defer opencl.CheckinQueue(q3idx)
+	queues := []*cl.CommandQueue{opencl.ClCmdQueue[q1idx], opencl.ClCmdQueue[q2idx], opencl.ClCmdQueue[q3idx]}
+
 	m := M.Buffer()
 	size := m.Size()
 
@@ -51,6 +68,7 @@ func (esdirk *ESDIRK32B) Step() {
 	m0 := opencl.Buffer(3, size)
 	defer opencl.Recycle(m0)
 	data.Copy(m0, m)
+	opencl.SyncQueues(queues, []*cl.CommandQueue{seqQueue})
 
 	k2, k3, k4 := opencl.Buffer(3, size), opencl.Buffer(3, size), opencl.Buffer(3, size)
 	defer opencl.Recycle(k2)
@@ -63,7 +81,8 @@ func (esdirk *ESDIRK32B) Step() {
 
 	// stage 2
 	Time = t0 + (0.5857864376)*Dt_si
-	opencl.Madd2(m, m0, esdirk.k1, 1, (0.2928932188)*h) // m{try} = m*1 + k1*0.2928932188
+	opencl.Madd2(m, m0, esdirk.k1, 1, (0.2928932188)*h, queues, nil) // m{try} = m*1 + k1*0.2928932188
+	opencl.SyncQueues([]*cl.CommandQueue{seqQueue}, queues)
 	M.normalize()
 	m_ := opencl.Buffer(3, size)
 	defer opencl.Recycle(m_)
@@ -73,7 +92,9 @@ func (esdirk *ESDIRK32B) Step() {
 
 	// stage 3
 	Time = t0 + Dt_si
-	opencl.Madd3(m, m0, esdirk.k1, k2, 1, (0.353553390567523)*h, (0.353553390632477)*h) // m = m0*1 + k1*0.353553390567523 + k2*0.353553390632477
+	opencl.Madd3(m, m0, esdirk.k1, k2, 1, (0.353553390567523)*h, (0.353553390632477)*h, queues, nil) // m = m0*1 + k1*0.353553390567523 + k2*0.353553390632477
+	// sync queues with seqQueue
+	opencl.SyncQueues([]*cl.CommandQueue{seqQueue}, queues)
 	M.normalize()
 	data.Copy(m_, m)
 	data.Copy(k3, k2)
@@ -81,22 +102,26 @@ func (esdirk *ESDIRK32B) Step() {
 
 	// stage 4 (for estimating error)
 	Time = t0 + Dt_si
-	opencl.Madd4(m, m0, esdirk.k1, k2, k3, 1, (0.215482203122508)*h, (0.686886723913539)*h, (-0.195262145836047)*h) // m = m0*1 + k1*0.215482203122508 + k2*0.686886723913539- k3*0.195262145836047
+	opencl.Madd4(m, m0, esdirk.k1, k2, k3, 1, (0.215482203122508)*h, (0.686886723913539)*h, (-0.195262145836047)*h, queues, nil) // m = m0*1 + k1*0.215482203122508 + k2*0.686886723913539- k3*0.195262145836047
+	// sync queues with seqQueue
+	opencl.SyncQueues([]*cl.CommandQueue{seqQueue}, queues)
 	M.normalize()
 	data.Copy(m_, m)
 	data.Copy(k4, k3)
 	_, _, _ = fixedPtIterations((0.2928932188)*h, m_, k4)
 
 	// 2nd order solution
-	opencl.Madd3(m_, esdirk.k1, k2, k3, (0.353553390567523), (0.353553390632477), (0.2928932188)) // m = m0*1 + k1*0.353553390567523 + k2*0.353553390632477 + k3*0.2928932188
-	opencl.Madd2(m, m0, m_, 1, h)
+	opencl.Madd3(m_, esdirk.k1, k2, k3, (0.353553390567523), (0.353553390632477), (0.2928932188), queues, nil) // m = m0*1 + k1*0.353553390567523 + k2*0.353553390632477 + k3*0.2928932188
+	opencl.Madd2(m, m0, m_, 1, h, queues, nil)
+	// sync queues with seqQueue
+	opencl.SyncQueues([]*cl.CommandQueue{seqQueue}, queues)
 	M.normalize()
 
 	// error estimate
 	Time = t0 + Dt_si
 	Err := k2 // re-use k2 as error
 	// difference of 3rd and 2nd order torque without explicitly storing them first
-	opencl.Madd4(Err, esdirk.k1, k2, k3, k4, (-0.138071187445015), (0.333333333281062), (-0.488155364636047), (-0.2928932188))
+	opencl.Madd4(Err, esdirk.k1, k2, k3, k4, (-0.138071187445015), (0.333333333281062), (-0.488155364636047), (-0.2928932188), queues, nil)
 
 	gustafssonController(Err, m_, esdirk.k1, m0, t0, float64(h), esdirk.AdvOrder(), true)
 }

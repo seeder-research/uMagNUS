@@ -1,12 +1,12 @@
 CC := gcc
 CFLAGS := -fPIC -Wall -O4
-LDFLAGS := -shared
+LDFLAGS := -shared -L /lib/x86_64-linux-gnu
 LIBPREFIX := 
 LIBSUFFIX := 
 LIBLINKS := 
 LIB64LINKS := 
-VER_MAJOR := 2
-VER_MINOR := 4
+VER_MAJOR := 3
+VER_MINOR := 0
 VER_PATCH := 0
 MINOR_VER := $(VER_MAJOR).$(VER_MINOR)
 FULL_VER := $(MINOR_VER).$(VER_PATCH)

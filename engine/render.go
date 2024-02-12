@@ -1,12 +1,14 @@
 package engine
 
 import (
+	"fmt"
 	"image"
 	"image/jpeg"
 	"math"
 	"net/http"
 	"sync"
 
+	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
 	draw "github.com/seeder-research/uMagNUS/draw"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
@@ -88,14 +90,29 @@ func (ren *render) download() {
 			ren.imgBuf = Download(quant) // fallback (no zoom)
 			return
 		}
-		// make sure buffers are there (in CUDA context)
+		// make sure buffers are there (in OpenCL context)
 		if ren.rescaleBuf.Size() != size {
 			ren.rescaleBuf.Free()
 			ren.rescaleBuf = opencl.NewSlice(1, size)
 		}
+
+		// checkout queues for executing kernel
+		seqQueue := opencl.ClCmdQueue[0]
+		q1idx, q2idx, q3idx := opencl.CheckoutQueue(), opencl.CheckoutQueue(), opencl.CheckoutQueue()
+		defer opencl.CheckinQueue(q1idx)
+		defer opencl.CheckinQueue(q2idx)
+		defer opencl.CheckinQueue(q3idx)
+		queues := []*cl.CommandQueue{opencl.ClCmdQueue[q1idx], opencl.ClCmdQueue[q2idx], opencl.ClCmdQueue[q3idx]}
+
 		for c := 0; c < quant.NComp(); c++ {
-			opencl.Resize(ren.rescaleBuf, buf.Comp(c), renderLayer)
+			opencl.Resize(ren.rescaleBuf, buf.Comp(c), renderLayer, queues[c], nil)
+			opencl.SyncQueues([]*cl.CommandQueue{seqQueue}, []*cl.CommandQueue{queues[c]})
 			data.Copy(ren.imgBuf.Comp(c), ren.rescaleBuf)
+		}
+
+		// sync before returning
+		if err := seqQueue.Finish(); err != nil {
+			fmt.Printf("error wait for queue to finish in render.download: %+v \n", err)
 		}
 	})
 }

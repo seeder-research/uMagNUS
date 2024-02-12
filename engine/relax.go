@@ -8,7 +8,7 @@ import (
 	opencl "github.com/seeder-research/uMagNUS/opencl"
 )
 
-//Stopping relax Maxtorque in T. The user can check MaxTorque for sane values (e.g. 1e-3).
+// Stopping relax Maxtorque in T. The user can check MaxTorque for sane values (e.g. 1e-3).
 // If set to 0, relax() will stop when the average torque is steady or increasing.
 var RelaxTorqueThreshold float64 = -1.
 
@@ -66,10 +66,12 @@ func Relax() {
 	defer stepper.Free() // purge previous rk.k1 because FSAL will be dead wrong.
 
 	maxTorque := func() float64 {
-		return opencl.MaxVecNorm(solver.k1)
+		seqQueue := opencl.ClCmdQueue[0]
+		return opencl.MaxVecNorm(solver.k1, seqQueue, nil)
 	}
 	avgTorque := func() float32 {
-		return opencl.Dot(solver.k1, solver.k1)
+		seqQueue := opencl.ClCmdQueue[0]
+		return opencl.Dot(solver.k1, solver.k1, seqQueue, nil)
 	}
 
 	if RelaxTorqueThreshold > 0 {

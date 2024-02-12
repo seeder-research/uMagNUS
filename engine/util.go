@@ -103,7 +103,11 @@ func Download(q Quantity) *data.Slice {
 	if buf.CPUAccess() {
 		return buf
 	} else {
-		return buf.HostCopy()
+		tmp := buf.HostCopy()
+		if err := opencl.D2HQueue.Finish(); err != nil {
+			fmt.Printf("error waiting for data transfer queue in download(): %+v \n", err)
+		}
+		return tmp
 	}
 }
 
@@ -181,7 +185,11 @@ func assureGPU(s *data.Slice) *data.Slice {
 	if s.GPUAccess() {
 		return s
 	} else {
-		return opencl.GPUCopy(s)
+		tmp := opencl.GPUCopy(s)
+		if err := opencl.H2DQueue.Finish(); err != nil {
+			fmt.Printf("error waiting for data transfer queue to finish in assuregpu(): %+v \n", err)
+		}
+		return tmp
 	}
 }
 

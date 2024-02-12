@@ -38,6 +38,12 @@ func (q *component) EvalTo(dst *data.Slice) {
 	src := ValueOf(q.parent)
 	defer opencl.Recycle(src)
 	data.Copy(dst, src.Comp(q.comp))
+
+	// sync before returning
+	seqQueue := opencl.ClCmdQueue[0]
+	if err := seqQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for queue to finish in component.evalto: %+v \n", err)
+	}
 }
 
 var compname = map[int]string{0: "x", 1: "y", 2: "z"}

@@ -3,6 +3,9 @@ package engine
 // Mangeto-elastic coupling.
 
 import (
+	"fmt"
+
+	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
 	util "github.com/seeder-research/uMagNUS/util"
@@ -32,6 +35,12 @@ func init() {
 }
 
 func AddMagnetoelasticField(dst *data.Slice) {
+	// sync in the beginning
+	seqQueue := opencl.ClCmdQueue[0]
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting for all queues in addmagnetoelasticfield: %+v \n", err)
+	}
+
 	haveMel := B1.nonZero() || B2.nonZero()
 	if !haveMel {
 		return
@@ -67,10 +76,22 @@ func AddMagnetoelasticField(dst *data.Slice) {
 	opencl.AddMagnetoelasticField(dst, M.Buffer(),
 		Exx, Eyy, Ezz,
 		Exy, Exz, Eyz,
-		b1, b2, ms)
+		b1, b2, ms,
+		seqQueue, nil)
+
+	// sync before returning
+	if err := seqQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for all queues in addmagnetoelasticfield: %+v \n", err)
+	}
 }
 
 func GetMagnetoelasticForceDensity(dst *data.Slice) {
+	// sync in the beginning
+	seqQueue := opencl.ClCmdQueue[0]
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting for all queues in getmagnetoelasticforcedensity: %+v \n", err)
+	}
+
 	haveMel := B1.nonZero() || B2.nonZero()
 	if !haveMel {
 		return
@@ -85,17 +106,31 @@ func GetMagnetoelasticForceDensity(dst *data.Slice) {
 	defer b2.Recycle()
 
 	opencl.GetMagnetoelasticForceDensity(dst, M.Buffer(),
-		b1, b2, M.Mesh())
+		b1, b2, M.Mesh(),
+		seqQueue, nil)
+
+	// sync before returning
+	if err := seqQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for all queues in getmagnetoelasticforcedensity: %+v \n", err)
+	}
 }
 
 func AddMagnetoelasticEnergyDensity(dst *data.Slice) {
+	// sync in the beginning
+	seqQueue := opencl.ClCmdQueue[0]
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting for all queues in addmagnetoelasticenergydensity: %+v \n", err)
+	}
+
 	haveMel := B1.nonZero() || B2.nonZero()
 	if !haveMel {
 		return
 	}
 
-	buf := opencl.Buffer(B_mel.NComp(), B_mel.Mesh().Size())
-	defer opencl.Recycle(buf)
+	buf0 := opencl.Buffer(B_mel.NComp(), B_mel.Mesh().Size())
+	defer opencl.Recycle(buf0)
+	buf1 := opencl.Buffer(B_mel.NComp(), B_mel.Mesh().Size())
+	defer opencl.Recycle(buf1)
 
 	// unnormalized magnetization:
 	Mf := ValueOf(M_full)
@@ -131,21 +166,36 @@ func AddMagnetoelasticEnergyDensity(dst *data.Slice) {
 	zeromel := zeroMel.MSlice()
 	defer zeromel.Recycle()
 
+	// checkout queues
+	q1idx, q2idx := opencl.CheckoutQueue(), opencl.CheckoutQueue()
+	defer opencl.CheckinQueue(q1idx)
+	defer opencl.CheckinQueue(q2idx)
+
 	// 1st
-	opencl.Zero(buf)
-	opencl.AddMagnetoelasticField(buf, M.Buffer(),
+	opencl.Zero(buf0)
+	opencl.SyncQueues([]*cl.CommandQueue{seqQueue}, []*cl.CommandQueue{opencl.ClCmdQueue[q1idx]})
+	opencl.AddMagnetoelasticField(buf0, M.Buffer(),
 		Exx, Eyy, Ezz,
 		Exy, Exz, Eyz,
-		b1, zeromel, ms)
-	opencl.AddDotProduct(dst, -1./2., buf, Mf)
+		b1, zeromel, ms,
+		opencl.ClCmdQueue[q1idx], nil)
+	opencl.AddDotProduct(dst, -1./2., buf0, Mf, opencl.ClCmdQueue[q1idx], nil)
 
 	// 1nd
-	opencl.Zero(buf)
-	opencl.AddMagnetoelasticField(buf, M.Buffer(),
+	opencl.Zero(buf1)
+	opencl.SyncQueues([]*cl.CommandQueue{seqQueue}, []*cl.CommandQueue{opencl.ClCmdQueue[q2idx]})
+	opencl.AddMagnetoelasticField(buf1, M.Buffer(),
 		Exx, Eyy, Ezz,
 		Exy, Exz, Eyz,
-		zeromel, b2, ms)
-	opencl.AddDotProduct(dst, -1./1., buf, Mf)
+		zeromel, b2, ms,
+		opencl.ClCmdQueue[q2idx], nil)
+	opencl.SyncQueues([]*cl.CommandQueue{seqQueue}, []*cl.CommandQueue{opencl.ClCmdQueue[q2idx]})
+	opencl.AddDotProduct(dst, -1./1., buf1, Mf, seqQueue, nil)
+
+	// sync before returning
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting for all queues after addmagnetoelasticenergydensity: %+v \n", err)
+	}
 }
 
 // Returns magneto-ell energy in joules.
@@ -160,5 +210,6 @@ func GetMagnetoelasticEnergy() float64 {
 
 	opencl.Zero(buf)
 	AddMagnetoelasticEnergyDensity(buf)
-	return cellVolume() * float64(opencl.Sum(buf))
+	seqQueue := opencl.ClCmdQueue[0]
+	return cellVolume() * float64(opencl.Sum(buf, seqQueue, nil))
 }

@@ -143,7 +143,8 @@ func setLastErr(err float64) {
 }
 
 func setMaxTorque(τ *data.Slice) {
-	LastTorque = opencl.MaxVecNorm(τ)
+	seqQueue := opencl.ClCmdQueue[0]
+	LastTorque = opencl.MaxVecNorm(τ, seqQueue, nil)
 }
 
 // adapt time step: dt *= corr, but limited to sensible values.

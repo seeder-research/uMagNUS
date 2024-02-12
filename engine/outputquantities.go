@@ -117,6 +117,11 @@ func (q *fieldFunc) Slice() (s *data.Slice, recycle bool) {
 	buf := opencl.Buffer(q.NComp(), q.Mesh().Size())
 	opencl.Zero(buf)
 	q.f(buf)
+	//sync before returning
+	seqQueue := opencl.ClCmdQueue[0]
+	if err := seqQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for queue to finish in fieldfunc.slice(): %+v \n", err)
+	}
 	return buf, true
 }
 
@@ -166,5 +171,11 @@ func (v VectorField) Unit() string             { return UnitOf(v.Quantity) }
 func (v VectorField) HostCopy() *data.Slice {
 	s := ValueOf(v.Quantity)
 	defer opencl.Recycle(s)
-	return s.HostCopy()
+	tmp := s.HostCopy()
+	if s.GPUAccess() {
+		if err := opencl.D2HQueue.Finish(); err != nil {
+			fmt.Printf("error waiting for queue to finish in vectorfield.hostcopy(): %+v \n", err)
+		}
+	}
+	return tmp
 }

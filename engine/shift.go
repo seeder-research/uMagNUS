@@ -1,6 +1,9 @@
 package engine
 
 import (
+	"fmt"
+
+	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
 )
@@ -29,6 +32,10 @@ func GetShiftYPos() float64 { return -TotalYShift }
 
 // shift the simulation window over dx cells in X direction
 func Shift(dx int) {
+	// sync in the beginning
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting for all queues in yshift: %+v \n", err)
+	}
 	TotalShift += float64(dx) * Mesh().CellSize()[X] // needed to re-init geom, regions
 	if ShiftM {
 		shiftMag(M.Buffer(), dx) // TODO: M.shift?
@@ -40,20 +47,43 @@ func Shift(dx int) {
 		geometry.shift(dx)
 	}
 	M.normalize()
+	// sync before returning
+	seqQueue := opencl.ClCmdQueue[0]
+	if err := seqQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for queue to finish after shift: %+v \n", err)
+	}
 }
 
 func shiftMag(m *data.Slice, dx int) {
-	m2 := opencl.Buffer(1, m.Size())
-	defer opencl.Recycle(m2)
+	m2 := make([]*data.Slice, m.NComp())
+	for c := 0; c < m.NComp(); c++ {
+		m2[c] = opencl.Buffer(1, m.Size())
+		defer opencl.Recycle(m2[c])
+	}
+	seqQueue := opencl.ClCmdQueue[0]
+	q1idx, q2idx, q3idx := opencl.CheckoutQueue(), opencl.CheckoutQueue(), opencl.CheckoutQueue()
+	defer opencl.CheckinQueue(q1idx)
+	defer opencl.CheckinQueue(q2idx)
+	defer opencl.CheckinQueue(q3idx)
+	queues := []*cl.CommandQueue{opencl.ClCmdQueue[q1idx], opencl.ClCmdQueue[q2idx], opencl.ClCmdQueue[q3idx]}
 	for c := 0; c < m.NComp(); c++ {
 		comp := m.Comp(c)
-		opencl.ShiftX(m2, comp, dx, float32(ShiftMagL[c]), float32(ShiftMagR[c]))
-		data.Copy(comp, m2) // str0 ?
+		opencl.ShiftX(m2[c], comp, dx, float32(ShiftMagL[c]), float32(ShiftMagR[c]), queues[c], nil)
+		opencl.SyncQueues([]*cl.CommandQueue{seqQueue}, []*cl.CommandQueue{queues[c]})
+		data.Copy(comp, m2[c]) // str0 ?
+	}
+	// sync before returning
+	if err := seqQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for queue to finish after shiftmag: %+v \n", err)
 	}
 }
 
 // shift the simulation window over dy cells in Y direction
 func YShift(dy int) {
+	// sync in the beginning
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting for all queues in yshift: %+v \n", err)
+	}
 	TotalYShift += float64(dy) * Mesh().CellSize()[Y] // needed to re-init geom, regions
 	if ShiftM {
 		shiftMagY(M.Buffer(), dy)
@@ -65,14 +95,33 @@ func YShift(dy int) {
 		geometry.shiftY(dy)
 	}
 	M.normalize()
+	// sync before returning
+	seqQueue := opencl.ClCmdQueue[0]
+	if err := seqQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for queue to finish after yshift: %+v \n", err)
+	}
 }
 
 func shiftMagY(m *data.Slice, dy int) {
-	m2 := opencl.Buffer(1, m.Size())
-	defer opencl.Recycle(m2)
+	m2 := make([]*data.Slice, m.NComp())
+	for c := 0; c < m.NComp(); c++ {
+		m2[c] = opencl.Buffer(1, m.Size())
+		defer opencl.Recycle(m2[c])
+	}
+	seqQueue := opencl.ClCmdQueue[0]
+	q1idx, q2idx, q3idx := opencl.CheckoutQueue(), opencl.CheckoutQueue(), opencl.CheckoutQueue()
+	defer opencl.CheckinQueue(q1idx)
+	defer opencl.CheckinQueue(q2idx)
+	defer opencl.CheckinQueue(q3idx)
+	queues := []*cl.CommandQueue{opencl.ClCmdQueue[q1idx], opencl.ClCmdQueue[q2idx], opencl.ClCmdQueue[q3idx]}
 	for c := 0; c < m.NComp(); c++ {
 		comp := m.Comp(c)
-		opencl.ShiftY(m2, comp, dy, float32(ShiftMagU[c]), float32(ShiftMagD[c]))
-		data.Copy(comp, m2) // str0 ?
+		opencl.ShiftY(m2[c], comp, dy, float32(ShiftMagU[c]), float32(ShiftMagD[c]), queues[c], nil)
+		opencl.SyncQueues([]*cl.CommandQueue{seqQueue}, []*cl.CommandQueue{queues[c]})
+		data.Copy(comp, m2[c]) // str0 ?
+	}
+	// sync before returning
+	if err := seqQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for queue to finish after shiftmagy: %+v \n", err)
 	}
 }

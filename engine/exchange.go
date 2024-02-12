@@ -4,6 +4,7 @@ package engine
 // See also opencl/exchange.cl and opencl/dmi.cl
 
 import (
+	"fmt"
 	"math"
 	"unsafe"
 
@@ -51,14 +52,19 @@ func AddExchangeField(dst *data.Slice) {
 	bulk := !Dbulk.isZero()
 	ms := Msat.MSlice()
 	defer ms.Recycle()
+	// sync in the beginning
+	seqQueue := opencl.ClCmdQueue[0]
+	if err := seqQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for sequential queue to finish in addexchangefield: %+v \n", err)
+	}
 	switch {
 	case !inter && !bulk:
-		opencl.AddExchange(dst, M.Buffer(), lex2.Gpu(), ms, regions.Gpu(), M.Mesh())
+		opencl.AddExchange(dst, M.Buffer(), lex2.Gpu(), ms, regions.Gpu(), M.Mesh(), seqQueue, nil)
 	case inter && !bulk:
 		Refer("mulkers2017")
-		opencl.AddDMI(dst, M.Buffer(), lex2.Gpu(), din2.Gpu(), ms, regions.Gpu(), M.Mesh(), OpenBC) // dmi+exchange
+		opencl.AddDMI(dst, M.Buffer(), lex2.Gpu(), din2.Gpu(), ms, regions.Gpu(), M.Mesh(), OpenBC, seqQueue, nil) // dmi+exchange
 	case bulk && !inter:
-		opencl.AddDMIBulk(dst, M.Buffer(), lex2.Gpu(), dbulk2.Gpu(), ms, regions.Gpu(), M.Mesh(), OpenBC) // dmi+exchange
+		opencl.AddDMIBulk(dst, M.Buffer(), lex2.Gpu(), dbulk2.Gpu(), ms, regions.Gpu(), M.Mesh(), OpenBC, seqQueue, nil) // dmi+exchange
 		// TODO: add ScaleInterDbulk and InterDbulk
 	case inter && bulk:
 		util.Fatal("Cannot have induced and interfacial DMI at the same time")
@@ -67,12 +73,30 @@ func AddExchangeField(dst *data.Slice) {
 
 // Set dst to the average exchange coupling per cell (average of lex2 with all neighbors).
 func exchangeDecode(dst *data.Slice) {
-	opencl.ExchangeDecode(dst, lex2.Gpu(), regions.Gpu(), M.Mesh())
+	// sync in the beginning
+	seqQueue := opencl.ClCmdQueue[0]
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting for all queues in exchangedecode: %+v \n", err)
+	}
+	opencl.ExchangeDecode(dst, lex2.Gpu(), regions.Gpu(), M.Mesh(), seqQueue, nil)
+	// sync before returning
+	if err := seqQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for sequential queue after exchangedecode: %+v \n", err)
+	}
 }
 
 // Set dst to the average dmi coupling per cell (average of din2 with all neighbors).
 func dindDecode(dst *data.Slice) {
-	opencl.ExchangeDecode(dst, din2.Gpu(), regions.Gpu(), M.Mesh())
+	// sync in the beginning
+	seqQueue := opencl.ClCmdQueue[0]
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting for all queues in exchangedecode: %+v \n", err)
+	}
+	opencl.ExchangeDecode(dst, din2.Gpu(), regions.Gpu(), M.Mesh(), seqQueue, nil)
+	// sync before returning
+	if err := seqQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for sequential queue after exchangedecode: %+v \n", err)
+	}
 }
 
 // Returns the current exchange energy in Joules.
@@ -173,6 +197,9 @@ func (p *exchParam) upload() {
 	}
 	lut := p.lut // Copy, to work around Go 1.6 cgo pointer limitations.
 	opencl.MemCpyHtoD(unsafe.Pointer(p.gpu), unsafe.Pointer(&lut[0]), opencl.SIZEOF_FLOAT32*len(p.lut))
+	if err := opencl.H2DQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for h2d queue to finish in exchparam.upload(): %+v \n", err)
+	}
 	p.gpu_ok = true
 }
 

@@ -26,13 +26,15 @@ func NewBytes(Len int) *Bytes {
 	zeroPattern := uint8(0)
 
 	if Synchronous {
-		if err := WaitAllQueuesToFinish(); err != nil {
-			log.Printf("failed to wait for queue to finish in newbytes: %+v \n", err)
+		if err0, err1, err2 := WaitAllQueuesToFinish(), H2DQueue.Finish(), D2HQueue.Finish(); (err0 != nil) || (err1 != nil) || (err2 != nil) {
+			log.Printf("failed to wait for queue to finish in newbytes 0: %+v \n", err0)
+			log.Printf("failed to wait for queue to finish in newbytes 1: %+v \n", err1)
+			log.Printf("failed to wait for queue to finish in newbytes 2: %+v \n", err2)
 		}
 	}
 
 	var event *cl.Event
-	event, err = ClCmdQueue[0].EnqueueFillBuffer(ptr, unsafe.Pointer(&zeroPattern), 1, 0, Len, nil)
+	event, err = H2DQueue.EnqueueFillBuffer(ptr, unsafe.Pointer(&zeroPattern), 1, 0, Len, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -71,12 +73,14 @@ func (dst *Bytes) Set(index int, value byte) {
 	src := value
 
 	if Synchronous {
-		if err := WaitAllQueuesToFinish(); err != nil {
-			log.Printf("failed to wait for queue to finish in bytes.set: %+v \n", err)
+		if err0, err1, err2 := WaitAllQueuesToFinish(), H2DQueue.Finish(), D2HQueue.Finish(); (err0 != nil) || (err1 != nil) || (err2 != nil) {
+			log.Printf("failed to wait for queue to finish in bytes.set 0: %+v \n", err0)
+			log.Printf("failed to wait for queue to finish in bytes.set 1: %+v \n", err1)
+			log.Printf("failed to wait for queue to finish in bytes.set 2: %+v \n", err2)
 		}
 	}
 
-	event, err := ClCmdQueue[0].EnqueueWriteBuffer((*cl.MemObject)(dst.Ptr), false, index, 1, unsafe.Pointer(&src), nil)
+	event, err := H2DQueue.EnqueueWriteBuffer((*cl.MemObject)(dst.Ptr), false, index, 1, unsafe.Pointer(&src), nil)
 	if err != nil {
 		panic(err)
 	}
@@ -95,12 +99,14 @@ func (src *Bytes) Get(index int) byte {
 	dst := make([]byte, 1)
 
 	if Synchronous {
-		if err := WaitAllQueuesToFinish(); err != nil {
-			log.Printf("failed to wait for queue to finish in bytes.get: %+v \n", err)
+		if err0, err1, err2 := WaitAllQueuesToFinish(), H2DQueue.Finish(), D2HQueue.Finish(); (err0 != nil) || (err1 != nil) || (err2 != nil) {
+			log.Printf("failed to wait for queue to finish in bytes.get 0: %+v \n", err0)
+			log.Printf("failed to wait for queue to finish in bytes.get 1: %+v \n", err1)
+			log.Printf("failed to wait for queue to finish in bytes.get 2: %+v \n", err2)
 		}
 	}
 
-	event, err := ClCmdQueue[0].EnqueueReadBufferByte((*cl.MemObject)(src.Ptr), false, index, dst, nil)
+	event, err := D2HQueue.EnqueueReadBufferByte((*cl.MemObject)(src.Ptr), false, index, dst, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -114,8 +120,10 @@ func (src *Bytes) Get(index int) byte {
 // Frees the GPU memory and disables the slice.
 func (b *Bytes) Free() {
 	if Synchronous {
-		if err := WaitAllQueuesToFinish(); err != nil {
-			log.Printf("failed to wait for queue to finish in bytes.free: %+v \n", err)
+		if err0, err1, err2 := WaitAllQueuesToFinish(), H2DQueue.Finish(), D2HQueue.Finish(); (err0 != nil) || (err1 != nil) || (err2 != nil) {
+			log.Printf("failed to wait for queue to finish in bytes.free 0: %+v \n", err0)
+			log.Printf("failed to wait for queue to finish in bytes.free 1: %+v \n", err1)
+			log.Printf("failed to wait for queue to finish in bytes.free 2: %+v \n", err2)
 		}
 	}
 

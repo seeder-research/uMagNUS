@@ -1,10 +1,12 @@
 package engine
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
 	"time"
 
+	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
 	mag "github.com/seeder-research/uMagNUS/mag"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
@@ -49,17 +51,45 @@ func (b *thermField) UpdateSeed(seedVal *uint64) {
 	} else {
 		b.seed = *seedVal
 	}
-	b.generator.Init(&b.seed, nil)
+	seqQueue := opencl.ClCmdQueue[0]
+	b.generator.Init(&b.seed, seqQueue, nil)
+	// sync before returning
+	if err := seqQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for queue at the end of thermfield.updateseed: %+v \n", err)
+	}
 }
 
 func (b *thermField) AddTo(dst *data.Slice) {
 	if !Temp.isZero() {
+		// sync in the beginning
+		if err := opencl.WaitAllQueuesToFinish(); err != nil {
+			fmt.Printf("error waiting for all queues to finish in thermfield.addto: %+v \n", err)
+		}
 		b.update()
-		opencl.Add(dst, dst, b.noise)
+
+		// checkout queues and execute kernel
+		q1idx, q2idx, q3idx := opencl.CheckoutQueue(), opencl.CheckoutQueue(), opencl.CheckoutQueue()
+		defer opencl.CheckinQueue(q1idx)
+		defer opencl.CheckinQueue(q2idx)
+		defer opencl.CheckinQueue(q3idx)
+		queues := []*cl.CommandQueue{opencl.ClCmdQueue[q1idx], opencl.ClCmdQueue[q2idx], opencl.ClCmdQueue[q3idx]}
+		seqQueue := opencl.ClCmdQueue[0]
+
+		opencl.Add(dst, dst, b.noise, queues, nil)
+
+		opencl.SyncQueues([]*cl.CommandQueue{seqQueue}, queues)
+		if err := seqQueue.Finish(); err != nil {
+			fmt.Printf("error waiting for queue to finish after thermfield.addto: %+v \n", err)
+		}
 	}
 }
 
 func (b *thermField) update() {
+	// sync in the beginning
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting all queues to finish in thermfield.update: %+v \n", err)
+	}
+
 	// we need to fix the time step here because solver will not yet have done it before the first step.
 	// FixDt as an lvalue that sets Dt_si on change might be cleaner.
 	if FixDt != 0 {
@@ -80,6 +110,9 @@ func (b *thermField) update() {
 
 	if Temp.isZero() {
 		opencl.Memset(b.noise, 0, 0, 0)
+		if err := opencl.H2DQueue.Finish(); err != nil {
+			fmt.Printf("error waiting for queue if temp is zero in thermfield.update: %+v \n", err)
+		}
 		b.step = NSteps
 		b.dt = Dt_si
 		return
@@ -90,12 +123,24 @@ func (b *thermField) update() {
 		return
 	}
 
+	// checkout queues and execute kernel
+	q1idx, q2idx, q3idx := opencl.CheckoutQueue(), opencl.CheckoutQueue(), opencl.CheckoutQueue()
+	defer opencl.CheckinQueue(q1idx)
+	defer opencl.CheckinQueue(q2idx)
+	defer opencl.CheckinQueue(q3idx)
+	queues := []*cl.CommandQueue{opencl.ClCmdQueue[q1idx], opencl.ClCmdQueue[q2idx], opencl.ClCmdQueue[q3idx]}
+	seqQueue := opencl.ClCmdQueue[0]
+
 	// after a bad step the timestep is rescaled and the noise should be rescaled accordingly, instead of redrawing the random numbers
 	if NSteps == b.step && Dt_si != b.dt {
 		for c := 0; c < 3; c++ {
-			opencl.Madd2(b.noise.Comp(c), b.noise.Comp(c), b.noise.Comp(c), float32(math.Sqrt(b.dt/Dt_si)), 0.)
+			opencl.Madd2(b.noise.Comp(c), b.noise.Comp(c), b.noise.Comp(c), float32(math.Sqrt(b.dt/Dt_si)), 0., []*cl.CommandQueue{queues[c]}, nil)
 		}
 		b.dt = Dt_si
+		opencl.SyncQueues([]*cl.CommandQueue{seqQueue}, queues)
+		if err := seqQueue.Finish(); err != nil {
+			fmt.Printf("error waiting for madd2 queues in thermfield.update: %+v \n", err)
+		}
 		return
 	}
 
@@ -118,10 +163,13 @@ func (b *thermField) update() {
 	alpha := Alpha.MSlice()
 	defer alpha.Recycle()
 	for i := 0; i < 3; i++ {
-		b.generator.Normal(noise.DevPtr(0), int(N), nil)
-		opencl.SetTemperature(dst.Comp(i), noise, k2_VgammaDt, ms, temp, alpha)
+		b.generator.Normal(noise.DevPtr(0), int(N), queues[i], nil)
+		opencl.SetTemperature(dst.Comp(i), noise, k2_VgammaDt, ms, temp, alpha, queues[i], nil)
 	}
-
+	opencl.SyncQueues([]*cl.CommandQueue{seqQueue}, queues)
+	if err := seqQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for queue after thermfield.update: %+v \n", err)
+	}
 	b.step = NSteps
 	b.dt = Dt_si
 }

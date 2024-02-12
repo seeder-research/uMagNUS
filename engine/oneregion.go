@@ -3,6 +3,7 @@ package engine
 import (
 	"fmt"
 
+	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
 	util "github.com/seeder-research/uMagNUS/util"
@@ -52,10 +53,27 @@ func (q *oneReg) EvalTo(dst *data.Slice) { EvalTo(q, dst) }
 
 // returns a new slice equal to q in the given region, 0 outside.
 func (q *oneReg) Slice() (*data.Slice, bool) {
+	// sync in the beginning
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting for queue to finish in onereg.slice: %+v \n", err)
+	}
+	// checkout queues
+	seqQueue := opencl.ClCmdQueue[0]
+	q1idx, q2idx, q3idx := opencl.CheckoutQueue(), opencl.CheckoutQueue(), opencl.CheckoutQueue()
+	defer opencl.CheckinQueue(q1idx)
+	defer opencl.CheckinQueue(q2idx)
+	defer opencl.CheckinQueue(q3idx)
+	queues := []*cl.CommandQueue{opencl.ClCmdQueue[q1idx], opencl.ClCmdQueue[q2idx], opencl.ClCmdQueue[q3idx]}
+
 	src := ValueOf(q.parent)
 	defer opencl.Recycle(src)
 	out := opencl.Buffer(q.NComp(), q.Mesh().Size())
-	opencl.RegionSelect(out, src, regions.Gpu(), byte(q.region))
+	opencl.RegionSelect(out, src, regions.Gpu(), byte(q.region), queues, nil)
+	// sync before returning
+	opencl.SyncQueues([]*cl.CommandQueue{seqQueue}, queues)
+	if err := seqQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for queue to finish after onereg.slice: %+v \n", err)
+	}
 	return out, true
 }
 

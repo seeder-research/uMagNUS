@@ -72,6 +72,9 @@ func SaveAs(q Quantity, fname string) {
 	defer opencl.Recycle(buffer)
 	info := data.Meta{Time: Time, Name: NameOf(q), Unit: UnitOf(q), CellSize: MeshOf(q).CellSize()}
 	data := buffer.HostCopy() // must be copy (async io)
+	if err := opencl.D2HQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for d2h queue in saveas: %+v \n", err)
+	}
 	queOutput(func() { saveAs_sync(fname, data, info, outputFormat) })
 }
 
@@ -82,6 +85,9 @@ func Snapshot(q Quantity) {
 	s := ValueOf(q)
 	defer opencl.Recycle(s)
 	data := s.HostCopy() // must be copy (asyncio)
+	if err := opencl.D2HQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for d2h queue in snapshot: %+v \n", err)
+	}
 	queOutput(func() { snapshot_sync(fname, data) })
 	autonum[qname]++
 }
@@ -97,6 +103,9 @@ func SnapshotAs(q Quantity, fname string) {
 	s := ValueOf(q)
 	defer opencl.Recycle(s)
 	data := s.HostCopy() // must be copy (asyncio)
+	if err := opencl.D2HQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for d2h queue in snapshotas: %+v \n", err)
+	}
 	queOutput(func() { snapshot_sync(fname, data) })
 }
 

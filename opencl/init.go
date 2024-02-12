@@ -18,33 +18,34 @@ type GPU struct {
 }
 
 var (
-	Version      string                    // OpenCL version
-	DevName      string                    // GPU name
-	TotalMem     int64                     // total GPU memory
-	PlatformInfo string                    // Human-readable OpenCL platform description
-	GPUInfo      string                    // Human-readable GPU description
-	GPUList      []GPU                     // List of GPUs available
-	Synchronous  bool                      // for debug: synchronize command queue at every kernel launch
-	Debug        = false                   // for debug: synchronize command queue after every kernel launch
-	ClPlatforms  []*cl.Platform            // list of platforms available
-	ClPlatform   *cl.Platform              // platform the global OpenCL context is attached to
-	ClDevices    []*cl.Device              // list of devices global OpenCL context may be associated with
-	ClDevice     *cl.Device                // device associated with global OpenCL context
-	ClCtx        *cl.Context               // global OpenCL context
-	ClCmdQueue   []*cl.CommandQueue        // command queues attached to global OpenCL context (0: main sequential queue)
-	NumQueues    = 10                      // number of command queues for concurrent kernel execution
-	D2HQueue     *cl.CommandQueue          // command queue for device to host transfers
-	H2DQueue     *cl.CommandQueue          // command queue for host to device transfers
-	ClProgram    *cl.Program               // handle to program in the global OpenCL context
-	KernList     = map[string]*cl.Kernel{} // Store pointers to all compiled kernels
-	initialized  = false                   // Initial state defaults to false
-	ClCUnits     int                       // Get number of compute units available
-	ClWGSize     []int                     // Get maximum size of work group in each dimension
-	ClPrefWGSz   int                       // Get preferred work group size of device
-	ClMaxWGSize  int                       // Get maximum number of concurrent work-items that can execute simultaneously
-	ClMaxWGNum   int                       // Get maximum number of max-sized work groups that can execute simultaneously
-	ClTotalPE    int                       // Get total number of processing elements available
-	GPUVend      int                       // 1: nvidia, 2: intel, 3: amd, 4: unknown
+	Version       string                    // OpenCL version
+	DevName       string                    // GPU name
+	TotalMem      int64                     // total GPU memory
+	PlatformInfo  string                    // Human-readable OpenCL platform description
+	GPUInfo       string                    // Human-readable GPU description
+	GPUList       []GPU                     // List of GPUs available
+	Synchronous   bool                      // for debug: synchronize command queue at every kernel launch
+	Debug         = false                   // for debug: synchronize command queue after every kernel launch
+	ClPlatforms   []*cl.Platform            // list of platforms available
+	ClPlatform    *cl.Platform              // platform the global OpenCL context is attached to
+	ClDevices     []*cl.Device              // list of devices global OpenCL context may be associated with
+	ClDevice      *cl.Device                // device associated with global OpenCL context
+	ClCtx         *cl.Context               // global OpenCL context
+	ClCmdQueue    []*cl.CommandQueue        // command queues attached to global OpenCL context (0: main sequential queue)
+	NumQueues     = 30                      // number of command queues for concurrent kernel execution
+	QueueChannels chan int                  // channel for indexing into ClCmdQueue
+	D2HQueue      *cl.CommandQueue          // command queue for device to host transfers
+	H2DQueue      *cl.CommandQueue          // command queue for host to device transfers
+	ClProgram     *cl.Program               // handle to program in the global OpenCL context
+	KernList      = map[string]*cl.Kernel{} // Store pointers to all compiled kernels
+	initialized   = false                   // Initial state defaults to false
+	ClCUnits      int                       // Get number of compute units available
+	ClWGSize      []int                     // Get maximum size of work group in each dimension
+	ClPrefWGSz    int                       // Get preferred work group size of device
+	ClMaxWGSize   int                       // Get maximum number of concurrent work-items that can execute simultaneously
+	ClMaxWGNum    int                       // Get maximum number of max-sized work groups that can execute simultaneously
+	ClTotalPE     int                       // Get total number of processing elements available
+	GPUVend       int                       // 1: nvidia, 2: intel, 3: amd, 4: unknown
 )
 
 // Locks to an OS thread and initializes CUDA for that thread.
@@ -144,6 +145,7 @@ func Init(gpu int) {
 	}
 
 	// Create opencl command queues on selected device
+	ClCmdQueue = make([]*cl.CommandQueue, NumQueues)
 	for idx := 0; idx < NumQueues; idx++ {
 		ClCmdQueue[idx], err = context.CreateCommandQueue(ClDevice, 0)
 		if err != nil {
@@ -161,6 +163,7 @@ func Init(gpu int) {
 		fmt.Printf("CreateCommandQueue for D2H failed: %+v \n", err)
 		return
 	}
+	InitQueueChannels(NumQueues)
 
 	// Create opencl program on selected opencl device
 	var program *cl.Program

@@ -23,3 +23,44 @@ func SyncQueues(dst, src []*cl.CommandQueue) {
 		}
 	}
 }
+
+func WaitAllQueuesToFinish() error {
+	var err error
+	var errOut error
+	errOut = nil
+	for _, q := range ClCmdQueue {
+		if err = q.Finish(); err != nil {
+			fmt.Printf("failed to wait for queue to finish: %+v \n", err)
+			errOut = err
+		}
+	}
+	return errOut
+}
+
+func CheckoutQueue() int {
+	q := <-QueueChannels
+	return q
+}
+
+func CheckinQueue(idx int) {
+	QueueChannels <- idx
+}
+
+func ExpandQueueList() {
+	q, err := ClCtx.CreateCommandQueue(ClDevice, 0)
+	if err != nil {
+		fmt.Printf("CreateCommandQueue failed: %+v \n", err)
+		return
+	}
+	ClCmdQueue = append(ClCmdQueue, q)
+	InitQueueChannels(NumQueues)
+	NumQueues++
+}
+
+func InitQueueChannels(n int) {
+	newChan := make(chan int, n-1)
+	for i := 1; i < n; i++ {
+		newChan <- i
+	}
+	QueueChannels = newChan
+}

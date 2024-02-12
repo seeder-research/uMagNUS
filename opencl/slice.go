@@ -205,6 +205,7 @@ func GetElem(s *data.Slice, comp int, index int) float32 {
 	if err != nil {
 		fmt.Printf("EnqueueReadBuffer failed: %+v \n", err)
 	}
+	SyncQueues([]*cl.CommandQueue{ClCmdQueue[0]}, []*cl.CommandQueue{D2HQueue})
 	// Must sync
 	if err = cl.WaitForEvents([](*cl.Event){event}); err != nil {
 		fmt.Printf("WaitForEvents in GetElem failed: %+v \n", err)

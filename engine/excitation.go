@@ -1,9 +1,11 @@
 package engine
 
 import (
+	"fmt"
 	"math"
 	"reflect"
 
+	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
 	script "github.com/seeder-research/uMagNUS/script"
@@ -39,16 +41,36 @@ func (p *Excitation) MSlice() opencl.MSlice {
 }
 
 func (e *Excitation) AddTo(dst *data.Slice) {
-	if !e.perRegion.isZero() {
-		opencl.RegionAddV(dst, e.perRegion.gpuLUT(), regions.Gpu())
+	// sync in the beginning
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting for queues in excitation.addto(): %+v \n", err)
 	}
+	// checkout queues
+	q1idx, q2idx, q3idx := opencl.CheckoutQueue(), opencl.CheckoutQueue(), opencl.CheckoutQueue()
+	defer opencl.CheckinQueue(q1idx)
+	defer opencl.CheckinQueue(q2idx)
+	defer opencl.CheckinQueue(q3idx)
+	queues := []*cl.CommandQueue{opencl.ClCmdQueue[q1idx], opencl.ClCmdQueue[q2idx], opencl.ClCmdQueue[q3idx]}
+	seqQueue := opencl.ClCmdQueue[0]
+
+	if !e.perRegion.isZero() {
+		opencl.RegionAddV(dst, e.perRegion.gpuLUT(), regions.Gpu(), seqQueue, nil)
+	}
+
+	// sync queues to seqQueue
+	opencl.SyncQueues(queues, []*cl.CommandQueue{seqQueue})
 
 	for _, t := range e.extraTerms {
 		var mul float32 = 1
 		if t.mul != nil {
 			mul = float32(t.mul())
 		}
-		opencl.Madd2(dst, dst, t.mask, 1, mul)
+		opencl.Madd2(dst, dst, t.mask, 1, mul, queues, nil)
+	}
+
+	// sync before returning
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting for queues after excitation.addto(): %+v \n", err)
 	}
 }
 

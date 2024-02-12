@@ -1,6 +1,7 @@
 package engine
 
 import (
+	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
 	util "github.com/seeder-research/uMagNUS/util"
@@ -39,23 +40,39 @@ func fixedPtIterations(hFac float32, Y, ks *data.Slice) (float64, float64, int) 
 	iterate := true
 	Niters := 0
 
+	// checkout queues for executing kernel
+	q1idx, q2idx, q3idx := opencl.CheckoutQueue(), opencl.CheckoutQueue(), opencl.CheckoutQueue()
+	defer opencl.CheckinQueue(q1idx)
+	defer opencl.CheckinQueue(q2idx)
+	defer opencl.CheckinQueue(q3idx)
+	queues := []*cl.CommandQueue{opencl.ClCmdQueue[q1idx], opencl.ClCmdQueue[q2idx], opencl.ClCmdQueue[q3idx]}
+	seqQueue := opencl.ClCmdQueue[0]
+	// sync in the beginning
+	opencl.SyncQueues(queues, []*cl.CommandQueue{seqQueue})
+
 	// fixed point iterations until converence criterion reached
 	for ; iterate && (Niters < NConv); Niters++ {
 		// Update guess
-		opencl.Madd2(yPred, Y, kPrev, 1.0, hFac) // y = y0 + dt * dy
+		opencl.Madd2(yPred, Y, kPrev, 1.0, hFac, queues, nil) // y = y0 + dt * dy
+		// sync queues
+		opencl.SyncQueues([]*cl.CommandQueue{seqQueue}, queues)
 		M.normalize()
 		torqueFn(ks)
 
 		// Calculate error as the difference in calculated predictions
 		// in consecutive fixed point iterations
-		ErrIter = float64(opencl.MaxVecDiff(ks, kPrev))
-		ksNorm := float64(opencl.MaxVecNorm(ks))
+		ErrIter = float64(opencl.MaxVecDiff(ks, kPrev, seqQueue, nil))
+		ksNorm := float64(opencl.MaxVecNorm(ks, seqQueue, nil))
 		relErr = RelErrConv * ksNorm
 		iterate = (ErrIter > AbsErrConv) && (ErrIter > relErr)
 
-		// Record fixed point result for next iteration
-		data.Copy(kPrev, ks)
+		if iterate && (Niters < NConv-1) {
+			// Record fixed point result for next iteration
+			data.Copy(kPrev, ks)
 
+			// sync before next iteration
+			opencl.SyncQueues(queues, []*cl.CommandQueue{seqQueue})
+		}
 	}
 	if Niters == NConv {
 		util.Log("fixed point iterations exceeded limit!")

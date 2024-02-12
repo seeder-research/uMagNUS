@@ -1,24 +1,41 @@
 package engine
 
 import (
+	"fmt"
+
+	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
 )
 
 // Bogacki-Shampine solver. 3rd order, 3 evaluations per step, adaptive step.
-// 	http://en.wikipedia.org/wiki/Bogacki-Shampine_method
 //
-// 	k1 = f(tn, yn)
-// 	k2 = f(tn + 1/2 h, yn + 1/2 h k1)
-// 	k3 = f(tn + 3/4 h, yn + 3/4 h k2)
-// 	y{n+1}  = yn + 2/9 h k1 + 1/3 h k2 + 4/9 h k3            // 3rd order
-// 	k4 = f(tn + h, y{n+1})
-// 	z{n+1} = yn + 7/24 h k1 + 1/4 h k2 + 1/3 h k3 + 1/8 h k4 // 2nd order
+//	http://en.wikipedia.org/wiki/Bogacki-Shampine_method
+//
+//	k1 = f(tn, yn)
+//	k2 = f(tn + 1/2 h, yn + 1/2 h k1)
+//	k3 = f(tn + 3/4 h, yn + 3/4 h k2)
+//	y{n+1}  = yn + 2/9 h k1 + 1/3 h k2 + 4/9 h k3            // 3rd order
+//	k4 = f(tn + h, y{n+1})
+//	z{n+1} = yn + 7/24 h k1 + 1/4 h k2 + 1/3 h k3 + 1/8 h k4 // 2nd order
 type RK23 struct {
 	k1 *data.Slice // torque at end of step is kept for beginning of next step
 }
 
 func (rk *RK23) Step() {
+	// sync in the beginning
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting for all queues at start of esdirk32a.step(): %+v \n", err)
+	}
+
+	// Get queues
+	seqQueue := opencl.ClCmdQueue[0]
+	q1idx, q2idx, q3idx := opencl.CheckoutQueue(), opencl.CheckoutQueue(), opencl.CheckoutQueue()
+	defer opencl.CheckinQueue(q1idx)
+	defer opencl.CheckinQueue(q2idx)
+	defer opencl.CheckinQueue(q3idx)
+	queues := []*cl.CommandQueue{opencl.ClCmdQueue[q1idx], opencl.ClCmdQueue[q2idx], opencl.ClCmdQueue[q3idx]}
+
 	m := M.Buffer()
 	size := m.Size()
 
@@ -47,6 +64,8 @@ func (rk *RK23) Step() {
 	m0 := opencl.Buffer(3, size)
 	defer opencl.Recycle(m0)
 	data.Copy(m0, m)
+	// sync queues to seqQueue
+	opencl.SyncQueues(queues, []*cl.CommandQueue{seqQueue})
 
 	k2, k3, k4 := opencl.Buffer(3, size), opencl.Buffer(3, size), opencl.Buffer(3, size)
 	defer opencl.Recycle(k2)
@@ -59,18 +78,24 @@ func (rk *RK23) Step() {
 
 	// stage 2
 	Time = t0 + (1./2.)*Dt_si
-	opencl.Madd2(m, m, rk.k1, 1, (1./2.)*h) // m = m*1 + k1*h/2
+	opencl.Madd2(m, m, rk.k1, 1, (1./2.)*h, queues, nil) // m = m*1 + k1*h/2
+	// sync queues to seqQueue
+	opencl.SyncQueues([]*cl.CommandQueue{seqQueue}, queues)
 	M.normalize()
 	torqueFn(k2)
 
 	// stage 3
 	Time = t0 + (3./4.)*Dt_si
-	opencl.Madd2(m, m0, k2, 1, (3./4.)*h) // m = m0*1 + k2*3/4
+	opencl.Madd2(m, m0, k2, 1, (3./4.)*h, queues, nil) // m = m0*1 + k2*3/4
+	// sync queues to seqQueue
+	opencl.SyncQueues([]*cl.CommandQueue{seqQueue}, queues)
 	M.normalize()
 	torqueFn(k3)
 
 	// 3rd order solution
-	opencl.Madd4(m, m0, rk.k1, k2, k3, 1, (2./9.)*h, (1./3.)*h, (4./9.)*h)
+	opencl.Madd4(m, m0, rk.k1, k2, k3, 1, (2./9.)*h, (1./3.)*h, (4./9.)*h, queues, nil)
+	// sync queues to seqQueue
+	opencl.SyncQueues([]*cl.CommandQueue{seqQueue}, queues)
 	M.normalize()
 
 	// error estimate
@@ -78,7 +103,7 @@ func (rk *RK23) Step() {
 	torqueFn(k4)
 	Err := k2 // re-use k2 as error
 	// difference of 3rd and 2nd order torque without explicitly storing them first
-	opencl.Madd4(Err, rk.k1, k2, k3, k4, (7./24.)-(2./9.), (1./4.)-(1./3.), (1./3.)-(4./9.), (1. / 8.))
+	opencl.Madd4(Err, rk.k1, k2, k3, k4, (7./24.)-(2./9.), (1./4.)-(1./3.), (1./3.)-(4./9.), (1. / 8.), queues, nil)
 
 	integralController(Err, k4, rk.k1, m0, t0, float64(h), rk.AdvOrder(), rk.AdvOrder()+1, true)
 }

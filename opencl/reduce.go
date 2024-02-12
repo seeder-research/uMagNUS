@@ -54,7 +54,9 @@ func Dot(a, b *data.Slice, queue *cl.CommandQueue, events []*cl.Event) float32 {
 	result := float32(0)
 	numComp := a.NComp()
 	out := make([]unsafe.Pointer, numComp)
-	SyncQueues([]*cl.CommandQueue{ClCmdQueue[1], ClCmdQueue[2], ClCmdQueue[3]}, []*cl.CommandQueue{queue})
+	if err := WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("eror waiting all queues to finish in dot: %+v \n", err)
+	}
 	for c := 0; c < numComp; c++ {
 		out[c] = reduceBuf(0, ClCmdQueue[1+c], events)
 	}
@@ -194,10 +196,12 @@ func reduceBuf(initVal float32, queue *cl.CommandQueue, events []*cl.Event) unsa
 // copy back single float result from GPU and recycle buffer
 func copyback(buf unsafe.Pointer, queue *cl.CommandQueue, events []*cl.Event) float32 {
 	var result float32
-	SyncQueues([]*cl.CommandQueue{ClCmdQueue[0]}, []*cl.CommandQueue{queue})
+	if err := queue.Finish(); err != nil {
+		fmt.Printf("error waiting for queue to finish in copyback: %+v \n", err)
+	}
 	MemCpyDtoH(unsafe.Pointer(&result), buf, SIZEOF_FLOAT32)
 	// must sync since copying from d to h
-	if err := ClCmdQueue[0].Finish(); err != nil {
+	if err := D2HQueue.Finish(); err != nil {
 		fmt.Printf("failed to wait for queue to finish in copyback: %+v \n", err)
 	}
 	reduceBuffers <- (*cl.MemObject)(buf)
@@ -207,10 +211,12 @@ func copyback(buf unsafe.Pointer, queue *cl.CommandQueue, events []*cl.Event) fl
 // copy back float slice result from GPU and recycle buffer
 func copybackSlice(buf unsafe.Pointer, queue *cl.CommandQueue, events []*cl.Event) []float32 {
 	result := make([]float32, ReduceWorkgroups)
-	SyncQueues([]*cl.CommandQueue{ClCmdQueue[0]}, []*cl.CommandQueue{queue})
+	if err := queue.Finish(); err != nil {
+		fmt.Printf("error waiting for queue to finish in copyback: %+v \n", err)
+	}
 	MemCpyDtoH(unsafe.Pointer(&result[0]), buf, ReduceWorkgroups*SIZEOF_FLOAT32)
 	// must sync since copying from d to h
-	if err := ClCmdQueue[0].Finish(); err != nil {
+	if err := D2HQueue.Finish(); err != nil {
 		fmt.Printf("failed to wait for queue to finish in copybackSlice: %+v \n", err)
 	}
 	reduceBuffers <- (*cl.MemObject)(buf)

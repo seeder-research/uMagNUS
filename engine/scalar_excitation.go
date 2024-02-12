@@ -1,8 +1,10 @@
 package engine
 
 import (
+	"fmt"
 	"reflect"
 
+	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
 	script "github.com/seeder-research/uMagNUS/script"
@@ -32,8 +34,13 @@ func (p *ScalarExcitation) MSlice() opencl.MSlice {
 }
 
 func (e *ScalarExcitation) AddTo(dst *data.Slice) {
+	// sync in the beginning
+	seqQueue := opencl.ClCmdQueue[0]
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting for all queues to finish in scalarexcitation.addto: %+v \n", err)
+	}
 	if !e.perRegion.isZero() {
-		opencl.RegionAddS(dst, e.perRegion.gpuLUT1(), regions.Gpu())
+		opencl.RegionAddS(dst, e.perRegion.gpuLUT1(), regions.Gpu(), seqQueue, nil)
 	}
 
 	for _, t := range e.extraTerms {
@@ -41,7 +48,11 @@ func (e *ScalarExcitation) AddTo(dst *data.Slice) {
 		if t.mul != nil {
 			mul = float32(t.mul())
 		}
-		opencl.Madd2(dst, dst, t.mask, 1, mul)
+		opencl.Madd2(dst, dst, t.mask, 1, mul, []*cl.CommandQueue{seqQueue}, nil)
+	}
+	// sync before returning
+	if err := seqQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for sequential queue after scalarexcitation.addto: %+v \n", err)
 	}
 }
 

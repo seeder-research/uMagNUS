@@ -20,7 +20,7 @@ import (
 	timer "github.com/seeder-research/uMagNUS/timer"
 )
 
-const VERSION = "uMagNUS 2.4.0"
+const VERSION = "uMagNUS 3.0.0"
 
 var UNAME = VERSION + " " + runtime.GOOS + "_" + runtime.GOARCH + " " + runtime.Version() + " (" + runtime.Compiler + ")"
 

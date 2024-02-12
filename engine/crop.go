@@ -133,6 +133,10 @@ func (q *cropped) Slice() (*data.Slice, bool) {
 	src := ValueOf(q.parent)
 	defer opencl.Recycle(src)
 	dst := opencl.Buffer(q.NComp(), q.Mesh().Size())
-	opencl.Crop(dst, src, q.x1, q.y1, q.z1)
+	seqQueue := opencl.ClCmdQueue[0]
+	opencl.Crop(dst, src, q.x1, q.y1, q.z1, seqQueue, nil)
+	if err := seqQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for queue to finish in crop.slice(): %+v \n", err)
+	}
 	return dst, true
 }

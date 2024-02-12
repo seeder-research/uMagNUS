@@ -1,6 +1,8 @@
 package engine
 
 import (
+	"fmt"
+
 	data "github.com/seeder-research/uMagNUS/data"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
 )
@@ -11,9 +13,27 @@ var (
 )
 
 func SetPhi(dst *data.Slice) {
-	opencl.SetPhi(dst, M.Buffer())
+	// sync in the beginning
+	seqQueue := opencl.ClCmdQueue[0]
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting for queues to finish in setphi: %+v \n", err)
+	}
+	opencl.SetPhi(dst, M.Buffer(), seqQueue, nil)
+	// sync before returning
+	if err := seqQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for queues to finish after setphi: %+v \n", err)
+	}
 }
 
 func SetTheta(dst *data.Slice) {
-	opencl.SetTheta(dst, M.Buffer())
+	// sync in the beginning
+	seqQueue := opencl.ClCmdQueue[0]
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting for queues to finish in settheta: %+v \n", err)
+	}
+	opencl.SetTheta(dst, M.Buffer(), seqQueue, nil)
+	// sync before returning
+	if err := seqQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for queues to finish after settheta: %+v \n", err)
+	}
 }

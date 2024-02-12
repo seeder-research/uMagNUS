@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"fmt"
 	"math/rand"
 
 	data "github.com/seeder-research/uMagNUS/data"
@@ -35,7 +36,12 @@ func spaceFill() float64 {
 	if geometry.Gpu().IsNil() {
 		return 1
 	} else {
-		return float64(opencl.Sum(geometry.buffer)) / float64(geometry.Mesh().NCell())
+		// sync in the beginning
+		seqQueue := opencl.ClCmdQueue[0]
+		if err := opencl.WaitAllQueuesToFinish(); err != nil {
+			fmt.Printf("error waiting for queues to finish in spacefill: %+v \n", err)
+		}
+		return float64(opencl.Sum(geometry.buffer, seqQueue, nil)) / float64(geometry.Mesh().NCell())
 	}
 }
 
@@ -51,6 +57,10 @@ func (g *geom) Slice() (*data.Slice, bool) {
 	if s.IsNil() {
 		s := opencl.Buffer(g.NComp(), g.Mesh().Size())
 		opencl.Memset(s, 1)
+		// sync queue before returning
+		if err := opencl.H2DQueue.Finish(); err != nil {
+			fmt.Printf("error waiting for queue to finish in geom.slice(): %+v \n", err)
+		}
 		return s, true
 	} else {
 		return s, false
@@ -157,6 +167,9 @@ func (geometry *geom) setGeom(s Shape) {
 	needupload := false
 	geomlist := host.Host()[0]
 	mhost := M.Buffer().HostCopy()
+	if err := opencl.D2HQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for d2h data transfer to finish in geom.setgeom: %+v \n", err)
+	}
 	m := mhost.Host()
 	rng := rand.New(rand.NewSource(0))
 	for i := range m[0] {
@@ -172,8 +185,15 @@ func (geometry *geom) setGeom(s Shape) {
 	if needupload {
 		data.Copy(M.Buffer(), mhost)
 	}
+	if err := opencl.H2DQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for h2d data transfer to finish in geom.setgeom: %+v \n", err)
+	}
 
 	M.normalize() // removes m outside vol
+	seqQueue := opencl.ClCmdQueue[0]
+	if err := seqQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for queue to finish in geom.setgeom: %+v \n", err)
+	}
 }
 
 // Sample edgeSmooth^3 points inside the cell to estimate its volume.
@@ -216,7 +236,16 @@ func (g *geom) shift(dx int) {
 	s2 := opencl.Buffer(1, g.Mesh().Size())
 	defer opencl.Recycle(s2)
 	newv := float32(1) // initially fill edges with 1's
-	opencl.ShiftX(s2, s, dx, newv, newv)
+
+	// sync in the beginning
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting for queues to finish in geom.shift: %+v\n", err)
+	}
+
+	// checkout queue for kernel execution
+	seqQueue := opencl.ClCmdQueue[0]
+
+	opencl.ShiftX(s2, s, dx, newv, newv, seqQueue, nil)
 	data.Copy(s, s2)
 
 	n := Mesh().Size()
@@ -233,6 +262,11 @@ func (g *geom) shift(dx int) {
 		}
 	}
 
+	// sync before returning
+	if err := seqQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for queue to finish after geom.shift: %+v\n", err)
+	}
+
 }
 
 func (g *geom) shiftY(dy int) {
@@ -246,7 +280,16 @@ func (g *geom) shiftY(dy int) {
 	s2 := opencl.Buffer(1, g.Mesh().Size())
 	defer opencl.Recycle(s2)
 	newv := float32(1) // initially fill edges with 1's
-	opencl.ShiftY(s2, s, dy, newv, newv)
+
+	// sync in the beginning
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting for queues to finish in geom.shifty: %+v\n", err)
+	}
+
+	// checkout queue for kernel execution
+	seqQueue := opencl.ClCmdQueue[0]
+
+	opencl.ShiftY(s2, s, dy, newv, newv, seqQueue, nil)
 	data.Copy(s, s2)
 
 	n := Mesh().Size()
@@ -261,6 +304,11 @@ func (g *geom) shiftY(dy int) {
 				}
 			}
 		}
+	}
+
+	// sync before returning
+	if err := seqQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for queue to finish after geom.shifty: %+v\n", err)
 	}
 
 }

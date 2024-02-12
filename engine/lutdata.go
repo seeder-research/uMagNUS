@@ -1,8 +1,10 @@
 package engine
 
 import (
+	"fmt"
 	"unsafe"
 
+	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
 	util "github.com/seeder-research/uMagNUS/util"
@@ -38,12 +40,19 @@ func (p *lut) gpuLUT() opencl.LUTPtrs {
 	if !p.gpu_ok {
 		// upload to GPU
 		p.assureAlloc()
-		opencl.ClCmdQueue.Finish() // sync previous kernels, may still be using gpu lut
+		// sync previous kernels, may still be using gpu lut
+		if err := opencl.WaitAllQueuesToFinish(); err != nil {
+			fmt.Printf("error waiting for all queues in lut.gpulut: %+v \n", err)
+		}
 		for c := range p.gpu_buf {
 			opencl.MemCpyHtoD(p.gpu_buf[c], unsafe.Pointer(&p.cpu_buf[c][0]), opencl.SIZEOF_FLOAT32*NREGION)
 		}
 		p.gpu_ok = true
-		opencl.ClCmdQueue.Finish() //sync upload
+
+		//sync upload
+		if err := opencl.H2DQueue.Finish(); err != nil {
+			fmt.Printf("error waiting for queue in lut.gpulut: %+v \n", err)
+		}
 	}
 	return p.gpu_buf
 }
@@ -83,8 +92,17 @@ func (b *lut) NComp() int { return len(b.cpu_buf) }
 func (p *lut) Slice() (*data.Slice, bool) {
 	gpu := p.gpuLUT()
 	b := opencl.Buffer(p.NComp(), Mesh().Size())
+	queues := make([]*cl.CommandQueue, p.NComp())
+	queueIndices := make([]int, p.NComp())
 	for c := 0; c < p.NComp(); c++ {
-		opencl.RegionDecode(b.Comp(c), opencl.LUTPtr(gpu[c]), regions.Gpu())
+		queueIndices[c] = opencl.CheckoutQueue()
+		defer opencl.CheckinQueue(queueIndices[c])
+		queues[c] = opencl.ClCmdQueue[queueIndices[c]]
+		opencl.RegionDecode(b.Comp(c), opencl.LUTPtr(gpu[c]), regions.Gpu(), queues[c], nil)
+	}
+	// sync before returning
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting for all queues to finish in lut.slice: %+v \n", err)
 	}
 	return b, true
 }

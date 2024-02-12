@@ -3,6 +3,8 @@ package engine
 // Total energy calculation
 
 import (
+	"fmt"
+
 	data "github.com/seeder-research/uMagNUS/data"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
 )
@@ -48,7 +50,8 @@ func cellVolume() float64 {
 }
 
 // returns a function that adds to dst the energy density:
-// 	prefactor * dot (M_full, field)
+//
+//	prefactor * dot (M_full, field)
 func makeEdensAdder(field Quantity, prefactor float64) func(*data.Slice) {
 	return func(dst *data.Slice) {
 		B := ValueOf(field)
@@ -56,7 +59,16 @@ func makeEdensAdder(field Quantity, prefactor float64) func(*data.Slice) {
 		m := ValueOf(M_full)
 		defer opencl.Recycle(m)
 		factor := float32(prefactor)
-		opencl.AddDotProduct(dst, factor, B, m)
+		if err := opencl.WaitAllQueuesToFinish(); err != nil {
+			fmt.Printf("error waiting for all queues to finish in edensadder: %+v \n", err)
+		}
+		qIdx := opencl.CheckoutQueue()
+		defer opencl.CheckinQueue(qIdx)
+		queue := opencl.ClCmdQueue[qIdx]
+		opencl.AddDotProduct(dst, factor, B, m, queue, nil)
+		if err := queue.Finish(); err != nil {
+			fmt.Printf("error waiting for queue to finish after edensadder: %+v \n", err)
+		}
 	}
 }
 
@@ -66,5 +78,11 @@ func dot(a, b Quantity) float64 {
 	defer opencl.Recycle(A)
 	B := ValueOf(b)
 	defer opencl.Recycle(B)
-	return float64(opencl.Dot(A, B))
+
+	// sync in the beginning
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting for all queues to finish before dot: %+v \n", err)
+	}
+	seqQueue := opencl.ClCmdQueue[0]
+	return float64(opencl.Dot(A, B, seqQueue, nil))
 }

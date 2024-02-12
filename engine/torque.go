@@ -1,8 +1,10 @@
 package engine
 
 import (
+	"fmt"
 	"reflect"
 
+	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
 	util "github.com/seeder-research/uMagNUS/util"
@@ -99,7 +101,7 @@ func init() {
 	DeclFunc("RemoveCustomTorques", RemoveCustomTorques, "Removes all custom torques again")
 }
 
-//Removes all customfields
+// Removes all customfields
 func RemoveCustomTorques() {
 	customTorques = nil
 }
@@ -113,22 +115,254 @@ func AddTorqueTerm(b Quantity) {
 // AddCustomTorque evaluates the user-defined custom torque terms
 // and adds the result to dst.
 func AddCustomTorques(dst *data.Slice) {
-	for _, term := range customTorques {
-		buf := ValueOf(term)
-		opencl.Add(dst, dst, buf)
-		opencl.Recycle(buf)
+	if len(customTorques) > 0 {
+		// sync in the beginning
+		if err := opencl.WaitAllQueuesToFinish(); err != nil {
+			fmt.Printf("error waiting for queues to finish before addcustomtorques: %+v \n", err)
+		}
+		// checkout queues for execution
+		q1idx, q2idx, q3idx := opencl.CheckoutQueue(), opencl.CheckoutQueue(), opencl.CheckoutQueue()
+		defer opencl.CheckinQueue(q1idx)
+		defer opencl.CheckinQueue(q2idx)
+		defer opencl.CheckinQueue(q3idx)
+
+		for _, term := range customTorques {
+			buf := ValueOf(term)
+			queues := []*cl.CommandQueue{opencl.ClCmdQueue[q1idx], opencl.ClCmdQueue[q2idx], opencl.ClCmdQueue[q3idx]}
+			opencl.Add(dst, dst, buf, queues, nil)
+
+			// sync to prevent buf from being recycled before the kernel finishes
+			if err := opencl.WaitAllQueuesToFinish(); err != nil {
+				fmt.Printf("error waiting for queues to finish in addcustomtorques: %+v \n", err)
+			}
+
+			opencl.Recycle(buf)
+		}
 	}
 }
 
 // Sets dst to the current total torque
 func SetTorque(dst *data.Slice) {
-	SetLLTorque(dst)
-	AddSTTorque(dst)
-	AddSTTorque1(dst)
-	AddSTTorque2(dst)
-	AddRegionLinkSpinTorque(dst)
-	AddCustomTorques(dst)
-	FreezeSpins(dst)
+
+	// sync in the beginning
+	if err0, err1, err2 := opencl.WaitAllQueuesToFinish(), opencl.H2DQueue.Finish(), opencl.D2HQueue.Finish(); (err0 != nil) || (err1 != nil) || (err2 != nil) {
+		fmt.Printf("error waiting for queues to finish in settorque 0: %+v \n", err0)
+		fmt.Printf("error waiting for queues to finish in settorque 1: %+v \n", err1)
+		fmt.Printf("error waiting for queues to finish in settorque 2: %+v \n", err2)
+	}
+
+	q1idx, q2idx, q3idx := opencl.CheckoutQueue(), opencl.CheckoutQueue(), opencl.CheckoutQueue()
+	defer opencl.CheckinQueue(q1idx)
+	defer opencl.CheckinQueue(q2idx)
+	defer opencl.CheckinQueue(q3idx)
+	seqQueue := opencl.ClCmdQueue[0]
+
+	// SetLLTorque(dst) - torque from fields ------------
+	SetEffectiveField(dst) // calc and store B_eff
+	alpha := Alpha.MSlice()
+	defer alpha.Recycle()
+
+	if Precess {
+		opencl.LLTorque(dst, M.Buffer(), dst, alpha, opencl.ClCmdQueue[q1idx], nil) // overwrite dst with torque
+	} else {
+		opencl.LLNoPrecess(dst, M.Buffer(), dst, opencl.ClCmdQueue[q1idx], nil)
+	}
+	// sync queue with seqQueue
+	opencl.SyncQueues([]*cl.CommandQueue{seqQueue}, []*cl.CommandQueue{opencl.ClCmdQueue[q1idx]})
+
+	// Checkout buffers for remaining torques
+	var sttBuf1, sttBuf2, sttBuf3, sttBuf4 *data.Slice
+
+	msat := Msat.MSlice()
+	defer msat.Recycle()
+
+	// AddSTTorque(dst) - stt torque -----------
+	if J.isZero() == false {
+		j := J.MSlice()
+		defer j.Recycle()
+		xi := Xi.MSlice()
+		defer xi.Recycle()
+		pol := Pol.MSlice()
+		defer pol.Recycle()
+		fixedP := FixedLayer.MSlice()
+		defer fixedP.Recycle()
+		lambda := Lambda.MSlice()
+		defer lambda.Recycle()
+		epsPrime := EpsilonPrime.MSlice()
+		defer epsPrime.Recycle()
+		thickness := FreeLayerThickness.MSlice()
+		defer thickness.Recycle()
+
+		util.AssertMsg(!Pol.isZero(), "spin polarization should not be 0")
+		jspin, rec := J.Slice()
+		if rec {
+			defer opencl.Recycle(jspin)
+		}
+		fl, rec := FixedLayer.Slice()
+		if rec {
+			defer opencl.Recycle(fl)
+		}
+		if !DisableZhangLiTorque {
+			// checkout buffer and queue for execution
+			sttBuf1 = opencl.Buffer(dst.NComp(), dst.Size())
+			defer opencl.Recycle(sttBuf1)
+			opencl.AddZhangLiTorque(sttBuf1, M.Buffer(), msat, j, alpha, xi, pol, Mesh(), opencl.ClCmdQueue[q2idx], nil)
+			opencl.SyncQueues([]*cl.CommandQueue{seqQueue}, []*cl.CommandQueue{opencl.ClCmdQueue[q2idx]})
+		}
+		if !DisableSlonczewskiTorque && !FixedLayer.isZero() {
+			// checkout buffer and queue for execution
+			sttBuf2 = opencl.Buffer(dst.NComp(), dst.Size())
+			defer opencl.Recycle(sttBuf2)
+			opencl.AddSlonczewskiTorque2(sttBuf2, M.Buffer(),
+				msat, j, fixedP, alpha, pol, lambda, epsPrime,
+				thickness,
+				CurrentSignFromFixedLayerPosition[fixedLayerPosition],
+				Mesh(),
+				opencl.ClCmdQueue[q3idx], nil)
+			// sync queue with seqQueue
+			opencl.SyncQueues([]*cl.CommandQueue{seqQueue}, []*cl.CommandQueue{opencl.ClCmdQueue[q3idx]})
+		}
+		opencl.SyncQueues([]*cl.CommandQueue{opencl.ClCmdQueue[q2idx], opencl.ClCmdQueue[q3idx]}, []*cl.CommandQueue{seqQueue})
+		queues := []*cl.CommandQueue{seqQueue, opencl.ClCmdQueue[q2idx], opencl.ClCmdQueue[q3idx]}
+		if !DisableZhangLiTorque {
+			if !DisableSlonczewskiTorque && !FixedLayer.isZero() {
+				opencl.Madd3(dst, dst, sttBuf1, sttBuf2, 1., 1., 1., queues, nil)
+			} else {
+				opencl.Add(dst, dst, sttBuf1, queues, nil)
+			}
+		} else {
+			if !DisableSlonczewskiTorque && !FixedLayer.isZero() {
+				opencl.Add(dst, dst, sttBuf2, queues, nil)
+			}
+		}
+	}
+
+	// AddSTTorque1(dst) - stt torque ----------------
+	if (Jint1.isZero() && Vint1.isZero()) == false {
+		util.AssertMsg(!Pfree1.isZero(), "spin polarization (Pfree1) should not be 0")
+		util.AssertMsg(!Pfixed1.isZero(), "spin polarization (Pfixed1) should not be 0")
+		jspin, rec := Jint1.Slice()
+		if rec {
+			defer opencl.Recycle(jspin)
+		}
+		fl, rec := FixedLayer1.Slice()
+		if rec {
+			defer opencl.Recycle(fl)
+		}
+		if !DisableSlonczewskiTorque1 && !FixedLayer1.isZero() {
+			// Checkout buffer and queue for executing kernel
+			sttBuf3 = opencl.Buffer(dst.NComp(), dst.Size())
+			defer opencl.Recycle(sttBuf3)
+			q4idx := opencl.CheckoutQueue()
+			defer opencl.CheckinQueue(q4idx)
+
+			vapp, rec := Vint1.Slice()
+			if rec {
+				defer opencl.Recycle(vapp)
+			}
+			Jcurr := opencl.Buffer(vapp.NComp(), vapp.Size())
+			defer opencl.Recycle(Jcurr)
+			if !DisableVoltageInt1 {
+				a1int, rec := A1int1.Slice()
+				if rec {
+					defer opencl.Recycle(a1int)
+				}
+				a2int, rec := A2int1.Slice()
+				if rec {
+					defer opencl.Recycle(a2int)
+				}
+				JfromV(vapp, a1int, a2int, M.Buffer(), fl, Jcurr, ToMulFactorInt1)
+				Jint1.AddTo(Jcurr)
+			}
+			j := opencl.ToMSlice(Jcurr)
+			defer j.Recycle()
+			fixedP := FixedLayer1.MSlice()
+			defer fixedP.Recycle()
+			pfix := Pfixed1.MSlice()
+			defer pfix.Recycle()
+			pfree := Pfree1.MSlice()
+			defer pfree.Recycle()
+			lambdafree := Lambdafree1.MSlice()
+			defer lambdafree.Recycle()
+			lambdafix := Lambdafixed1.MSlice()
+			defer lambdafix.Recycle()
+			epsPrime := EpsilonPrime1.MSlice()
+			defer epsPrime.Recycle()
+			opencl.AddOommfSlonczewskiTorque(sttBuf3, M.Buffer(),
+				msat, j, fixedP, alpha, pfix, pfree, lambdafix, lambdafree, epsPrime, Mesh(), opencl.ClCmdQueue[q4idx], nil)
+			// sync queues and merge result
+			opencl.SyncQueues([]*cl.CommandQueue{seqQueue, opencl.ClCmdQueue[q1idx], opencl.ClCmdQueue[q2idx], opencl.ClCmdQueue[q3idx]}, []*cl.CommandQueue{opencl.ClCmdQueue[q4idx]})
+			opencl.Add(dst, dst, sttBuf3, []*cl.CommandQueue{seqQueue, opencl.ClCmdQueue[q1idx], opencl.ClCmdQueue[q2idx]}, nil)
+			// sync queues
+			opencl.SyncQueues([]*cl.CommandQueue{seqQueue}, []*cl.CommandQueue{opencl.ClCmdQueue[q1idx], opencl.ClCmdQueue[q2idx]})
+		}
+	}
+
+	// AddSTTorque2(dst) - stt torque ----------------
+	if (Jint2.isZero() && Vint2.isZero()) == false {
+		util.AssertMsg(!Pfree2.isZero(), "spin polarization (Pfree1) should not be 0")
+		util.AssertMsg(!Pfixed2.isZero(), "spin polarization (Pfixed1) should not be 0")
+		jspin, rec := Jint2.Slice()
+		if rec {
+			defer opencl.Recycle(jspin)
+		}
+		fl, rec := FixedLayer2.Slice()
+		if rec {
+			defer opencl.Recycle(fl)
+		}
+		if !DisableSlonczewskiTorque2 && !FixedLayer2.isZero() {
+			// Checkout buffer and queue for executing kernel
+			sttBuf4 = opencl.Buffer(dst.NComp(), dst.Size())
+			defer opencl.Recycle(sttBuf4)
+			q4idx := opencl.CheckoutQueue()
+			defer opencl.CheckinQueue(q4idx)
+
+			vapp, rec := Vint2.Slice()
+			if rec {
+				defer opencl.Recycle(vapp)
+			}
+			Jcurr := opencl.Buffer(vapp.NComp(), vapp.Size())
+			defer opencl.Recycle(Jcurr)
+			if !DisableVoltageInt2 {
+				a1int, rec := A1int2.Slice()
+				if rec {
+					defer opencl.Recycle(a1int)
+				}
+				a2int, rec := A2int2.Slice()
+				if rec {
+					defer opencl.Recycle(a2int)
+				}
+				JfromV(vapp, a1int, a2int, M.Buffer(), fl, Jcurr, ToMulFactorInt2)
+				Jint2.AddTo(Jcurr)
+			}
+			j := opencl.ToMSlice(Jcurr)
+			defer j.Recycle()
+			fixedP := FixedLayer2.MSlice()
+			defer fixedP.Recycle()
+			pfix := Pfixed2.MSlice()
+			defer pfix.Recycle()
+			pfree := Pfree2.MSlice()
+			defer pfree.Recycle()
+			lambdafree := Lambdafree2.MSlice()
+			defer lambdafree.Recycle()
+			lambdafix := Lambdafixed2.MSlice()
+			defer lambdafix.Recycle()
+			epsPrime := EpsilonPrime2.MSlice()
+			defer epsPrime.Recycle()
+			opencl.AddOommfSlonczewskiTorque(sttBuf4, M.Buffer(),
+				msat, j, fixedP, alpha, pfix, pfree, lambdafix, lambdafree, epsPrime, Mesh(), opencl.ClCmdQueue[q4idx], nil)
+			// sync queues and merge result
+			opencl.SyncQueues([]*cl.CommandQueue{seqQueue, opencl.ClCmdQueue[q1idx], opencl.ClCmdQueue[q2idx], opencl.ClCmdQueue[q3idx]}, []*cl.CommandQueue{opencl.ClCmdQueue[q4idx]})
+			opencl.Add(dst, dst, sttBuf3, []*cl.CommandQueue{seqQueue, opencl.ClCmdQueue[q1idx], opencl.ClCmdQueue[q2idx]}, nil)
+			// sync queues
+			opencl.SyncQueues([]*cl.CommandQueue{seqQueue}, []*cl.CommandQueue{opencl.ClCmdQueue[q1idx], opencl.ClCmdQueue[q2idx]})
+		}
+	}
+	// -----
+
+	AddRegionLinkSpinTorque(dst) // special stt torque (synchronous)
+	AddCustomTorques(dst)        // custom torques (synchronous)
+	FreezeSpins(dst)             // zero the torques at locations where spins are frozen.
 }
 
 // Sets dst to the current Landau-Lifshitz torque
@@ -136,10 +370,15 @@ func SetLLTorque(dst *data.Slice) {
 	SetEffectiveField(dst) // calc and store B_eff
 	alpha := Alpha.MSlice()
 	defer alpha.Recycle()
+	seqQueue := opencl.ClCmdQueue[0]
 	if Precess {
-		opencl.LLTorque(dst, M.Buffer(), dst, alpha) // overwrite dst with torque
+		opencl.LLTorque(dst, M.Buffer(), dst, alpha, seqQueue, nil) // overwrite dst with torque
 	} else {
-		opencl.LLNoPrecess(dst, M.Buffer(), dst)
+		opencl.LLNoPrecess(dst, M.Buffer(), dst, seqQueue, nil)
+	}
+	// sync before returning
+	if err := seqQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for queue after setlltorque: %+v \n", err)
 	}
 }
 
@@ -168,7 +407,7 @@ func AddSTTorque(dst *data.Slice) {
 		defer xi.Recycle()
 		pol := Pol.MSlice()
 		defer pol.Recycle()
-		opencl.AddZhangLiTorque(dst, M.Buffer(), msat, j, alpha, xi, pol, Mesh())
+		opencl.AddZhangLiTorque(dst, M.Buffer(), msat, j, alpha, xi, pol, Mesh(), opencl.ClCmdQueue[0], nil)
 	}
 	if !DisableSlonczewskiTorque && !FixedLayer.isZero() {
 		msat := Msat.MSlice()
@@ -187,11 +426,12 @@ func AddSTTorque(dst *data.Slice) {
 		defer epsPrime.Recycle()
 		thickness := FreeLayerThickness.MSlice()
 		defer thickness.Recycle()
+		// Checkout a queue and execute synchronously
 		opencl.AddSlonczewskiTorque2(dst, M.Buffer(),
 			msat, j, fixedP, alpha, pol, lambda, epsPrime,
 			thickness,
 			CurrentSignFromFixedLayerPosition[fixedLayerPosition],
-			Mesh())
+			Mesh(), opencl.ClCmdQueue[0], nil)
 	}
 }
 
@@ -248,7 +488,7 @@ func AddSTTorque1(dst *data.Slice) {
 		epsPrime := EpsilonPrime1.MSlice()
 		defer epsPrime.Recycle()
 		opencl.AddOommfSlonczewskiTorque(dst, M.Buffer(),
-			msat, j, fixedP, alpha, pfix, pfree, lambdafix, lambdafree, epsPrime, Mesh())
+			msat, j, fixedP, alpha, pfix, pfree, lambdafix, lambdafree, epsPrime, Mesh(), opencl.ClCmdQueue[0], nil)
 	}
 }
 
@@ -305,11 +545,15 @@ func AddSTTorque2(dst *data.Slice) {
 		epsPrime := EpsilonPrime2.MSlice()
 		defer epsPrime.Recycle()
 		opencl.AddOommfSlonczewskiTorque(dst, M.Buffer(),
-			msat, j, fixedP, alpha, pfix, pfree, lambdafix, lambdafree, epsPrime, Mesh())
+			msat, j, fixedP, alpha, pfix, pfree, lambdafix, lambdafree, epsPrime, Mesh(), opencl.ClCmdQueue[0], nil)
 	}
 }
 
 func JfromV(Vappl, A1, A2, m, refM, Jcurr *data.Slice, ToMulFactor bool) {
+	// sync in the beginning
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting for all queues in jfromv: %+v \n", err)
+	}
 	cellSz := M.Mesh().CellSize()
 	xSz, ySz, zSz := cellSz[X], cellSz[Y], cellSz[Z]
 	xArea := make([]float64, 3)
@@ -326,35 +570,80 @@ func JfromV(Vappl, A1, A2, m, refM, Jcurr *data.Slice, ToMulFactor bool) {
 	defer opencl.Recycle(factor1)
 	defer opencl.Recycle(dp)
 	opencl.Zero(dp)
-	opencl.Zero(factor)
-	opencl.Zero(factor1)
 
-	opencl.AddDotProduct(dp, float32(1.0), m, refM)
+	// checkout queues for execution
+	seqQueue := opencl.ClCmdQueue[0]
+	q1idx, q2idx, q3idx := opencl.CheckoutQueue(), opencl.CheckoutQueue(), opencl.CheckoutQueue()
+	q4idx, q5idx, q6idx := opencl.CheckoutQueue(), opencl.CheckoutQueue(), opencl.CheckoutQueue()
+	q7idx := opencl.CheckoutQueue()
+	defer opencl.CheckinQueue(q1idx)
+	defer opencl.CheckinQueue(q2idx)
+	defer opencl.CheckinQueue(q3idx)
+	defer opencl.CheckinQueue(q4idx)
+	defer opencl.CheckinQueue(q5idx)
+	defer opencl.CheckinQueue(q6idx)
+	defer opencl.CheckinQueue(q7idx)
+	queues1 := []*cl.CommandQueue{opencl.ClCmdQueue[q1idx], opencl.ClCmdQueue[q2idx], opencl.ClCmdQueue[q3idx]}
+	queues2 := []*cl.CommandQueue{opencl.ClCmdQueue[q4idx], opencl.ClCmdQueue[q5idx], opencl.ClCmdQueue[q6idx]}
+	// sync queues
+	opencl.SyncQueues([]*cl.CommandQueue{opencl.ClCmdQueue[q7idx]}, []*cl.CommandQueue{seqQueue}) // dp
+
+	opencl.AddDotProduct(dp, float32(1.0), m, refM, opencl.ClCmdQueue[q7idx], nil)
+	// sync queues
+	opencl.SyncQueues([]*cl.CommandQueue{seqQueue}, []*cl.CommandQueue{opencl.ClCmdQueue[q7idx]})
 
 	for ii := 0; ii < A1.NComp(); ii++ {
-		opencl.Madd2(a1int, A1.Comp(ii), A2.Comp(ii), float32(0.5), float32(0.5))
-		opencl.Madd2(a2int, A1.Comp(ii), A2.Comp(ii), float32(0.5), float32(-0.5))
-		opencl.Mul(factor1, a2int, dp)
+		opencl.Madd2(a1int, A1.Comp(ii), A2.Comp(ii), float32(0.5), float32(0.5), []*cl.CommandQueue{queues1[ii]}, nil)
+		opencl.Madd2(a2int, A1.Comp(ii), A2.Comp(ii), float32(0.5), float32(-0.5), []*cl.CommandQueue{queues2[ii]}, nil)
+
+		// sync queues
+		opencl.SyncQueues([]*cl.CommandQueue{queues2[ii]}, []*cl.CommandQueue{opencl.ClCmdQueue[q7idx]})
+		opencl.Mul(factor1, a2int, dp, []*cl.CommandQueue{queues2[ii]}, nil)
+		// sync queues
+		opencl.SyncQueues([]*cl.CommandQueue{queues2[ii]}, []*cl.CommandQueue{queues1[ii]})
+
 		if ToMulFactor {
-			opencl.Madd2(factor, a1int, factor1, float32(float64(1.0)/xArea[ii]), float32(float64(1.0)/xArea[ii]))
-			opencl.Mul(Jcurr.Comp(ii), Vappl.Comp(ii), factor)
+			opencl.Madd2(factor, a1int, factor1, float32(float64(1.0)/xArea[ii]), float32(float64(1.0)/xArea[ii]), []*cl.CommandQueue{queues2[ii]}, nil)
+			opencl.Mul(Jcurr.Comp(ii), Vappl.Comp(ii), factor, []*cl.CommandQueue{queues2[ii]}, nil)
 		} else {
-			opencl.Madd2(factor, a1int, factor1, float32(xArea[ii]), float32(xArea[ii]))
-			opencl.Div(Jcurr.Comp(ii), Vappl.Comp(ii), factor)
+			opencl.Madd2(factor, a1int, factor1, float32(xArea[ii]), float32(xArea[ii]), []*cl.CommandQueue{queues2[ii]}, nil)
+			opencl.Div(Jcurr.Comp(ii), Vappl.Comp(ii), factor, []*cl.CommandQueue{queues2[ii]}, nil)
 		}
+	}
+
+	// Sync all queues
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting for all queues to finish after jfromv: %+v \n", err)
 	}
 }
 
 func FreezeSpins(dst *data.Slice) {
 	if !FrozenSpins.isZero() {
-		opencl.ZeroMask(dst, FrozenSpins.gpuLUT1(), regions.Gpu())
+		// sync in the beginning
+		if err := opencl.WaitAllQueuesToFinish(); err != nil {
+			fmt.Printf("error waiting for queues to finish in freezespins: %+v \n", err)
+		}
+
+		// Checkout queues and execute kernel
+		q1idx, q2idx, q3idx := opencl.CheckoutQueue(), opencl.CheckoutQueue(), opencl.CheckoutQueue()
+		defer opencl.CheckinQueue(q1idx)
+		defer opencl.CheckinQueue(q2idx)
+		defer opencl.CheckinQueue(q3idx)
+		queues := []*cl.CommandQueue{opencl.ClCmdQueue[q1idx], opencl.ClCmdQueue[q2idx], opencl.ClCmdQueue[q3idx]}
+		opencl.ZeroMask(dst, FrozenSpins.gpuLUT1(), regions.Gpu(), queues, nil)
+
+		// sync before returning
+		if err := opencl.WaitAllQueuesToFinish(); err != nil {
+			fmt.Printf("error waiting for queues to finish after freezespins: %+v \n", err)
+		}
 	}
 }
 
 func GetMaxTorque() float64 {
 	torque := ValueOf(Torque)
 	defer opencl.Recycle(torque)
-	return opencl.MaxVecNorm(torque)
+	seqQueue := opencl.ClCmdQueue[0]
+	return opencl.MaxVecNorm(torque, seqQueue, nil)
 }
 
 type FixedLayerPosition int

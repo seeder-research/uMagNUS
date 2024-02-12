@@ -3,6 +3,9 @@ package engine
 // Minimize follows the steepest descent method as per Exl et al., JAP 115, 17D118 (2014).
 
 import (
+	"fmt"
+
+	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
 )
@@ -55,6 +58,19 @@ type Minimizer struct {
 }
 
 func (mini *Minimizer) Step() {
+	// sync in the beginning
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting for all queues at start of esdirk32a.step(): %+v \n", err)
+	}
+
+	// Get queues
+	seqQueue := opencl.ClCmdQueue[0]
+	q1idx, q2idx, q3idx := opencl.CheckoutQueue(), opencl.CheckoutQueue(), opencl.CheckoutQueue()
+	defer opencl.CheckinQueue(q1idx)
+	defer opencl.CheckinQueue(q2idx)
+	defer opencl.CheckinQueue(q3idx)
+	queues := []*cl.CommandQueue{opencl.ClCmdQueue[q1idx], opencl.ClCmdQueue[q2idx], opencl.ClCmdQueue[q3idx]}
+
 	m := M.Buffer()
 	size := m.Size()
 
@@ -72,7 +88,7 @@ func (mini *Minimizer) Step() {
 	data.Copy(m0, m)
 
 	// make descent
-	opencl.Minimize(m, m0, k, h)
+	opencl.Minimize(m, m0, k, h, seqQueue, nil)
 
 	// calculate new torque for next step
 	k0 := opencl.Buffer(3, size)
@@ -86,22 +102,28 @@ func (mini *Minimizer) Step() {
 	dk := k0
 
 	// calculate step difference of m and k
-	opencl.Madd2(dm, m, m0, 1., -1.)
-	opencl.Madd2(dk, k, k0, -1., 1.) // reversed due to LLNoPrecess sign
+	opencl.Madd2(dm, m, m0, 1., -1., queues, nil)
+	opencl.Madd2(dk, k, k0, -1., 1., queues, nil) // reversed due to LLNoPrecess sign
+	// sync queues to seqQueue
+	opencl.SyncQueues([]*cl.CommandQueue{seqQueue}, queues)
 
 	// get maxdiff and add to list
-	max_dm := opencl.MaxVecNorm(dm)
+	max_dm := opencl.MaxVecNorm(dm, seqQueue, nil)
 	mini.lastDm.Add(max_dm)
 	setLastErr(mini.lastDm.Max()) // report maxDm to user as LastErr
 
 	// adjust next time step
 	var nom, div float32
 	if NSteps%2 == 0 {
-		nom = opencl.Dot(dm, dm)
-		div = opencl.Dot(dm, dk)
+		nom = opencl.Dot(dm, dm, seqQueue, nil)
+		div = opencl.Dot(dm, dk, seqQueue, nil)
 	} else {
-		nom = opencl.Dot(dm, dk)
-		div = opencl.Dot(dk, dk)
+		nom = opencl.Dot(dm, dk, seqQueue, nil)
+		div = opencl.Dot(dk, dk, seqQueue, nil)
+	}
+	// sync
+	if err := seqQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for dot queues to finish in minimizer.step: %+v \n", err)
 	}
 	if div != 0. {
 		mini.h = nom / div
@@ -110,6 +132,10 @@ func (mini *Minimizer) Step() {
 	}
 
 	M.normalize()
+	// sync before returning
+	if err := seqQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for queue to finish after minimizer.step: %+v \n", err)
+	}
 
 	// as a convention, time does not advance during relax
 	NSteps++

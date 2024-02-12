@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"fmt"
 	"reflect"
 
 	data "github.com/seeder-research/uMagNUS/data"
@@ -87,4 +88,10 @@ func EvalTo(q interface {
 		defer opencl.Recycle(v)
 	}
 	data.Copy(dst, v)
+	// sync before returning
+	if err0, err1, err2 := opencl.WaitAllQueuesToFinish(), opencl.H2DQueue.Finish(), opencl.D2HQueue.Finish(); (err0 != nil) || (err1 != nil) || (err2 != nil) {
+		fmt.Printf("error waiting for queues to finish after evalto() 0: %+v \n", err0)
+		fmt.Printf("error waiting for queues to finish after evalto() 1: %+v \n", err1)
+		fmt.Printf("error waiting for queues to finish after evalto() 2: %+v \n", err2)
+	}
 }

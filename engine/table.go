@@ -91,6 +91,10 @@ func (x *userVar) EvalTo(dst *data.Slice) {
 	for c := 0; c < x.NComp(); c++ {
 		opencl.Memset(dst.Comp(c), float32(avg[c]))
 	}
+	// sync before returning
+	if err := opencl.H2DQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for queue after uservar.evalto(): %+v \n", err)
+	}
 }
 
 func TableSave() {

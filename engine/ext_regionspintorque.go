@@ -1,6 +1,9 @@
 package engine
 
 import (
+	"fmt"
+
+	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
 	util "github.com/seeder-research/uMagNUS/util"
@@ -78,13 +81,35 @@ func AddRegionLinkSpinTorque(dst *data.Slice) {
 	defer ms.Recycle()
 	buf := opencl.Buffer(3, Mesh().Size())
 	defer opencl.Recycle(buf)
+
+	// sync in the beginning
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting for queues to finish before addregionlinkspintorque: %+v \n", err)
+	}
+
 	opencl.Zero(buf)
+	seqQueue := opencl.ClCmdQueue[0]
 	for _, linkpair := range regionspintorquelinks {
 		linkPtr := &linkpair
 		sX, sY, sZ := linkPtr.GetDisplacement()
-		opencl.AddRegionSpinTorque(buf, M.Buffer(), ms, regions.Gpu(), uint8(linkPtr.GetRegionA()), uint8(linkPtr.GetRegionB()), sX, sY, sZ, linkPtr.GetJ(), linkPtr.GetAlpha(), linkPtr.GetPfix(), linkPtr.GetPfree(), linkPtr.GetLambdafix(), linkPtr.GetLambdafree(), linkPtr.GetEPrime(), M.Mesh())
+		opencl.AddRegionSpinTorque(buf, M.Buffer(), ms, regions.Gpu(), uint8(linkPtr.GetRegionA()), uint8(linkPtr.GetRegionB()), sX, sY, sZ, linkPtr.GetJ(), linkPtr.GetAlpha(), linkPtr.GetPfix(), linkPtr.GetPfree(), linkPtr.GetLambdafix(), linkPtr.GetLambdafree(), linkPtr.GetEPrime(), M.Mesh(), seqQueue, nil)
 	}
-	opencl.Add(dst, dst, buf)
+
+	// checkout queues for 3-component vector addition
+	q1idx, q2idx, q3idx := opencl.CheckoutQueue(), opencl.CheckoutQueue(), opencl.CheckoutQueue()
+	defer opencl.CheckinQueue(q1idx)
+	defer opencl.CheckinQueue(q2idx)
+	defer opencl.CheckinQueue(q3idx)
+	queues := []*cl.CommandQueue{opencl.ClCmdQueue[q1idx], opencl.ClCmdQueue[q2idx], opencl.ClCmdQueue[q3idx]}
+	opencl.SyncQueues(queues, []*cl.CommandQueue{seqQueue})
+
+	// add vectors
+	opencl.Add(dst, dst, buf, queues, nil)
+
+	// sync before returning
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting for all queues to finish in addregionlinkspintorque: %+v \n", err)
+	}
 }
 
 func (r *RegionSpinTorque) SetJ(s float32) {

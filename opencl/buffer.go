@@ -52,7 +52,8 @@ func Buffer(nComp int, size [3]int) *data.Slice {
 			panic(err)
 		}
 		ptrs[i] = unsafe.Pointer(tmpPtr)
-		event, err := ClCmdQueue[0].EnqueueFillBuffer(tmpPtr, unsafe.Pointer(&initVal), SIZEOF_FLOAT32, 0, bytes, nil)
+		event, err := H2DQueue.EnqueueFillBuffer(tmpPtr, unsafe.Pointer(&initVal), SIZEOF_FLOAT32, 0, bytes, nil)
+		SyncQueues([]*cl.CommandQueue{ClCmdQueue[0]}, []*cl.CommandQueue{H2DQueue})
 		if err != nil {
 			log.Printf("CreateEmptyBuffer failed: %+v \n", err)
 		}

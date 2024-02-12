@@ -1,6 +1,8 @@
 package engine
 
 import (
+	"fmt"
+
 	data "github.com/seeder-research/uMagNUS/data"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
 	util "github.com/seeder-research/uMagNUS/util"
@@ -27,6 +29,9 @@ type Regions struct {
 func (r *Regions) alloc() {
 	mesh := r.Mesh()
 	r.gpuCache = opencl.NewBytes(mesh.NCell())
+	if err := opencl.H2DQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for region.alloc to finish: %+v \n", err)
+	}
 	DefRegion(0, universe)
 }
 
@@ -73,6 +78,10 @@ func (r *Regions) render(f func(x, y, z float64) int) {
 	}
 	//log.Print("regions.upload")
 	r.gpuCache.Upload(l)
+	// sync before returning
+	if err := opencl.H2DQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for data transfer queue in regions.loadfile: %+v \n", err)
+	}
 }
 
 // get the region for position R based on the history
@@ -95,6 +104,10 @@ func (r *Regions) HostArray() [][][]byte {
 func (r *Regions) HostList() []byte {
 	regionsList := make([]byte, r.Mesh().NCell())
 	regions.gpuCache.Download(regionsList)
+	// sync before returning
+	if err := opencl.D2HQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for data transfer queue in regions.hostlist: %+v \n", err)
+	}
 	return regionsList
 }
 
@@ -126,6 +139,10 @@ func (r *Regions) LoadFile(fname string) {
 		}
 	}
 	r.gpuCache.Upload(l)
+	// sync before returning
+	if err := opencl.H2DQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for data transfer queue in regions.loadfile: %+v \n", err)
+	}
 }
 
 func (r *Regions) average() []float64 {
@@ -189,8 +206,17 @@ func init() {
 
 // Get returns the regions as a slice of floats, so it can be output.
 func (r *Regions) Slice() (*data.Slice, bool) {
+	// sync in the beginning
+	seqQueue := opencl.ClCmdQueue[0]
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting for all queues in regions.slice: %+v \n", err)
+	}
 	buf := opencl.Buffer(1, r.Mesh().Size())
-	opencl.RegionDecode(buf, unitMap.gpuLUT1(), regions.Gpu())
+	opencl.RegionDecode(buf, unitMap.gpuLUT1(), regions.Gpu(), seqQueue, nil)
+	// sync before returning
+	if err := seqQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for all queues after regions.slice: %+v \n", err)
+	}
 	return buf, true
 }
 
@@ -215,12 +241,17 @@ func reshapeBytes(array []byte, size [3]int) [][][]byte {
 }
 
 func (b *Regions) shift(dx int) {
+	// sync in the beginning
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting for all queues to finish in regions.shift: %+v \n", err)
+	}
 	// TODO: return if no regions defined
 	r1 := b.Gpu()
 	r2 := opencl.NewBytes(b.Mesh().NCell()) // TODO: somehow recycle
 	defer r2.Free()
 	newreg := byte(0) // new region at edge
-	opencl.ShiftBytes(r2, r1, b.Mesh(), dx, newreg)
+	seqQueue := opencl.ClCmdQueue[0]
+	opencl.ShiftBytes(r2, r1, b.Mesh(), dx, newreg, seqQueue, nil)
 	r1.Copy(r2)
 
 	n := Mesh().Size()
@@ -237,15 +268,24 @@ func (b *Regions) shift(dx int) {
 			}
 		}
 	}
+	// sync before returning
+	if err := seqQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for all queues to finish after regions.shift: %+v \n", err)
+	}
 }
 
 func (b *Regions) shiftY(dy int) {
+	// sync in the beginning
+	if err := opencl.WaitAllQueuesToFinish(); err != nil {
+		fmt.Printf("error waiting for all queues to finish in regions..shift: %+v \n", err)
+	}
 	// TODO: return if no regions defined
 	r1 := b.Gpu()
 	r2 := opencl.NewBytes(b.Mesh().NCell()) // TODO: somehow recycle
 	defer r2.Free()
 	newreg := byte(0) // new region at edge
-	opencl.ShiftBytesY(r2, r1, b.Mesh(), dy, newreg)
+	seqQueue := opencl.ClCmdQueue[0]
+	opencl.ShiftBytesY(r2, r1, b.Mesh(), dy, newreg, seqQueue, nil)
 	r1.Copy(r2)
 
 	n := Mesh().Size()
@@ -261,6 +301,10 @@ func (b *Regions) shiftY(dy int) {
 				}
 			}
 		}
+	}
+	// sync before returning
+	if err := seqQueue.Finish(); err != nil {
+		fmt.Printf("error waiting for all queues to finish after regions.shifty: %+v \n", err)
 	}
 }
 

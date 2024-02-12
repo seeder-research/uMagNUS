@@ -1,19 +1,28 @@
 package engine
 
 import (
+	"fmt"
 	"math"
 
+	cl "github.com/seeder-research/uMagNUS/cl"
 	data "github.com/seeder-research/uMagNUS/data"
 	opencl "github.com/seeder-research/uMagNUS/opencl"
 	util "github.com/seeder-research/uMagNUS/util"
 )
 
 // Time step controller to be used with these solvers:
-//   RK4
+//
+//	RK4
 func simpleController(Err *data.Slice, h float64, accOrder, rejOrder int) bool {
 
+	// sync in the beginning
+	if err1 := opencl.WaitAllQueuesToFinish(); err1 != nil {
+		fmt.Printf("error waiting for all queues to finish in simplecontroller: %+v \n", err1)
+	}
+	seqQueue := opencl.ClCmdQueue[0]
+
 	// determine error
-	err := opencl.MaxVecNorm(Err) * h
+	err := opencl.MaxVecNorm(Err, seqQueue, nil) * h
 
 	// adjust next time step
 	if err < MaxErr || Dt_si <= MinDt || FixDt != 0 { // mindt check to avoid infinite loop
@@ -37,31 +46,53 @@ func integralController(Err, delM, k1, m0 *data.Slice, t0, h float64, accOrder, 
 	m := M.Buffer()
 	size := m.Size()
 
+	// sync in the beginning
+	if err1 := opencl.WaitAllQueuesToFinish(); err1 != nil {
+		fmt.Printf("error waiting for all queues to finish in integralcontroller: %+v \n", err1)
+	}
+	seqQueue := opencl.ClCmdQueue[0]
+
 	// determine error
-	err := opencl.MaxVecNorm(Err) * h
+	err := opencl.MaxVecNorm(Err, seqQueue, nil) * h
 
 	// adjust next time step
 	if err < MaxErr || Dt_si <= MinDt || FixDt != 0 { // mindt check to avoid infinite loop
+		// checkout queues to execute div
+		q1idx, q2idx, q3idx := opencl.CheckoutQueue(), opencl.CheckoutQueue(), opencl.CheckoutQueue()
+		defer opencl.CheckinQueue(q1idx)
+		defer opencl.CheckinQueue(q2idx)
+		defer opencl.CheckinQueue(q3idx)
+		queues := []*cl.CommandQueue{opencl.ClCmdQueue[q1idx], opencl.ClCmdQueue[q2idx], opencl.ClCmdQueue[q3idx]}
+
 		// Passed absolute error. Check relative error...
-		errnorm := opencl.Buffer(1, size)
-		ddtnorm := opencl.Buffer(1, size)
-		defer opencl.Recycle(errnorm)
-		defer opencl.Recycle(ddtnorm)
-
-		opencl.VecNorm(errnorm, Err)
-		opencl.VecNorm(ddtnorm, delM)
-
-		maxdm := opencl.MaxVecNorm(delM)
+		maxdm := opencl.MaxVecNorm(delM, seqQueue, nil)
 		fail := 0
 		rlerr := float64(0.0)
 
 		if maxdm < MinSlope { // Only step using relerr if dmdt is big enough. Overcomes equilibrium problem
 			fail = 0
 		} else {
-			opencl.Div(errnorm, errnorm, ddtnorm) //re-use errnorm
-			rlerr = float64(opencl.MaxAbs(errnorm))
+			errnorm := opencl.Buffer(1, size)
+			ddtnorm := opencl.Buffer(1, size)
+			defer opencl.Recycle(errnorm)
+			defer opencl.Recycle(ddtnorm)
+
+			opencl.VecNorm(errnorm, Err, queues[0], nil)
+			opencl.VecNorm(ddtnorm, delM, queues[1], nil)
+
+			// sync all queues
+			if err1 := opencl.WaitAllQueuesToFinish(); err1 != nil {
+				fmt.Printf("error waiting for all queues to finish in integralcontroller after maxdm: %+v \n", err1)
+			}
+
+			opencl.Div(errnorm, errnorm, ddtnorm, queues, nil) //re-use errnorm
+			// sync queues and seqQueue
+			opencl.SyncQueues([]*cl.CommandQueue{seqQueue}, queues)
+
+			rlerr = float64(opencl.MaxAbs(errnorm, seqQueue, nil))
 			fail = 1
 		}
+
 		if fail == 0 || RelErr <= 0.0 || rlerr < RelErr || Dt_si <= MinDt || FixDt != 0 { // mindt check to avoid infinite loop
 			// step OK
 			setLastErr(err)
@@ -75,6 +106,10 @@ func integralController(Err, delM, k1, m0 *data.Slice, t0, h float64, accOrder, 
 			}
 			if FSAL && (k1 != nil) && (delM != nil) {
 				data.Copy(k1, delM) // FSAL
+				// sync seqQueue
+				if err1 := seqQueue.Finish(); err1 != nil {
+					fmt.Printf("error waiting for seqQueue to finish in integralcontroller: %+v \n", err1)
+				}
 			}
 		} else {
 			// undo bad step
@@ -82,6 +117,10 @@ func integralController(Err, delM, k1, m0 *data.Slice, t0, h float64, accOrder, 
 			util.Assert(FixDt == 0)
 			Time = t0
 			data.Copy(m, m0)
+			// sync seqQueue
+			if err1 := seqQueue.Finish(); err1 != nil {
+				fmt.Printf("error waiting for seqQueue to finish in integralcontroller: %+v \n", err1)
+			}
 			NUndone++
 			adaptDt(math.Pow(RelErr/rlerr, 1./float64(rejOrder)))
 		}
@@ -91,6 +130,10 @@ func integralController(Err, delM, k1, m0 *data.Slice, t0, h float64, accOrder, 
 		util.Assert(FixDt == 0)
 		Time = t0
 		data.Copy(m, m0)
+		// sync seqQueue
+		if err1 := seqQueue.Finish(); err1 != nil {
+			fmt.Printf("error waiting for seqQueue to finish in integralcontroller: %+v \n", err1)
+		}
 		NUndone++
 		adaptDt(math.Pow(MaxErr/err, 1./float64(rejOrder)))
 	}
@@ -122,31 +165,53 @@ func gustafssonController(Err, delM, k1, m0 *data.Slice, t0, h float64, kOrder i
 	m := M.Buffer()
 	size := m.Size()
 
+	// sync in the beginning
+	if err1 := opencl.WaitAllQueuesToFinish(); err1 != nil {
+		fmt.Printf("error waiting for all queues to finish in gustafssoncontroller: %+v \n", err1)
+	}
+	seqQueue := opencl.ClCmdQueue[0]
+
 	// determine error
-	err := opencl.MaxVecNorm(Err) * h
+	err := opencl.MaxVecNorm(Err, seqQueue, nil) * h
 
 	// adjust next time step
 	if err < MaxErr || Dt_si <= MinDt || FixDt != 0 { // mindt check to avoid infinite loop
+		// checkout queues to execute div
+		q1idx, q2idx, q3idx := opencl.CheckoutQueue(), opencl.CheckoutQueue(), opencl.CheckoutQueue()
+		defer opencl.CheckinQueue(q1idx)
+		defer opencl.CheckinQueue(q2idx)
+		defer opencl.CheckinQueue(q3idx)
+		queues := []*cl.CommandQueue{opencl.ClCmdQueue[q1idx], opencl.ClCmdQueue[q2idx], opencl.ClCmdQueue[q3idx]}
+
 		// Passed absolute error. Check relative error...
-		errnorm := opencl.Buffer(1, size)
-		ddtnorm := opencl.Buffer(1, size)
-		defer opencl.Recycle(errnorm)
-		defer opencl.Recycle(ddtnorm)
-
-		opencl.VecNorm(errnorm, Err)
-		opencl.VecNorm(ddtnorm, delM)
-
-		maxdm := opencl.MaxVecNorm(delM)
+		maxdm := opencl.MaxVecNorm(delM, seqQueue, nil)
 		fail := 0
 		rlerr := float64(0.0)
 
 		if maxdm < MinSlope { // Only step using relerr if dmdt is big enough. Overcomes equilibrium problem
 			fail = 0
 		} else {
-			opencl.Div(errnorm, errnorm, ddtnorm) //re-use errnorm
-			rlerr = float64(opencl.MaxAbs(errnorm))
+			errnorm := opencl.Buffer(1, size)
+			ddtnorm := opencl.Buffer(1, size)
+			defer opencl.Recycle(errnorm)
+			defer opencl.Recycle(ddtnorm)
+
+			opencl.VecNorm(errnorm, Err, queues[0], nil)
+			opencl.VecNorm(ddtnorm, delM, queues[1], nil)
+
+			// sync all queues
+			if err1 := opencl.WaitAllQueuesToFinish(); err1 != nil {
+				fmt.Printf("error waiting for all queues to finish in gustafssoncontroller after maxdm: %+v \n", err1)
+			}
+
+			opencl.Div(errnorm, errnorm, ddtnorm, queues, nil) //re-use errnorm
+			// sync queues and seqQueue
+			opencl.SyncQueues([]*cl.CommandQueue{seqQueue}, queues)
+
+			rlerr = float64(opencl.MaxAbs(errnorm, seqQueue, nil))
 			fail = 1
 		}
+
 		if fail == 0 || RelErr <= 0.0 || rlerr < RelErr || Dt_si <= MinDt || FixDt != 0 { // mindt check to avoid infinite loop
 			// step OK
 			setLastErr(err)
@@ -186,6 +251,10 @@ func gustafssonController(Err, delM, k1, m0 *data.Slice, t0, h float64, kOrder i
 			}
 			if FSAL && (k1 != nil) && (delM != nil) {
 				data.Copy(k1, delM) // FSAL
+				// sync seqQueue
+				if err1 := seqQueue.Finish(); err1 != nil {
+					fmt.Printf("error waiting for seqQueue to finish in gustafssoncontroller: %+v \n", err1)
+				}
 			}
 		} else {
 			// undo bad step
@@ -193,6 +262,10 @@ func gustafssonController(Err, delM, k1, m0 *data.Slice, t0, h float64, kOrder i
 			util.Assert(FixDt == 0)
 			Time = t0
 			data.Copy(m, m0)
+			// sync seqQueue
+			if err1 := seqQueue.Finish(); err1 != nil {
+				fmt.Printf("error waiting for seqQueue to finish in gustafssoncontroller: %+v \n", err1)
+			}
 			NUndone++
 			if rejRelErr <= 0. {
 				dtScale := math.Pow(RelErr/rlerr, 1./float64(kOrder))
@@ -222,6 +295,10 @@ func gustafssonController(Err, delM, k1, m0 *data.Slice, t0, h float64, kOrder i
 		util.Assert(FixDt == 0)
 		Time = t0
 		data.Copy(m, m0)
+		// sync seqQueue
+		if err1 := seqQueue.Finish(); err1 != nil {
+			fmt.Printf("error waiting for seqQueue to finish in gustafssoncontroller: %+v \n", err1)
+		}
 		NUndone++
 		if rejErr <= 0. {
 			dtScale := math.Pow(MaxErr/err, 1./float64(kOrder))
